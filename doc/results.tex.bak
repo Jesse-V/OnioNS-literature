@@ -1,0 +1,115 @@
+% Be sure to write chapter titles in ALL CAPS
+\chapter{\uppercase{RESULTS}}
+
+Each section of this chapter focuses on the results of one of the four research questions discussed in the experiments chapter.  First, an abstract URL test suite is compared to the full exhaustive test suite in both size and effectiveness.  Second, a more effective combinatorial coverage based test suite is compared to the same exhaustive test suite.
+
+\section{Size Impact of Abstract URL Test Suite}
+
+Using the algorithm described in Figure~\ref{algorithm}, one is able to identify variables in semantic URLs.  These variables are then used to build abstract URLs that represent a single application state for each template or combinations of templates in the sample application.  The abstract URL test suite does not represent every possible data combination represented in the sample application.  The exhaustive count represents every application state as a combination of data plus templates.  The hypothesis of this experiment was that the abstract URL test suite would find less faults than the exhaustive test suite but would miss most, if not all, data related faults.
+
+For this relatively small application, one can quickly understand the value of identifying abstract URLs.  Indeed, assuming an average page load latency of around 500 milliseconds, running the exhaustive test suite would require more than 27 hours to perform a full regression test.
+
+One option for future work would be to increase the number of abstract URL tests from a single random data point for each application state to a statistically relevant sample of random data points for each application state and compare the effectiveness to the exhaustive test suite.  Table~\label{table:reducedSize} compares the sizes of the two strategies.
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{| l | l |}
+		\hline
+  Strategy 					& 	Number of Tests		\\ \hline
+  Exhaustive 				& 	199,484				\\ \hline
+  Abstract URLs 			& 	27					\\
+		\hline
+	\end{tabular}
+\caption{Size of test suites by strategy.}
+\label{table:reducedSize}
+\end{table}
+
+\section{Effectiveness of Abstract URL Test Suite}
+
+The exhaustive test suite yields significantly better results in fault detection compared to the abstract URL test suite but also took the longest amount of time.  In real-world scenarios, it may not be likely that you'll be able to let a full regression test of nearly 200,000 application states run for days before deploying.
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{| l | l | l |}
+		\hline
+  Strategy 					& 	Number Faults Identified		&	Percent Faults Identified		\\ \hline
+  Exhaustive 				& 	69						&	94.5\%					\\ \hline
+  Reducted Abstract URL 		& 	42						&	57.5\%					\\
+		\hline
+	\end{tabular}
+\caption{Effectiveness of Single Coverage With Abstract URL Reduction.}
+\label{table:reducedEffectiveness}
+\end{table}
+
+\section{Size Impact of Combinatorial Coverage}
+
+The test generation code, when discovering a \textless form\textgreater\ element on any snippet of HTML code, analyzes it looking for related or hierarchical variables to apply combinatorial algorithms to test generation.  Not all of the application states in the sample application have multiple variable combinations as an option.  Some pages, such as the application about page, have no variables.  As the combinatorial test generation algorithms do not apply to them, I have combined both generated combinatorial tests and the remaining ``uncombined'' states, i.e. about page to provide a more comprehensive test suite to better compare with the exhaustive, single coverage testing strategy.  The single, exhaustive coverage and combinatorial testing coverage had the following number of tests in their respective test suites.
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{| l | l |}
+		\hline
+  Strategy 						& 	Number of Tests				\\ \hline
+  Exhaustive, Single Coverage 		& 	199,484						\\ \hline
+  2-way Combinatorial Coverage	& 	25,560 (13,387 combinatorial + 12,173 remaining)	\\
+		\hline
+	\end{tabular}
+\caption{Size of test suites by strategy.}
+\label{table:combinatorialSize}
+\end{table}
+
+Inside an encountered \textless form\textgreater\ element, the combinatorial test generation will search for any input element or select element as well as a ``data-hierarchical'' attribute that indicates these options should be pre-combined before applied as a option in a variable in the combinatorial test generation.  An example \textless form\textgreater\ element can be found in Figure~\ref{formVariableHierarchical}.  The ``data-hierarchical'' attribute tells the test generation code to combine them as a sub-model before applying it to a combinatorial algorithm.  A sample of the pre-combined sub-model data would look like is found in Table~\ref{table:sampleTests}.
+
+\begin{figure}
+\begin{lstlisting}[language=HTML]
+	<fieldset data-name="unit" data-role="controlgroup">
+		<select data-hierarchical="unit" name="state" id="state">
+		   	<option>Select State</option>
+		</select>		
+		<select data-hierarchical="unit" name="county" id="county">
+			<option value="">Select County</option>
+		</select>
+		<select data-hierarchical="unit" name="city" id="city">
+			<option value="">Select City</option>
+		</select>
+	</fieldset>
+\end{lstlisting}
+\caption{Hierarchical Variable HTML Form Example}
+\label{formVariableHierarchical}
+\end{figure}
+
+With the unit variable type pre-combined in the sample application, combinatorial test generation can then be applied according to Table~\ref{table:sampleTests}.
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{| l | c | l |}
+		\hline
+Unit												&	Year		& 	Data Point	\\ \hline
+ /state/alabama									&	1990	&	Population	\\ \hline
+ /state/alabama/county/autauga						&	2000	&	Density		\\ \hline
+ /state/alabama/county/lee/city/auburn-city				&	2005	&	Ranking		\\ \hline
+/state/alabama/county/tuscaloosa/city/tuscaloosa-city 	&			&				\\ \hline
+...												&			&				\\ \hline
+Remaining combined units							&			&				\\
+		\hline
+	\end{tabular}
+\caption{Sample Combinatorial Tests.}
+\label{table:sampleTests}
+\end{table}
+
+\section{Effectiveness of Combinatorial Coverage}
+
+The single, exhaustive coverage testing yielded a slightly better fault detection but required a full order of magnitude more tests to achieve that result, 199,484 compared to 25,560.  Assuming an average latency of 500 milliseconds would require only 3.5 hours to execute all test cases in the combinatorial coverage test suite, or approximately 23.5 hours less time required to test the exhaustive test suite on the sample application.
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{| l | l | l |}
+		\hline
+  Strategy 						& 	Number Faults Identified		&	Percent Faults Identified			\\ \hline
+  Exhaustive, Single	Coverage 		& 	69						&	94.5\%						\\ \hline
+  2-way, Combinatorial Coverage& 	68						&	93.1\%						\\
+		\hline
+	\end{tabular}
+\caption{Effectiveness of Combinatorial Coverage.}
+\label{table:combinatorialEffectiveness}
+\end{table}

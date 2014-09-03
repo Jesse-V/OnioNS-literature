@@ -1,0 +1,13 @@
+
+
+\begin{abstract}
+% A space is needed before the text starts so that the first paragraph
+% is indented properly.
+
+Web applications are increasingly moving business and processing logic from the server to the browser.  Traditional, multiple-page request/response applications are quickly being replaced by single-page applications where complex application logic is downloaded on the initial page load and data is then subsequently fetched asynchronously via the browser's native XMLHttpRequest (XHR) object.  
+
+These new generation web applications are called Rich Web Applications (RWA).  Frameworks such as the Google Web Toolkit (GWT), and JavaScript model-view-controller (MVC) frameworks such as Backbone.js, Angular.js, and Ember.js are facilitating this move.  With this migration, testing frameworks also need to follow the logic by moving analysis and test generation from the server to the client.  One problem hindering the movement of testing from server-side to client-side in this domain is the adoption of semantic URLs.  This paper introduces a novel approach to systematically identify variables in semantic URLs and then use these variables as part of our test generation process.  
+
+Using a sample RWA that I built and carefully seeded with various JavaScript faults, I demonstrate in this thesis, as an empirical study, that combinatorial testing algorithms and test reduction strategies also apply to new RWAs.
+
+\end{abstract}

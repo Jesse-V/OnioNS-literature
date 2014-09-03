@@ -1,0 +1,128 @@
+%Sample usage of usuthesis.cls
+\documentclass[cs, msthesis]{usuthesis}
+
+%{{{ Some useful packages, modify as needed
+\usepackage{epsfig}
+\usepackage{amssymb}           % add ams symbols stuff
+\usepackage{caption}		% needed for listing captions
+\usepackage{graphicx}          	% add graphics
+\usepackage{subfigure}
+\usepackage{color}             	% grants control of link text colors.
+\usepackage{algorithm2e}
+\usepackage{listings}		% code listings
+\usepackage{pdflscape}
+\usepackage{hyperref}          	% make contents/ref/citations clickable
+\usepackage{epstopdf}
+\usepackage{color}
+\usepackage{enumerate}		% lists of items
+\usepackage{url} 			% url in bib
+%}}}
+
+% for formatting code
+\lstset{
+	language=Java,                		% choose the language of the code
+	basicstyle=\footnotesize,       		% the size of the fonts that are used for the code
+	numbers=left,                   		% where to put the line-numbers
+	numberstyle=\footnotesize,		% the size of the fonts that are used for the line-numbers
+	stepnumber=1,                   		% the step between two line-numbers. If it is 1 each line will be numbered
+	firstnumber=100,
+	lineskip={5pt},
+	aboveskip={2\baselineskip},
+	belowskip={0\baselineskip},
+	xleftmargin=0mm,				% left margin of listing section
+	floatplacement=t,
+	numbersep=-15pt,                  	% how far the line-numbers are from the code
+	backgroundcolor=\color{white},  	% choose the background color. You must add \usepackage{color}
+	showspaces=false,               		% show spaces adding particular underscores
+	showstringspaces=false,         	% underline spaces within strings
+	showtabs=false,                 		% show tabs within strings adding particular underscores
+	frame=tb,           				% adds a frame around the code
+	tabsize=4,          				% sets default tabsize to 2 spaces
+	captionpos=b,           			% sets the caption-position to bottom
+	breaklines=true,        			% sets automatic line breaking
+	breakatwhitespace=false,    		% sets if automatic breaks should only happen at whitespace
+	numberbychapter=true,
+	escapeinside={\%*}{*)}          		% if you want to add a comment within your code
+}
+\lstloadlanguages{
+         Java,HTML
+ }
+
+\intextsep=10mm					% controls spacing before and after figures and tables
+\belowcaptionskip=-5mm
+
+%Set all linked content to be plain black text
+\hypersetup{
+    colorlinks,%
+    citecolor=black,%
+    filecolor=black,%
+    linkcolor=black,%
+    urlcolor=black
+}
+
+
+% Author and Title Information
+\author{Chad Maughan}
+\title{Test Case Generation Using Combinatorial Based Coverage for Rich Web Applications}
+
+
+% The Committee
+\majorprof{Dr. Renee Bryce}
+\firstreader{Dr. Daniel Bryce}
+\secondreader{Dr. Daniel Watson}
+%Dissertation includes additional committee members
+%\thirdreader{}
+%\fourthreader{}
+
+% Graduate Dean, Update as necessary
+\graddean{Dr. Mark R. McLellan} 
+\deantitle{Vice President for Research and}
+\deansecondtitle{Dean of the School of Graduate Studies}
+
+% Degree Information
+\degree{Master of Science}
+\month{July}
+\year{2012}
+
+\begin{document}
+
+    %{{{ Frontmatter
+    \preliminaries   % set frontmatter style
+
+    \maketitle
+    \makecopyright        % optional
+
+    \include{doc/abstract}
+    \include{doc/pubAbstract}
+    \include{doc/dedication}  % optional
+    \include{doc/acknowledgements}     % optional
+
+    \tableofcontents
+    \listoftables
+    \listoffigures
+
+%    \include{doc/notation}  % optional
+%    \include{doc/acronyms}  % optional
+    %}}}
+    %{{{ The main body of the thesis
+    \body  % set main body style
+
+    % Chapters
+    \include{doc/introduction}
+    \include{doc/background}
+    \include{doc/experiments}
+    \include{doc/results}
+    \include{doc/conclusions}
+
+    % Endmatter
+    % For BibTeX references: specify a .bib file and a style
+    % ECE dept. use USU-IEEEtran \references{sample}{USU-IEEEtran}
+    % MAE dept. use aiaa or asme \references{sample}{aiaa} or
+    													 % \references{sample}{asme}
+    % CS dept. use \references{sample}{IEEEtran.bst}
+    \references{thesis}{IEEEtran.bst}
+
+    %\include{appendix} % optional
+    %\include{vita}     % optional
+    %}}}
+\end{document}
