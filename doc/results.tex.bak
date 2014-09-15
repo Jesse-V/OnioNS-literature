@@ -9,10 +9,11 @@ Using the algorithm described in Figure~\ref{algorithm}, one is able to identify
 
 For this relatively small application, one can quickly understand the value of identifying abstract URLs.  Indeed, assuming an average page load latency of around 500 milliseconds, running the exhaustive test suite would require more than 27 hours to perform a full regression test.
 
-One option for future work would be to increase the number of abstract URL tests from a single random data point for each application state to a statistically relevant sample of random data points for each application state and compare the effectiveness to the exhaustive test suite.  Table~\label{table:reducedSize} compares the sizes of the two strategies.
+One option for future work would be to increase the number of abstract URL tests from a single random data point for each application state to a statistically relevant sample of random data points for each application state and compare the effectiveness to the exhaustive test suite.  Table~\ref{table:reducedSize} compares the sizes of the two strategies.
 
 \begin{table}[h]
 	\centering
+	\caption{Size of Test Suites by Strategy.}
 	\begin{tabular}{| l | l |}
 		\hline
   Strategy 					& 	Number of Tests		\\ \hline
@@ -20,33 +21,33 @@ One option for future work would be to increase the number of abstract URL tests
   Abstract URLs 			& 	27					\\
 		\hline
 	\end{tabular}
-\caption{Size of test suites by strategy.}
 \label{table:reducedSize}
 \end{table}
 
 \section{Effectiveness of Abstract URL Test Suite}
 
-The exhaustive test suite yields significantly better results in fault detection compared to the abstract URL test suite but also took the longest amount of time.  In real-world scenarios, it may not be likely that you'll be able to let a full regression test of nearly 200,000 application states run for days before deploying.
+The exhaustive test suite yields significantly better results in fault detection compared to the abstract URL test suite but also took the longest amount of time.  In real-world scenarios, it may not be practical to let a full regression test of nearly 200,000 application states run for more than a day before deploying.
 
 \begin{table}[h]
 	\centering
+	\caption{Effectiveness of Single Coverage With Abstract URL Reduction.}
 	\begin{tabular}{| l | l | l |}
 		\hline
   Strategy 					& 	Number Faults Identified		&	Percent Faults Identified		\\ \hline
-  Exhaustive 				& 	69						&	94.5\%					\\ \hline
-  Reducted Abstract URL 		& 	42						&	57.5\%					\\
+  Exhaustive 				& 	69						&	89.6\%					\\ \hline
+   Abstract URL 		& 	15						&	19.5\%					\\
 		\hline
 	\end{tabular}
-\caption{Effectiveness of Single Coverage With Abstract URL Reduction.}
 \label{table:reducedEffectiveness}
 \end{table}
 
 \section{Size Impact of Combinatorial Coverage}
 
-The test generation code, when discovering a \textless form\textgreater\ element on any snippet of HTML code, analyzes it looking for related or hierarchical variables to apply combinatorial algorithms to test generation.  Not all of the application states in the sample application have multiple variable combinations as an option.  Some pages, such as the application about page, have no variables.  As the combinatorial test generation algorithms do not apply to them, I have combined both generated combinatorial tests and the remaining ``uncombined'' states, i.e. about page to provide a more comprehensive test suite to better compare with the exhaustive, single coverage testing strategy.  The single, exhaustive coverage and combinatorial testing coverage had the following number of tests in their respective test suites.
+The test generation code, when discovering a \textless form\textgreater\ element on any snippet of HTML code, analyzes it looking for related or hierarchical variables to apply combinatorial algorithms to test generation.  Not all of the application states in the sample application have multiple variable combinations as an option.  Some pages, such as the application ``about'' page, have no variables.  As the combinatorial test generation algorithms do not apply to them, I have combined both generated combinatorial tests and the remaining ``uncombined'' states (i.e., about page) to provide a more comprehensive test suite to better compare with the exhaustive, single coverage testing strategy.  The single, exhaustive coverage and combinatorial testing coverage had the following number of tests in their respective test suites.
 
 \begin{table}[h]
 	\centering
+	\caption{Size of Test Suites by Strategy.}
 	\begin{tabular}{| l | l |}
 		\hline
   Strategy 						& 	Number of Tests				\\ \hline
@@ -54,7 +55,6 @@ The test generation code, when discovering a \textless form\textgreater\ element
   2-way Combinatorial Coverage	& 	25,560 (13,387 combinatorial + 12,173 remaining)	\\
 		\hline
 	\end{tabular}
-\caption{Size of test suites by strategy.}
 \label{table:combinatorialSize}
 \end{table}
 
@@ -74,7 +74,7 @@ Inside an encountered \textless form\textgreater\ element, the combinatorial tes
 		</select>
 	</fieldset>
 \end{lstlisting}
-\caption{Hierarchical Variable HTML Form Example}
+\caption{Hierarchical variable HTML form example}
 \label{formVariableHierarchical}
 \end{figure}
 
@@ -82,6 +82,7 @@ With the unit variable type pre-combined in the sample application, combinatoria
 
 \begin{table}[h]
 	\centering
+	\caption{Sample Combinatorial Tests.}
 	\begin{tabular}{| l | c | l |}
 		\hline
 Unit												&	Year		& 	Data Point	\\ \hline
@@ -93,8 +94,7 @@ Unit												&	Year		& 	Data Point	\\ \hline
 Remaining combined units							&			&				\\
 		\hline
 	\end{tabular}
-\caption{Sample Combinatorial Tests.}
-\label{table:sampleTests}
+	\label{table:sampleTests}
 \end{table}
 
 \section{Effectiveness of Combinatorial Coverage}
@@ -103,13 +103,13 @@ The single, exhaustive coverage testing yielded a slightly better fault detectio
 
 \begin{table}[h]
 	\centering
+	\caption{Effectiveness of Combinatorial Coverage.}
 	\begin{tabular}{| l | l | l |}
 		\hline
   Strategy 						& 	Number Faults Identified		&	Percent Faults Identified			\\ \hline
-  Exhaustive, Single	Coverage 		& 	69						&	94.5\%						\\ \hline
-  2-way, Combinatorial Coverage& 	68						&	93.1\%						\\
+  Exhaustive, Single	Coverage 		& 	69						&	89.6\%						\\ \hline
+  2-way, Combinatorial Coverage& 	68						&	88.3\%						\\
 		\hline
 	\end{tabular}
-\caption{Effectiveness of Combinatorial Coverage.}
 \label{table:combinatorialEffectiveness}
 \end{table}

@@ -1,6 +1,8 @@
 \begin{publicabstract}
+\centerline{CHAD M. MAUGHAN}
+\vspace{12pt}
 %Leave a blank line for formatting
 
-Rich Web Applications (RWA) that are data driven and feature responsive user interfaces are rapdily growing in popularity.  Popular sites such as Twitter, Pandora, and Angry Birds (browser version) are all examples of popular RWAs.  These RWAs are more complex and are developed differently than many previous web sites.  More of the processing power needed to run these applications is performed on the client machine, not the server.  Due to this development strategy, testing tools need new techniques to identify web application variables, capture errors, and identify problems.  In this thesis, I introduce novel techniques to identify variables in RWA semantic URLs and automatically generate tests for RWAs using a form of testing called combinatorial testing.
+Rich Web Applications (RWA) that are data driven and feature responsive user interfaces are rapidly growing in popularity.  Popular sites such as Twitter, Pandora, and Angry Birds (browser version) are all examples of popular RWAs.  These RWAs are more complex and are developed differently than many previous web sites.  More of the processing power needed to run these applications is performed on the client machine, not the server.  Due to this development strategy, testing tools need new techniques to identify web application variables, capture errors, and identify problems.  In this thesis, I introduce novel techniques to identify variables in RWA semantic URLs and automatically generate tests for RWAs using a form of testing called combinatorial testing.
 
 \end{publicabstract}

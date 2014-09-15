@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 15.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" 
+	id="Hash_tree" 
+	xmlns="http://www.w3.org/2000/svg" 
+	xmlns:xlink="http://www.w3.org/1999/xlink" 
+	x="0px" 
+	y="0px"
+	width="450px" 
+	height="400px" 
+	viewBox="0 0 450 400" 
+	enable-background="new 0 0 450 400" 
+	xml:space="preserve">
+<rect x="158.5" y="22.5" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="132" height="42"/>
+<rect x="89.5" y="105.5" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="73" height="59"/>
+<rect x="286.5" y="105.5" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="73" height="59"/>
+<rect x="38.5" y="206.5" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="72" height="58"/>
+<rect x="138.5" y="206.5" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="73" height="58"/>
+<rect x="239.5" y="206.5" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="71" height="58"/>
+<rect x="338.5" y="206.5" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="73" height="58"/>
+<rect x="38.5" y="296.5" fill="#FFFF99" stroke="#000000" stroke-miterlimit="10" width="72" height="78"/>
+<rect x="138.5" y="296.5" fill="#FFFF99" stroke="#000000" stroke-miterlimit="10" width="73" height="78"/>
+<rect x="239.5" y="296.5" fill="#FFFF99" stroke="#000000" stroke-miterlimit="10" width="71" height="78"/>
+<rect x="338.5" y="296.5" fill="#FFFF99" stroke="#000000" stroke-miterlimit="10" width="73" height="78"/>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="138.5" y1="105.5" x2="201.09" y2="70.347"/>
+		<g>
+			<polygon points="199.819,79.555 198.936,71.557 192.565,66.64 211.5,64.5 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="310.5" y1="105.5" x2="249.84" y2="70.471"/>
+		<g>
+			<polygon points="258.407,66.866 251.979,71.706 251,79.693 239.5,64.5 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="175" y1="206.5" x2="146.332" y2="173.512"/>
+		<g>
+			<polygon points="155.606,172.894 147.953,175.377 144.426,182.61 138.5,164.5 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="175" y1="297" x2="175" y2="277"/>
+		<g>
+			<polygon points="182.406,282.557 175,279.41 167.594,282.557 175,265 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="75.904" y1="206.5" x2="102.909" y2="173.715"/>
+		<g>
+			<polygon points="105.054,182.76 101.338,175.623 93.621,173.342 110.5,164.5 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="76" y1="297" x2="76" y2="277"/>
+		<g>
+			<polygon points="83.406,282.557 76,279.41 68.594,282.557 76,265 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="275" y1="297" x2="275" y2="277"/>
+		<g>
+			<polygon points="282.406,282.557 275,279.41 267.594,282.557 275,265 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="375" y1="297" x2="375" y2="277"/>
+		<g>
+			<polygon points="382.406,282.557 375,279.41 367.594,282.557 375,265 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="275" y1="206.5" x2="302.793" y2="173.619"/>
+		<g>
+			<polygon points="304.823,182.689 301.197,175.505 293.51,173.127 310.5,164.5 			"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="375" y1="206.5" x2="346.332" y2="173.512"/>
+		<g>
+			<polygon points="355.606,172.894 347.952,175.377 344.426,182.61 338.5,164.5 			"/>
+		</g>
+	</g>
+</g>
+<text transform="matrix(1 0 0 1 49.4473 318.8467)"><tspan x="0" y="0" font-family="Arial" font-size="24">Data</tspan><tspan x="-2.666" y="26" font-family="Arial" font-size="24">block</tspan><tspan x="18.674" y="52" font-family="Arial" font-size="24">1</tspan></text>
+<text transform="matrix(1 0 0 1 149.6523 318.8457)"><tspan x="0" y="0" font-family="Arial" font-size="24">Data</tspan><tspan x="-2.666" y="26" font-family="Arial" font-size="24">block</tspan><tspan x="18.674" y="52" font-family="Arial" font-size="24">2</tspan></text>
+<text transform="matrix(1 0 0 1 249.6523 318.8457)"><tspan x="0" y="0" font-family="Arial" font-size="24">Data</tspan><tspan x="-2.666" y="26" font-family="Arial" font-size="24">block</tspan><tspan x="18.674" y="52" font-family="Arial" font-size="24">3</tspan></text>
+<text transform="matrix(1 0 0 1 349.6523 318.8457)"><tspan x="0" y="0" font-family="Arial" font-size="24">Data</tspan><tspan x="-2.666" y="26" font-family="Arial" font-size="24">block</tspan><tspan x="18.674" y="52" font-family="Arial" font-size="24">4</tspan></text>
+<text transform="matrix(1 0 0 1 174.9673 50.8394)" font-family="Arial" font-size="24">Top hash</text>
+<text transform="matrix(1 0 0 1 97.9863 130.9565)"><tspan x="0" y="0" font-family="Arial" font-size="24">Hash</tspan><tspan x="21.34" y="26" font-family="Arial" font-size="24">0</tspan></text>
+<text transform="matrix(1 0 0 1 294.9863 130.9565)"><tspan x="0" y="0" font-family="Arial" font-size="24">Hash</tspan><tspan x="21.34" y="26" font-family="Arial" font-size="24">1</tspan></text>
+<text transform="matrix(1 0 0 1 46.4863 230.3057)"><tspan x="0" y="0" font-family="Arial" font-size="24">Hash</tspan><tspan x="10.67" y="26" font-family="Arial" font-size="24">0-0</tspan></text>
+<text transform="matrix(1 0 0 1 146.9863 230.3047)"><tspan x="0" y="0" font-family="Arial" font-size="24">Hash</tspan><tspan x="10.67" y="26" font-family="Arial" font-size="24">0-1</tspan></text>
+<text transform="matrix(1 0 0 1 246.9863 230.3057)"><tspan x="0" y="0" font-family="Arial" font-size="24">Hash</tspan><tspan x="10.67" y="26" font-family="Arial" font-size="24">1-0</tspan></text>
+<text transform="matrix(1 0 0 1 346.9863 230.3057)"><tspan x="0" y="0" font-family="Arial" font-size="24">Hash</tspan><tspan x="10.67" y="26" font-family="Arial" font-size="24">1-1</tspan></text>
+</svg>
