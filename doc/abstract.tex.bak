@@ -4,10 +4,6 @@
 % A space is needed before the text starts so that the first paragraph
 % is indented properly.
 
-Web applications are increasingly moving business and processing logic from the server to the browser.  Traditional, multiple-page request/response applications are quickly being replaced by single-page applications where complex application logic is downloaded on the initial page load and data is then subsequently fetched asynchronously via the browser's native XMLHttpRequest (XHR) object.  
-
-These new generation web applications are called Rich Web Applications (RWA).  Frameworks such as the Google Web Toolkit (GWT), and JavaScript model-view-controller (MVC) frameworks such as Backbone.js are facilitating this move.  With this migration, testing frameworks need to follow the logic by moving analysis and test generation from the server to the client.  One problem hindering the movement of testing in this domain is the adoption of semantic URLs.  This paper introduces a novel approach to systematically identify variables in semantic URLs and use them as part of the test generation process.  
-
-Using a sample RWA seeded with various JavaScript faults, I demonstrate in this thesis, as an empirical study, that combinatorial testing algorithms and reduction strategies also apply to new RWAs.
+The Tor network is a second-generation onion routing system that aims to provide anonymity, privacy, and Internet censorship resistance to its users. In recent years it has grown significantly in response to revelations of national and global electronic surveillance, and remains one of the most popular and secure anonymity network in use today. While it used most often for accessing the clearnet, Tor also supports anonymous websites within its network. Decentralized and secure, the domain names for these services are tied to public key infrastructure (PKI) but are challenged by their long and technical addresses. In response to this difficulty, in this thesis I utilize the Namecoin blockchain to introduce a novel, decentralized, and secure DNS system that provides human-meaningful domain names for Tor hidden services.
 
 \end{abstract}
