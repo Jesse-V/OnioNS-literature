@@ -53,11 +53,11 @@
 
 %Set all linked content to be plain black text
 \hypersetup{
-    colorlinks,%
-    citecolor=black,%
-    filecolor=black,%
-    linkcolor=black,%
-    urlcolor=black
+	colorlinks,%
+	citecolor=black,%
+	filecolor=black,%
+	linkcolor=black,%
+	urlcolor=black
 }
 
 
@@ -84,43 +84,46 @@
 
 \begin{document}
 
-    %{{{ Frontmatter
-    \preliminaries   % set frontmatter style
+	%{{{ Frontmatter
+	\preliminaries   % set frontmatter style
 
-    \maketitle
-    \makecopyright        % optional
+	\maketitle
+	\makecopyright        % optional
 
-    \include{doc/abstract}
-    \include{doc/pubAbstract}
-    %\include{doc/dedication}  % optional
-    %\include{doc/acknowledgements}     % optional
+	\include{doc/abstract}
+	\include{doc/pubAbstract}
+	%\include{doc/dedication}  % optional
+	%\include{doc/acknowledgements}     % optional
 
-    \tableofcontents
-    \listoftables
-    \listoffigures
+	\tableofcontents
+	\listoftables
+	\listoffigures
 
-%    \include{doc/notation}  % optional
-%    \include{doc/acronyms}  % optional
-    %}}}
-    %{{{ The main body of the thesis
-    \body  % set main body style
+	%    \include{doc/notation}  % optional
+	%    \include{doc/acronyms}  % optional
+	%}}}
+	%{{{ The main body of the thesis
+	\body  % set main body style
 
-    % Chapters
-    \include{doc/introduction}
-    \include{doc/background}
-    \include{doc/experiments}
-    \include{doc/results}
-    \include{doc/conclusions}
+	% Chapters
+	\include{doc/introduction}
+	\include{doc/background}
+	\include{doc/discussion}
+	\include{doc/proposal}
+	\include{doc/implementation}
+	\include{doc/experiments}
+	\include{doc/results}
+	\include{doc/conclusions}
 
-    % Endmatter
-    % For BibTeX references: specify a .bib file and a style
-    % ECE dept. use USU-IEEEtran \references{sample}{USU-IEEEtran}
-    % MAE dept. use aiaa or asme \references{sample}{aiaa} or
-    													 % \references{sample}{asme}
-    % CS dept. use \references{sample}{IEEEtran.bst}
-    \references{thesis}{IEEEtran.bst}
+	% Endmatter
+	% For BibTeX references: specify a .bib file and a style
+	% ECE dept. use USU-IEEEtran \references{sample}{USU-IEEEtran}
+	% MAE dept. use aiaa or asme \references{sample}{aiaa} or
+	% \references{sample}{asme}
+	% CS dept. use \references{sample}{IEEEtran.bst}
+	\references{thesis}{IEEEtran.bst}
 
-    %\include{appendix} % optional
-    %\include{vita}     % optional
-    %}}}
+	%\include{appendix} % optional
+	%\include{vita}     % optional
+	%}}}
 \end{document}
