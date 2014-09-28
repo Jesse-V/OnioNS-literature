@@ -76,7 +76,7 @@ In advance, Bob builds Tor circuits to several random relays and enables them to
 	\end{minipage}
 \end{figure}
 
-She then sends to $IP_{1}$ an cookie encrypted with $B_{K}$, containing $RP$ and $S$. Bob decrypts this message, builds a circuit to $RP$, and tells it $S_{1}$, enabling Alice and Bob to communicate. Their communication travels through six Tor nodes: three established by Alice and three by Bob, so both parties remain anonymous.
+She then sends to $IP_{1}$ an cookie encrypted with $B_{K}$, containing $RP$ and $S$. Bob decrypts this message, builds a circuit to $RP$, and tells it $S_{1}$, enabling Alice and Bob to communicate. Their communication travels through six Tor nodes: three established by Alice and three by Bob, so both parties remain anonymous. This method for addressing hidden services has never been revised since the protocol was introduced in 2004.\cite{NicolussiThesis2011}
 
 
 
@@ -138,8 +138,7 @@ Domain names on the Internet consist of a sequence of labels, delimited by dotes
 
 \section{Zooko's Triangle}
 
-Zooko's Triangle is an influential conjecture proposed by Zooko Wilcox-O'Hearn in late 2001. % Security Usability of Petname Systems http://persons.unik.no/josang/papers/FJSB2009-NordSec.pdf
-The conjecture states that in a persistent naming system, only two out of three properties can be established; 
+Zooko's Triangle is an influential conjecture proposed by Zooko Wilcox-O'Hearn in late 2001. The conjecture states that in a persistent naming system, only two out of the three following properties can be established:\cite{Ferdous2009}
 
 \begin{itemize}
   \item Human meaningfulness: the names have a quality of meaningfulness and memorability to the users of the system. 
@@ -154,7 +153,7 @@ The conjecture states that in a persistent naming system, only two out of three 
 	\label{fig:figure8}
 \end{figure}
 
-For example, Tor hidden service .onion addresses and Bitcoin addresses are secure and decentralized but are not human-meaningful. Internet domain names are memorable and provably collision-free, but use central database managed DNS under the jurisdiction of ICANN. Finally, human nicknames are meaningful and distributed, but not securely collision-free. %http://www.hpl.hp.com/techreports/2005/HPL-2005-148.pdf Petname Systems
+For example, Tor hidden service .onion addresses and Bitcoin addresses are secure and decentralized but are not human-meaningful. Internet domain names are memorable and provably collision-free, but use central database managed DNS under the jurisdiction of ICANN. Finally, human nicknames are meaningful and distributed, but not securely collision-free.\cite{Stiegler2005}
 
 In January of 2011, Aaron Swartz described a naming system based on Bitcoin that achieved all three properties and thus completed Zooko's Triangle. Three months later Namecoin was released as a proof-of-concept, becoming the first system to violate the conjecture. As described above, it allowed human-meaningful key-value pairs (names) to be secured in a global blockchain by proof-of-work, and specified that the uniqueness of the names be verified by a distributed network of miners and confirmation nodes.
 

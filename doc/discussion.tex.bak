@@ -13,13 +13,16 @@ A high degree of anonymity, privacy, and security are of paramount importance fo
 	\item It must be distributed. The Tor community will adamantly reject any centralized solution for Tor hidden services, as they have in the past for other proposals.
 	\item It must remain simple to use. Most Tor users are not security experts and Tor puts almost all cryptographic details and routing details behind the scenes.
 	\item It must remain backwards compatible. The existing Tor hidden service infrastructure must still remain functional.
-	\item It should not be possible to maliciously modify or falsify registrations in the database or in transit, even if a machine under their control answers the request for a registration.
+	\item It should not be possible to maliciously modify or falsify registrations in the database or in transit, even though insider attacks.
 \end{enumerate}
 
-There are a couple of works in the literature regarding a DNS system for Tor, neither of which fully solve all of these problems.
+Existing literature proposing DNS systems for Tor is fairly sparse, though some ideas have been put forward. 
+
+There are a couple of works in the literature regarding a DNS system for Tor, none of which fully solve all of these problems.
 
 \section{Solutions Analysis}
 
+0. Translate hash to words instead of base58
 1. Hidden services sign registration, upload using Tor to blockchain. Upload IP node so it can be contacted directly. Fully completes triangle.
 2. 1 except clients using Tor download blockchain, find info they are after.
 3. 2 except clients query Tor nodes for block, use it.

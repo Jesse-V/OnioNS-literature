@@ -16,10 +16,13 @@ A high degree of anonymity, privacy, and security are of paramount importance fo
 	\item It should not be possible to maliciously modify or falsify registrations in the database or in transit, even though insider attacks.
 \end{enumerate}
 
+Existing literature proposing DNS systems for Tor is fairly sparse, though some ideas have been put forward. 
+
 There are a couple of works in the literature regarding a DNS system for Tor, none of which fully solve all of these problems.
 
 \section{Solutions Analysis}
 
+0. Translate hash to words instead of base58
 1. Hidden services sign registration, upload using Tor to blockchain. Upload IP node so it can be contacted directly. Fully completes triangle.
 2. 1 except clients using Tor download blockchain, find info they are after.
 3. 2 except clients query Tor nodes for block, use it.
