@@ -1,9 +1,0 @@
-
-
-\begin{abstract}
-% A space is needed before the text starts so that the first paragraph
-% is indented properly.
-
-The Tor network is a second-generation onion routing system that aims to provide anonymity, privacy, and Internet censorship resistance to its users. In recent years it has grown significantly in response to revelations of national and global electronic surveillance, and remains one of the most popular and secure anonymity network in use today. While it used most often for accessing the clearnet, Tor also supports anonymous websites within its network. Decentralized and secure, the domain names for these services are tied to public key infrastructure (PKI) but are challenged by their long and technical addresses. In response to this difficulty, in this thesis I utilize the Namecoin blockchain to introduce a novel, decentralized, and secure DNS system that provides human-meaningful domain names for Tor hidden services.
-
-\end{abstract}

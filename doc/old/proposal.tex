@@ -1,0 +1,125 @@
+% Be sure to write chapter titles in ALL CAPS
+\chapter{\uppercase{PROPOSAL}}
+\thispagestyle{empty}
+
+My proposal...
+
+
+\begin{figure}[htbp]
+	\centering
+	
+	\tikzstyle{block}=[draw, fill=blue!20, minimum size=2em, rounded corners]	
+	\begin{tikzpicture}[node distance=3cm,auto,>=latex',scale=0.7,transform shape]
+		% -------------------- DAY 1 ---------------------------
+		% day 1's committee
+	    \node [block, yshift=0cm, fill=green!20, label=above:$11$] (day1block11) {$\textrm{capture}_{1}$};
+	    \node [block, yshift=1cm, fill=green!20, label=below:$3$] (day1block3) [below of=day1block11] {$\textrm{capture}_{1}$};
+	    \path [dashed, very thick, green] (day1block11) edge node {$\textrm{com}_{1}$} (day1block3);
+	    
+	    
+	    
+	
+		% -------------------- DAY 2 ---------------------------
+		% day 1's committee
+	    \node [block, yshift=0.9cm, fill=green!20, label=above:$11$] (day2block11) [below of=day1block3] {$\textrm{capture}_{1}$};
+	    \node [block, yshift=1cm, fill=green!20, label=below:$3$] (day2block3) [below of=day2block11] {$\textrm{capture}_{1}$};
+	    \path [dashed, very thick, green] (day2block11) edge node {$\textrm{com}_{1}$} (day2block3);
+	    
+	    % day 2's committee
+	    \node [block, yshift=0cm, fill=red!20, label=above:$7$] (day2block7) [right of=day2block11] {$\textrm{capture}_{2}$};
+	    \node [block, yshift=1cm, fill=red!20, label=below:$16$] (day2block16) [below of=day2block7] {$\textrm{capture}_{2}$};
+	    \path [solid, very thick, red] (day2block16) edge node {$\textrm{com}_{2}$} (day2block7);
+	    
+	    % paths from day 2 committee
+	    \path [->, thick, red] (day2block7)  edge node {} (day2block3);
+	    \path [->, thick, red] (day2block7)  edge node {} (day2block11);
+	    \path [->, thick, red] (day2block16) edge node {} (day2block3);
+	    \path [->, thick, red] (day2block16) edge node {} (day2block11);
+	
+	
+	
+	
+		% -------------------- DAY 3 ---------------------------
+		% day 1's committee
+	    \node [block, yshift=0.9cm, fill=green!20, label=above:$11$] (day3C1block11) [below of=day2block3] {$\textrm{capture}_{1}$};
+	    \node [block, yshift=1cm, fill=green!20, label=below:$3$] (day3C1block3) [below of=day3C1block11] {$\textrm{capture}_{1}$};
+	    \path [dashed, very thick, green] (day3C1block11) edge node {$\textrm{com}_{1}$} (day3C1block3);
+	    
+	    % day 2's committee
+	    \node [block, yshift=0cm, fill=red!20, label=above:$7$] (day3C2block7) [right of=day3C1block11] {$\textrm{capture}_{2}$};
+	    \node [block, yshift=1cm, fill=red!20, label=below:$16$] (day3C2block16) [below of=day3C2block7] {$\textrm{capture}_{2}$};
+	    \path [dashed, very thick, red] (day3C2block7) edge node {$\textrm{com}_{2}$} (day3C2block16);
+	    
+	     % day 3's committee
+	    \node [block, yshift=0cm, fill=orange!20, label=above:$9$] (day3C3block9) [right of=day3C2block7] {$\textrm{capture}_{3}$};
+	    \node [block, yshift=1cm, fill=orange!20, label=below:$3$] (day3C3block3) [below of=day3C3block9] {$\textrm{capture}_{3}$};
+	    \path [solid, very thick, orange] (day3C3block9) edge node {$\textrm{com}_{3}$} (day3C3block3);
+	    
+	    % paths from day 3 committee
+	    \path [->, thick, orange] (day3C3block9) edge node {} (day3C2block7);
+	    \path [->, thick, orange] (day3C3block9) edge node {} (day3C2block16);
+	    \path [->, thick, orange] (day3C3block3) edge node {} (day3C2block7);
+	    \path [->, thick, orange] (day3C3block3) edge node {} (day3C2block16);
+	
+		% paths from day 2 committee
+	    \path [->, thick, red] (day3C2block7)  edge node {} (day3C1block11);
+	    \path [->, thick, red] (day3C2block7)  edge node {} (day3C1block3);
+	    \path [->, thick, red] (day3C2block16) edge node {} (day3C1block11);
+	    \path [->, thick, red] (day3C2block16) edge node {} (day3C1block3);
+	    
+	    
+	    
+	
+		% -------------------- DAY 4 ---------------------------
+		% day 2's committee
+	    \node [block, yshift=0.5cm, fill=red!20, label=above:$7$] (day4C1block7) [below of=day3C2block16] {$\textrm{capture}_{2}$};
+	    \node [block, yshift=1cm, fill=red!20, label=below:$16$] (day4C1block16) [below of=day4C1block7] {$\textrm{capture}_{2}$};
+	    \path [dashed, very thick, red] (day4C1block7) edge node {$\textrm{com}_{2}$} (day4C1block16);
+	    
+	    % day 3's committee
+	    \node [block, yshift=0cm, fill=orange!20, label=above:$9$] (day4C2block9) [right of=day4C1block7] {$\textrm{capture}_{3}$};
+	    \node [block, yshift=1cm, fill=orange!20, label=below:$3$] (day4C2block3) [below of=day4C2block9] {$\textrm{capture}_{3}$};
+	    \path [dashed, very thick, orange] (day4C2block9) edge node {$\textrm{com}_{3}$} (day4C2block3);
+	    
+	     % day 4's committee
+	    \node [block, yshift=0cm, fill=blue!20, label=above:$1$] (day4C3block1) [right of=day4C2block9] {$\frac{\textrm{capture}_{1}}{\textrm{capture}_{4}}$};
+	    \node [block, yshift=1cm, fill=blue!20, label=below:$12$] (day4C3block12) [below of=day4C3block1] {$\frac{\textrm{capture}_{4}}{\textrm{capture}_{1}}$};
+	    \path [solid, very thick, blue] (day4C3block1) edge node {$\textrm{com}_{4}$} (day4C3block12);
+	    
+	    % paths from day 3 committee
+	    \path [->, thick, orange] (day4C2block9) edge node {} (day4C1block7);
+	    \path [->, thick, orange] (day4C2block9) edge node {} (day4C1block16);
+	    \path [->, thick, orange] (day4C2block3) edge node {} (day4C1block7);
+	    \path [->, thick, orange] (day4C2block3) edge node {} (day4C1block16);
+	    
+	    % paths from day 4 committee
+	    \path [->, thick, blue] (day4C3block1)  edge node {} (day4C2block9);
+	    \path [->, thick, blue] (day4C3block1)  edge node {} (day4C2block3);
+	    \path [->, thick, blue] (day4C3block12) edge node {} (day4C2block9);
+	    \path [->, thick, blue] (day4C3block12) edge node {} (day4C2block3);
+	    
+	    % paths from day 2 committee
+	    % thanks to https://tex.stackexchange.com/questions/33607/easy-curves-in-tikz and elsewhere
+	    \draw [->, thick, red] (day4C1block7)  to[out=32, in=150] (day4C3block1);
+	    \draw [->, thick, red] (day4C1block7)  to[out=200+15, in=170] (2.65, -15.6) to[out=-10, in=220] (day4C3block12);
+	    \draw [->, thick, red] (day4C1block16) to[out=160-15, in=190] (2.65, -11.8) to[out=10, in=140] (day4C3block1);
+	    \draw [->, thick, red] (day4C1block16) to[out=328, in=210] (day4C3block12);
+	    
+	    
+	    
+	    
+	    % https://tex.stackexchange.com/questions/134283/tikz-shading-a-path-without-any-filling
+	%	\begin{tikzfadingfrompicture}[name=custom fade]
+	%		\path (0,0) rectangle (1.75cm, -1.75cm);
+	%		\pgfinterruptboundingbox
+	%			%\path [->, transparent!20, thick] (1.75, 0) edge node {} (0, -1.75);
+	%			\draw [->, transparent!20, thick] (0,0) to[out=-45,in=90+45] (1.75, -1.75);
+	%		\endpgfinterruptboundingbox
+	%	\end{tikzfadingfrompicture}
+	%
+	%	\draw[path fading=custom fade, top color=red!80, bottom color=blue!80, transparent!40, very thin] (day4C1block16) rectangle (day4C3block1);
+	\end{tikzpicture}
+	
+	\caption{A 2-by-3 scroll within a 16-node network over 4 days.}
+	\label{fig:figure8}
+\end{figure}
