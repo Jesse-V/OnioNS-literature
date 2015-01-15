@@ -1,4 +1,31 @@
 
-
 \chapter{\uppercase{Requirements}}
 
+\section{Assumptions}
+
+
+
+\subsection{Threat Model}
+
+
+
+\section{Design Principles}
+
+% security and performance
+
+A high degree of anonymity, privacy, and security are of paramount importance for all Tor users. This context makes the inclusion of additional capabilities challenging. To meet these challenges and to remain acceptably resistant to attack, any proposed DNS system for Tor hidden services must meet at least the following requirements:
+
+\begin{enumerate}
+	\item The registrations must be anonymous; it should be infeasible to identify the registrant from the registration, including over the wire.
+	\item Lookups must be anonymous; clients must stay anonymous when looking up registrations, otherwise they leak what hidden services they are interested in.
+	\item Registrations must be publicly confirmable; akin to SSL certificates on the clearnet, clients must be able to verify that the registration matches and came from the service they are after, and is not a forgery.
+	\item Registrations must be securely unique, or have an extremely high chance of being securely unique such as when this property relies on the collision-free property of cryptographic hashes.
+	\item It must be distributed. The Tor community will adamantly reject any centralized solution for Tor hidden services for security reasons, as they have in the past for other proposals.
+	\item It must remain simple to use. Most Tor users are not security experts and Tor puts almost all cryptographic details and routing details behind the scenes.
+	\item It must remain backwards compatible; the existing Tor infrastructure must still remain functional.
+	\item It should not be possible to maliciously modify or falsify registrations in the database or in transit, even though insider attacks.
+\end{enumerate}
+
+The current Tor hidden service protocol meets these requirements, but does not provide human-meaningful domain names so it suffers in usability. Existing literature proposing DNS systems for Tor is fairly sparse, though some ideas have been put forward. One of the most prominent is a 2011 Bachelor's thesis which outlines representing a hidden service's domain name as a series of words, rather than a base58-encoded hash.\cite{NicolussiThesis2011} However, while this scheme would improved recognition and memorability of hidden services, the words would remain random, are not chosen in advance, and do not relate to the hidden service in any meaningful way. Therefore this solution is an improvement but is not a solution. The problem remains open.
+
+It is also impractical to require end-users to download the entire database to ensure uniqueness.
