@@ -1,31 +1,25 @@
 
 \chapter{\uppercase{Requirements}}
 
-\section{Assumptions}
+\section{Assumptions and Threat Model}
 
-
-
-\subsection{Threat Model}
-
-
+One of the primary assumptions that I make in this system is that not all Tor nodes can be trusted. Some of them may be run by malicious operators, curious researchers, or experimenting developers. They may be wiretapped, the Tor software modified and recompiled, or they may otherwise behave in an abnormal fashion. I assume that adversaries have control over some of the Tor network, they have access to large amounts of computational and financial resources, and that they have access to portions of Internet traffic, including portions of Tor traffic. I also assume that they do not have global and total Internet monitoring capabilities and I make no attempt to defend against such an attacker, although it should be noted that neither does Tor. I work under the believe that attackers are not capable of cryptographically breaking properly-executed TLS connections and their modern components, particularly the AES cipher, ECDHE key exchange, and the SHA2 series of digests, and that they maintain no backdoors in the Botan and OpenSSL implementations of these algorithms. Lastly, I assume that adversaries monitor and may attempt to modify the DNS record databases, but I assume that at least 50 percent of the Tor network is trustworthy and behave normally in accordance with Tor specifications.
 
 \section{Design Principles}
 
-% security and performance
-
-A high degree of anonymity, privacy, and security are of paramount importance for all Tor users. This context makes the inclusion of additional capabilities challenging. To meet these challenges and to remain acceptably resistant to attack, any proposed DNS system for Tor hidden services must meet at least the following requirements:
+Tor's high security environment is challenging to the inclusion of additional capabilities, even to systems that are backwards compatible to existing infrastructure. Anonymity, privacy, and general security are of paramount importance. We enumerate a short list of requirements for any secure DNS system designed for safe use by Tor clients. We later show how existing works do not meet these requirements and how we overcome these challenges with EsgalDNS.
 
 \begin{enumerate}
 	\item The registrations must be anonymous; it should be infeasible to identify the registrant from the registration, including over the wire.
 	\item Lookups must be anonymous; clients must stay anonymous when looking up registrations, otherwise they leak what hidden services they are interested in.
-	\item Registrations must be publicly confirmable; akin to SSL certificates on the clearnet, clients must be able to verify that the registration matches and came from the service they are after, and is not a forgery.
+	\item Registrations must be publicly confirmable; clients must be able to verify that the registration came from the desired hidden service and that the registration is not a forgery.
 	\item Registrations must be securely unique, or have an extremely high chance of being securely unique such as when this property relies on the collision-free property of cryptographic hashes.
-	\item It must be distributed. The Tor community will adamantly reject any centralized solution for Tor hidden services for security reasons, as they have in the past for other proposals.
-	\item It must remain simple to use. Most Tor users are not security experts and Tor puts almost all cryptographic details and routing details behind the scenes.
+	\item It must be distributed. The Tor community will adamantly reject any centralized solution for Tor hidden services for security reasons, as centralized control makes correlations easy, violating our first two requirements.
+	\item It must remain simple to use. Usability is key as most Tor users are not security experts. Tor hides non-essential details like routing information behind the scenes, so additional software should follow suite.
 	\item It must remain backwards compatible; the existing Tor infrastructure must still remain functional.
-	\item It should not be possible to maliciously modify or falsify registrations in the database or in transit, even though insider attacks.
+	\item It should not be feasible to maliciously modify or falsify registrations in the database or in transit, even though insider attacks.
 \end{enumerate}
 
-The current Tor hidden service protocol meets these requirements, but does not provide human-meaningful domain names so it suffers in usability. Existing literature proposing DNS systems for Tor is fairly sparse, though some ideas have been put forward. One of the most prominent is a 2011 Bachelor's thesis which outlines representing a hidden service's domain name as a series of words, rather than a base58-encoded hash.\cite{NicolussiThesis2011} However, while this scheme would improved recognition and memorability of hidden services, the words would remain random, are not chosen in advance, and do not relate to the hidden service in any meaningful way. Therefore this solution is an improvement but is not a solution. The problem remains open.
+The current Tor hidden service protocol meets the first, second, and sevenths requirements though the use of Tor circuits, the third by the nature of the hidden service domain names, the fourth because of the collision-free property of SHA-1, the fifth due to the hashtable in the Tor network, and the eight requirement because of the verifiability of the domain names to the service's public keys. However, it only partially meets the sixth requirement because although the domain names are entered in the traditional manner into the Tor Browser, the domain names are not entirely human-meaningful or memorable so it suffers from usability problems. 
 
-It is also impractical to require end-users to download the entire database to ensure uniqueness.
+Several additional objectives, although they are not requirements, revolve around performance: it should be assumed that it is impractical for clients to download the entirety or large portions of the domain database in order to verify any of the requirements, a DNS system should take a reasonable amount of time to resolve domain name queries, and that the system should not incur any significant load on client computers.
