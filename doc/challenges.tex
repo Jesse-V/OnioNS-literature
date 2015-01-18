@@ -7,7 +7,7 @@ One of the largest challenges is inherent to the difficulty of designing a distr
 
 \begin{itemize}
   \item Human meaningfulness: the names have a quality of meaningfulness and memorability to the users. 
-  \item Securely one-to-one: each name is unique, corresponds to a unique entity or owner, and cannot be forged.
+  \item Securely unique: for any name, duplicates do not exist.
   \item Distributed: the naming system lacks a central authority or database for allocating and distributing names.
 \end{itemize}
 
@@ -18,8 +18,10 @@ One of the largest challenges is inherent to the difficulty of designing a distr
 	\label{fig:figure8}
 \end{figure}
 
-For example, Tor hidden service .onion addresses and Bitcoin addresses are secure and decentralized but are not human-meaningful. Clearnet domain names are memorable and provably collision-free, but use central database managed DNS under the jurisdiction of ICANN. Finally, human nicknames are meaningful and distributed, but not securely collision-free.\cite{Stiegler2005}
+Tor hidden service .onion domains, PGP keys, and Bitcoin addresses are secure and decentralized but are not human-meaningful; they use the large key-space and the collision-free properties of secure digest algorithms to ensure uniqueness, so no centralized database is needed to provide this property. Tradition domain names on the Clearnet are memorable and provably collision-free, but use a hierarchical structure and central authorities under the jurisdiction of ICANN. Finally, human names and nicknames are meaningful and distributed, but not securely collision-free.\cite{Stiegler2005}
 
 \section{Communication}
+
+
 
 \section{Fault Tolerance}

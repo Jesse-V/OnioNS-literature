@@ -11,7 +11,7 @@ Tor's high security environment is challenging to the inclusion of additional ca
 
 \begin{enumerate}
 	\item The registrations must be anonymous; it should be infeasible to identify the registrant from the registration, including over the wire.
-	\item Lookups must be anonymous; clients must stay anonymous when looking up registrations, otherwise they leak what hidden services they are interested in.
+	\item Lookups must be anonymous or at least privacy-enhanced; it should not be trivial to determine what hidden services a client is interested in.
 	\item Registrations must be publicly confirmable; clients must be able to verify that the registration came from the desired hidden service and that the registration is not a forgery.
 	\item Registrations must be securely unique, or have an extremely high chance of being securely unique such as when this property relies on the collision-free property of cryptographic hashes.
 	\item It must be distributed. The Tor community will adamantly reject any centralized solution for Tor hidden services for security reasons, as centralized control makes correlations easy, violating our first two requirements.
