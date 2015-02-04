@@ -15,7 +15,7 @@ We use the JSON format to encode records and databases of records. JSON is signi
 
 \subsection{Quorum}
 
-EsgalDNS may have many participants: any Tor nodes that has sufficient storage and bandwidth capacity may perform a full synchronization and mirror the complete DNS system. However, only a subset of them must perform the main duties of the system at any given time. EsgalDNS is primarily powered by a special subset of Tor nodes, called a \textit{quorum}. The $ M $ nodes in the quorum may be found deterministically from the signed consensus document published by the Tor authority nodes. This consensus document is generated every hour by the authority nodes and distributed to all Tor nodes and clients. We consider the document published at 00:00 GMT each day; first we take the SHA-384 of the document, then secondly initialize the Mersenne Twister pseudorandom number generator (PRNG) from the output. Third, we construct a numerical list of Tor nodes from the consensus document, and finally scramble that list using the PRNG. The first $ M $ nodes, numbered $ 1 .. M $, become the quorum.
+EsgalDNS may have many participants: any Tor nodes that has sufficient storage and bandwidth capacity may perform a full synchronization and mirror the complete DNS system. However, only a subset of them must perform the main duties of the system at any given time. EsgalDNS is primarily powered by a special subset of Tor nodes, called a \textit{quorum}. Both Tor clients and nodes can deterministically find the $ M $ nodes in the quorum from the signed consensus document published every hour by the authority nodes. We consider the document published at 00:00 GMT each day; first we take the SHA-384 of the document, then secondly initialize the Mersenne Twister pseudorandom number generator (PRNG) from the output. Third, we construct a numerical list of \textit{qualified} Tor nodes from the consensus document, and finally scramble that list using the PRNG. The first $ M $ nodes, numbered $ 1 .. M $, become the quorum. The requirements to qualify as a quorum node are described below.
 
 \begin{figure}[htbp]
 	\centering
@@ -80,119 +80,120 @@ Each quorum node holds its page, the pages of the other quorum nodes on that day
 
 It then takes the SHA-384 of \textit{prevHash}, \textit{recordList}, and \textit{consensusDocHash} of that page, forming \textit{prevHash}. Secondly, it generates \textit{consensusDocHash} by hashing the morning's consensus document. Finally, it hashes the page and generates a digital signature of that hash, storing the result in \textit{pageSig}. The usage of \textit{recordList} is described below.
 
+\textit{TODO: diagram of a page chain and malicious branches}
+
 \subsection{Snapshot}
 
 Similar to a page, a \textit{snapshot} is JSON-encoded textual database held by quorum nodes, but unlike pages, snapshots are short-term and volatile. They are used for propagating very new records and receiving records from other quorum nodes, and are only held and processed by quorum nodes in the current day. Snapshots contain three fields: \textit{originTime}, \textit{recentRecords}, and \textit{snapshotSig}, where \textit{originTime} is the timestamp when the snapshot was first created, \textit{recentRecords} is a list of DNS records, and \textit{snapshotSig} is the digital signature of \textit{originTime} and \textit{recentRecords}. When a hidden service operator informs a quorum node about a new record, the quorum node first confirms that the record is valid (described below) and if it is, it adds that record into \textit{recentRecords} and updates \textit{snapshotSig}. 
 
-Where $ S_{x} $ is the current snapshot at propagation iteration $ x $, at each 15 minute mark each active quorum node $ Q_{j} $ performs the following:
+%todo: do I describe how records are validated?
+
+Where $ snap_{x} $ is the current snapshot at propagation iteration $ x $, at each 15 minute mark each active quorum node $ node_{j} $ performs the following:
 
 \begin{enumerate}
-	\item Generates a new snapshot, labelled $ S_{x+1} $, sets \textit{originTime} to the current time, creates \textit{snapshotSig}, and sets $ S_{x+1} $ to be the currently active snapshot for collecting new records.
+	\item Generates a new snapshot, labelled $ snap_{x+1} $, sets \textit{originTime} to the current time, creates \textit{snapshotSig}, and sets $ snap_{x+1} $ to be the currently active snapshot for collecting new records.
 	\item Randomly selects $ M / 2 $ nodes from the $ M $ quorum nodes, defining \textit{swapSet}.
-	\item With each node $ N_{k} $ in \textit{swapSet}, it swaps $ S_{x} $ and \textit{pageSig} with node $ N_{k} $, receiving a snapshot $ R_{x, k} $ and signature $ Sig_{x, k} $, and then verifies the validity of $ R_{x, k} $. For efficiency, if $ N_{k} $ in turn selects $ Q_{i} $, no swap will need to take place.
-	\item After all swapping is complete, $ Q_{j} $
+	\item With each node $ node_{k} $ in \textit{swapSet}, it swaps $ snap_{x} $ and \textit{pageSig} with node $ node_{k} $, receiving a snapshot $ s_{x, k} $ and signature $ sig_{x, k} $, and then verifies the validity of $ s_{x, k} $. For efficiency, if $ node_{k} $ in turn selects $ node_{j} $, no swap will need to take place.
+	\item After all swapping is complete, $ node_{j} $
 		\begin{enumerate}
-			\item Archives $ S_{x} $ and each $ R_{x, k} $ and $ Sig_{x, k} $ for all $ k $ in \textit{swapSet}.
-			\item Updates its copy of $ N_{k} $'s page by merging in $ R_{x-4, k} $, then confirming that $ Sig_{x, k} $ verifies against the generated page. If not, it asks $ N_{k} $ for its page so that the discrepancy can be resolved.
-			\item Updates its page by merging the contents of $ S_{x-4} $ into \textit{recordList} and regenerates \textit{pageSig}.
-			\item Deletes $ S_{x-4} $.
+			\item Archives $ snap_{x} $ and each $ s_{x, k} $ and $ sig_{x, k} $ for all $ k $ in \textit{swapSet}.
+			\item Updates its copy of $ node_{k} $'s page by merging in $ s_{x-4, k} $, then confirming that $ sig_{x, k} $ verifies against the generated page. If not, it asks $ node_{k} $ for its page so that the discrepancy can be resolved.
+			\item Updates its page by merging the contents of $ snap_{x-4} $ into \textit{recordList} and regenerates \textit{pageSig}.
+			\item Deletes $ snap_{x-4} $.
+			\item Increments $ x $.
 		\end{enumerate}
 \end{enumerate}
 
 
 % Page identification? Is 4b right? Need to swap all known snapshots! Delete old snapshots!
-
+\textit{TODO: this is incomplete. Quorum nodes send and receive a set of snapshots from other quorum nodes. They pass them along. After 4 rounds of share-with-50-percent the information should have reached all quorum nodes with a high probability, so the information can be safely added into the page and the signature updated. Likewise snapshots from other quorum nodes that are 4 rounds old can be added into its page, hence everyone will be in agreement, theoretically at least. Experiments needed and planned.}
 
 \subsection{Synchronization}
 
-Tor nodes must perform a full synchronization with the quorum nodes or node(s) mirroring the database before they are qualified to be picked as part of a quorum. 
+Tor nodes must perform a full synchronization with the quorum nodes or node(s) mirroring the database before they are qualified to be picked as part of a quorum. Additionally, they may optionally synchronize in order to become a mirror of the database themselves.
 
- up-t
+To qualify as a candidate to be a quorum node, Tor nodes must publish a small amount of information that demonstrates that they have completed a full synchronization (described below) with the system and are ready to accept new records themselves. A simple and naive solution would be to have Tor nodes and client ask that node for this information to demonstrate its readiness, but this does not scale to the size of the Tor network because that node could be quickly overwhelmed by requests. The better solution is to publish and distribute the information through the consensus document. After a Tor node performs a synchronization, they generate a SHA-384 hash of the page-chain used by the majority of the quorum nodes in the previous day. This is not the same thing as the page-chain that the node itself may choose, but rather its information that everyone should easily agree upon, but that can only be determined by fetching and analysing the entire database. This does not thwart malicious collusion, but our system tolerates a low percentage of that, so we don't consider that a significant problem.
 
-Tor nodes may optionally synchronize with quorum nodes. They may want to mirror the page-chain database or qualify to be a quorum node themselves. 
-
-\subsection{Registration Query}
+The generated SHA-384 hash can then be embedded in the consensus document. Ideally this could be placed in a special field set aside for this purpose, but to easy integration with existing Tor infrastructure (particularly the authority nodes) and third-party websites that parse the consensus document (such as Globe or Atlas) we suggest appending the hash onto the Contact field, a user-defined entry that Tor relay operators use to list methods of contact such as email addresses and PGP keys. EsgalDNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends portions of any donations to that address, presumably to the Tor relay operator. To embed the hash, the hash is first converted to base64, truncated to 6 bytes, and surrounded by parenthesis. The result is appended to the end of the Contact field, and must be updated at least every 24 hours. To become a candidate for membership in the quorum, a node must be a fast and stable node (flags determined and assigned by authority nodes) and must publish this truncated hash that is in the majority of hashes published by other Tor nodes. This can be easily be determined by all parties holding a recent or archived copy of the consensus document.
 
 \subsection{Registration Creation}
 
+Any hidden service operator may claim any domain name that is not currently in use. As domain names cannot be purchased from a central authority, it is necessary to implement a system that introduces a cost of ownership. This performs three main purposes: 1) thwarts potential flooding of system with domain registrations, 2) introduces a cost of investment that improves the availability of hidden services, and 3) makes domain squatting more difficulty, where someone claims one or more domains on a whim for the sole purpose of denying them to others. As hidden service operators typically remain anonymous, it is difficulty for one to contact them and request relinquishing of a domain, nor is there a central authority to force relinquishing through a court order or other formal means. Therefore we introduce a proof-of-work scheme that makes registration computationally intensive but is also easily verified by anyone.
+
+A domain registration consists of nine components: \textit{name}, \textit{subdomains}, \textit{contact}, \textit{timestamp}, \textit{consensusHash}, \textit{nonce}, \textit{pow}, \textit{recordSig}, and \textit{pubHSKey}. The variable \textit{central} consists of all fields except \textit{recordSig} and \textit{pow}.
+
+\begin{description}
+	\item[name] \hfill \\
+		A required field that specifies the domain name that the hidden service operator wishes to obtain, up to 32 characters in length. Domain names uses the .tor TLD.
+	\item[subdomains] \hfill \\
+		Names of the subdomains used before \textit{name} and their destinations. For example {"sample", "a.b.tor"} generates sample.example.tor that resolves to a.b.tor. They can also point to .onion addresses or traditional Clearnet domain names. Each subdomain and their destinations may each be up to 32 characters in length, and up to 16 subdomains may be registered per registration. This is an optional field.
+	\textit{contact} \hfill \\
+		The fingerprint of the HS operator's PGP key, if he has one. If not or if he chooses to withhold this information, this field is left blank. If the fingerprint is listed, clients may query a public key server for this fingerprint, obtain the operator's PGP public key, and contact him over encrypted email.
+	\textit{timestamp} \hfill \\
+		The UNIX timestamp of when the operator created the registration and began the proof-of-work to validate it. This is a required field.
+	\textit{consensusHash} \hfill \\
+		The SHA-384 of the morning's consensus document at the time of registration, encoded in base64. This a provable and irrefutable timestamp, since it can be matched against archives of the consensus document. Quorum nodes will not accept registration records that reference a consensus document more than 48 hours old. This is also required.
+	\textit{nonce} \hfill \\
+		A required field consisting of four bytes that serve as a source of randomness for the proof-of-work, described below.
+	\textit{pow} \hfill \\
+		16 bytes that demonstrate the result of the proof-of-work. Encoded in base64 and required.
+	\textit{recordSig} \hfill \\
+		The digital signature of all preceding fields, signed using the hidden service's private key. Encoded in base64 and required.
+	\textit{pubHSKey} \hfill \\
+		A required field holding the base64-encoding of the hidden service's public key.
+\end{description}
+
+A record is made valid through the completion of the proof-of-work process. The hidden service operator must find a \textit{nonce} such that the SHA-384 of \textit{central}, \textit{pow}, and \textit{recordSig} is $ \leq 2^\textrm{difficulty} $, where \textit{difficulty} specifies the order of magnitude of the work that must be done. For each \textit{nonce}, \textit{pow} and \textit{recordSig} must be regenerated, which effectively forces the computation to be performed by a machine owned by the HS operator. While this scheme would not entirely prevent the operator from outsourcing the computation to a cloud service or to a secondary offline resource, the other machine would need the hidden service private key to regenerate \textit{recordSig}, which the operator can't reveal for obvious security reasons. However, the secondary resource could perform the scrypt computations in batch without generating \textit{recordSig}, but it would always perform more than the necessary amount of computation because it would could not take the SHA-384 hash and thus know when to stop. Furthermore, offloading the computation would still incur a cost to the hidden service operator, who would have to pay another party for the consumed computational resources. Thus the scheme always requires some cost when claiming a domain name. The valid and complete record is then represented in JSON format when transmitted and stored by quorum nodes.
+
+\textit{TODO: specify how difficulty increases to counteract Moore's Law. Also, is the pow even necessary, or can that be regenerated by anyone?}
+
 \subsection{Record Modification}
+
+A hidden service operator may wish to update his registration with more current information. He can generate and broadcast a modification record, which contains updates to the field. The proof-of-work cost is a fourth of registration creation.
 
 \subsection{Ownership Transfer}
 
+Domain names may be transferred to a new owner from one hidden service operator to another. The transfer record contains the public key and signature of the originating owner and the public key of the new owner. The proof-of-work cost is an eighth of generating the domain name in the first place.
+
 \subsection{Domain Renewal}
+
+Domain names expire every 64 days, so they must be renewed periodically. To do this, a hidden service operator generates a renewal record and broadcasts it to the quorum nodes. The proof-of-work cost is a fourth of generating the domain name in the first place.
 
 \subsection{Registration Deletion}
 
+If a hidden service operator wishes to relinquish ownership rights over a domain name, they can issue a deletion record. This may happen if the hidden service key is compromised, the operator no longer has any use for the domain name, or for other reasons. The deletion record contains the hidden service public key and corresponding digital signature, and once issued to the quorum immediately triggers an expiration of that domain name, making it available to others by a creation record. There is no computational cost associated with a deletion record. 
+
 \subsection{Broadcast}
 
+A hidden service operator uses a Tor circuit to contact a quorum node. For security purposes, they must use the same entry node that their hidden service uses. Once the three-hop circuit has been established, they can use their exit node to give a record to the quorum node. That quorum node will add the record to their snapshot, which will be propagated to other quorum nodes and merged into pages for long-term storage.
+
+\subsection{Registration Query}
+
+When a Tor user wishes to visit example.tor, his client software must first perform a query to obtain the .onion address that corresponds to that domain name. The client must be able to verify that the received record originated from the desired hidden service, akin to SSL certificates on the Clearnet. Furthermore, the lookup must happen in an anonymous or privacy-enhanced manner and the details of the query must be handled behind-the-scenes, invisibly to the user. These policies satisfy our verifiability, privacy, and simplicity requirements.
+
+At startup, the Tor client software may build a circuit to a quorum node or to any node mirroring the database. He then asks the node server for the domain name. Depending on the verification level specified by the client, this could be limited or large amounts of information. As we mentioned in the requirements section, it is impractical to require the client to download the entire DNS database to perform verification, so instead the client can perform various degrees of verification with minimal information.
+
+At level 1, the server returns just returns the creation record. The client software then extracts the fields, uses \textit{pubHSKey} to confirm that \textit{recordSig} verifies the record, then confirms the proof-of-work. The client then uses \textit{pubHSKey} to generate the hidden service .onion address (eight bytes of the base32-encoded SHA-1 hash of the PKCS.1 DER encoding of \textit{pubHSKey}) and looks up the hidden service in the traditional manner. The lookup fails if the service has not published a recent hidden service desciptor to the distributed hash table, otherwise the lookup goes through. End-to-end verification is complete when \textit{pubHSKey} can be successfully used to encrypt the hidden service cookie and the service proves that it can decrypt $ sec $.
+
+At level 2, the server return the record, the page that it was included in, the \textit{pageSig} from all quorum nodes on that day, and an archive of the consensus document. This is \textit{width verification}; the client can verify the authenticity of the consensus document, determine the old quorum members and their keys, hash the page, and then verify that all the \textit{pageSig}s verify against that hash. The client then proceeds with record verification and hidden service lookup, as specified in level 1.
+
+At level 3, the server return the record, the page that contained that record, and the pages that form the chain below it. This is \textit{depth verification}; the client can confirm the length of the page-chain and records contained within. This is demanding both in computation and in bandwidth usage, but is an extremely thorough level of verification. 
+
+\textit{TODO: at level 4, include consensus documents so that the old quorums can be found?}
+
+At all levels, the server may return the introduction point for that hidden service, which the node can determine in advance by querying the distributed hash table and then cashing the result. This would significantly improve performance because the client can skip that step.
 
 
+%At a high level, domain registrations are broadcasted through a Tor circuit to all committee nodes. Every node then analyses the registration as well as its knowledge of the chain and makes a decision. If the registration is invalid, the node rejects with an appropriate flag. If the domain name is already taken, the node returns a flag along with the pre-existing registration. Otherwise, it digitally signs its approval and the proposal itself and distributes this to the rest of the committee. It then waits for the rest of the committee votes. Since every Tor node has the up-to-date public keys of all other nodes due to the consensus documents, every committee member can verify the votes of all other committee members. Once the node confirms that all committee nodes received the same proposal and that a significant majority indicate that the domain is both valid and available, it adds the registration to its local storage. More importantly, the registration is recorded to an append-only endless scroll distributed within the Tor network. Thus domain names are consumed in a first-come-first-serve basis.
 
+%The scroll is a distributed and highly redundant chained data structure that slowly rolls through the Tor network. The scroll is $ N $ by $ M $ in shape and consists of two primary components: \textit{blocks} and \textit{captures}. Blocks contain one or more captures, and blocks are duplicated across the $ M $ committee nodes. Each capture is a collection of information from one day; it contains the consensus document from the previous morning, a list of domain registrations approved that day, the approval sign-off digital signatures from the committee nodes on those registrations, the digital signatures from the committee indicating their approval of the integrity of the scroll, and the hash of the previous four captures. In this way, captures are fully verifiable and contain enough information to link to the previous capture, forming a chain. This chain is not held by any single Tor node, rather it is encapsulated within a rolling window of blocks $ N $ days deep. As the days progress, the captures in the oldest block are migrated to the current day's block, rolling the structure forward. Thus the scroll is divided across $ N $ blocks, with copies of each block held by $ M $ Tor nodes. I consider $ N = 16, M = 64 $ reasonable values, which would involve 1,024 nodes at any given time, although $ M $ can be easily changed even while the scroll is in use.
 
-
-Nodes currently in the quorum are responsible for handling transactions such as the Create, Modify, Move, Renew, and Delete commands. They can also respond to Query requests, although other nodes can also respond as well. Hidden service operators can use Tor circuits to give one of these former commands to one or more quorum nodes. The transaction then propagate to the remaining quorum nodes when they synchronize their knowledge bases. Each quorum node is responsible for distributing two databases to other quorum nodes: \textit{pages} and \textit{snapshots}. Pages are long-term and stable collections of records, whereas snapshots hold volatile records that may be yet be fully propagate across the entire quorum. Pages reference pages from the previous day's quorum, forming a append-only page-chain that grows forward with time. Snapshots, by contrast, do not reference previous pages but their information is merged into the quorum node's page periodically.
-
-
-
-
-A page on day $ n $ belonging to quorum member $ i $ can be expressed as $ P_{n,i} $. This page contains five distinct elements: \textit{prevN}, \textit{prevI}, \textit{prevHash}, \textit{recordList}, \textit{consensusDoc}, and \textit{digSig}, where \textit{prevN} and \textit{prevI} represents the back-reference to the $ P_{prevN,prevI} $ page, \textit{prevHash} is the SHA-256 of $ P_{prevN,prevI} $, \textit{recordList} is the list of records that were send the quorum on day $ n $, \textit{consensusDoc} is the consensus document digitally signed by the authority nodes, and finally \textit{digSig} is the digital signature from quorum member $ i $ on the preceding fields.
-
-At startup, every Tor node participating in EsgalDNS 
-
-
-
-
-
-
-
-One of the central elements in my system is a \textit{quarum}, a set of special decision-making Tor nodes. The set of committee nodes changes every day and the set cannot be known in advance. 
-
-At a high level, domain registrations are broadcasted through a Tor circuit to all committee nodes. Every node then analyses the registration as well as its knowledge of the chain and makes a decision. If the registration is invalid, the node rejects with an appropriate flag. If the domain name is already taken, the node returns a flag along with the pre-existing registration. Otherwise, it digitally signs its approval and the proposal itself and distributes this to the rest of the committee. It then waits for the rest of the committee votes. Since every Tor node has the up-to-date public keys of all other nodes due to the consensus documents, every committee member can verify the votes of all other committee members. Once the node confirms that all committee nodes received the same proposal and that a significant majority indicate that the domain is both valid and available, it adds the registration to its local storage. More importantly, the registration is recorded to an append-only endless scroll distributed within the Tor network. Thus domain names are consumed in a first-come-first-serve basis.
-
-The scroll is a distributed and highly redundant chained data structure that slowly rolls through the Tor network. The scroll is $ N $ by $ M $ in shape and consists of two primary components: \textit{blocks} and \textit{captures}. Blocks contain one or more captures, and blocks are duplicated across the $ M $ committee nodes. Each capture is a collection of information from one day; it contains the consensus document from the previous morning, a list of domain registrations approved that day, the approval sign-off digital signatures from the committee nodes on those registrations, the digital signatures from the committee indicating their approval of the integrity of the scroll, and the hash of the previous four captures. In this way, captures are fully verifiable and contain enough information to link to the previous capture, forming a chain. This chain is not held by any single Tor node, rather it is encapsulated within a rolling window of blocks $ N $ days deep. As the days progress, the captures in the oldest block are migrated to the current day's block, rolling the structure forward. Thus the scroll is divided across $ N $ blocks, with copies of each block held by $ M $ Tor nodes. I consider $ N = 16, M = 64 $ reasonable values, which would involve 1,024 nodes at any given time, although $ M $ can be easily changed even while the scroll is in use.
-
-This distributed system provides the ability to confirm a given domain name is not already in use, without relying on a single central authority. Assuming that the committee nodes are honest in their vote and trustworthy in their nature, this achieves all three properties of Zooko's Triangle. Even if the committee nodes are malicious, I believe I can introduce sufficient countermeasures to make it infeasible for an attacker to successfully manipulate the system, assuming that the majority of the Tor network is trustworthy. More research, design, and implementation is needed, but this I believe is a very promising approach.
+%This distributed system provides the ability to confirm a given domain name is not already in use, without relying on a single central authority. Assuming that the committee nodes are honest in their vote and trustworthy in their nature, this achieves all three properties of Zooko's Triangle. Even if the committee nodes are malicious, I believe I can introduce sufficient countermeasures to make it infeasible for an attacker to successfully manipulate the system, assuming that the majority of the Tor network is trustworthy. More research, design, and implementation is needed, but this I believe is a very promising approach.
 
 
 % Each node then votes on the proposed registration. A vote consists of \textit{decision}, \textit{hash}, \textit{count}, \textit{root}, and \textit{signature} where \textit{decision} is either \textit{available}, \textit{unavailable}, or \textit{invalid}; \textit{hash} is the SHA256 of the registration it received; \textit{count} is the number of valid registrations it has in local storage; \textit{root} is the root node of the Merkle tree formed by those registrations; and \textit{signature} is the digital signature of the preceding fields.
 
 % \textit{count} and \textit{root} will both be used to keep nodes synchronized with one another. Although I won't go into detail here, my plan calls for out-of-date nodes to attempt to synchronize with the node that advertises the highest \textit{count}. Synchronization also involves checking the votes, so falsely advertising a high \textit{count} isn't sufficient to mislead the network. \textit{root} is useful because it enables quick verification that nodes have synchronized lists and the use of a Merkle tree in general allows efficient synchronization when a node is out-of-date.
-
-\subsection{Domain Registration}
-
-A domain registration consists of eight components which are tied together by digital signatures and proof-of-work. The components are \textit{nonce}, \textit{consensusHash}, \textit{time}, \textit{domain}, \textit{subdomains}, \textit{contact}, \textit{digSig}, and \textit{pubKey}.
-
-\begin{description}
-	\item[nonce] \hfill \\
-		An eight-byte number that serves as a source of randomness for the proof-of-work.
-	\item[consensusHash] \hfill \\
-		A 32-byte value containing the SHA256 hash of the consensus document published by the authority nodes. Consensus documents are generated frequently, so \textit{consensusHash} will be based on the document published at 00:00 GMT that day.
-	\item[time] \hfill \\
-		A four-byte integer holding the number of seconds since January 1st, 2013.
-	\item[domain] \hfill \\
-		A null-terminated cstring of the human-meaningful domain that will be correlated with the traditional .onion address of the hidden service. This can be up to 32 characters long. The TLD is .tor
-	\item[subdomains] \hfill \\
-		Up to 255 bytes of subdomain data, preceded by one byte that indicates the byte length. Each subdomain is null-terminated, so with the null characters 15 subdomains are possible when each is 16 characters long.
-	\item[contact] \hfill \\
-		16 bytes representing the last 32 base64-encoded bytes of the fingerprint of the service operator's PGP key, if they have one. If they do not, these bytes are zeroed. The purpose of this field is to allow the operator to be contacted securely.
-	\item[digSig] \hfill \\
-		The digital signature of all preceding fields.
-	\item[pubKey] \hfill \\
-		The public key of the hidden service.
-\end{description}
-
-To generate a registration, \textit{domain}, \textit{subdomains}, and \textit{contact} are determined by the operator, while \textit{consensusHash} and \textit{time} are filled in automatically. The hidden service operator then has to find a value for \textit{nonce} such that the proof-of-work is valid, specifically that that the SHA256 of \textit{digSig} is less than a target value \textit{T}. I plan to set \textit{T} such that the proof-of-works takes a significant amount of time on a modern CPU. This makes registering a domain expensive, thwarting flooding attacks. If \textit{nonce} is found, the registration is valid and ready for broadcast.
-
-Two common proof-of-work systems are hashing, typically double-SHA256 ($ \textrm{SHA}256^{{2}} $) in the case of Bitcoin, and scrypt, a password-based key derivation function used by Litecoin. I chose the latter here; scrypt is a harder proof-of-work system because it requires large quantities of RAM in addition to CPU time, making brute-forcing significantly more challenging. Finding \textit{nonce} is made even more difficult because for every \textit{nonce}, a new digital signature must be made using the service's private key. This slows mining, complicates porting to GPUs and other specialized hardware, and prevents outsourcing to a outside computational resource. The digital signature ensures that all field are authenticated to the key of the hidden service, verifiable by all.
-
-Once created and finalized, domains are broadcasted through Tor circuit(s) to committee nodes, where it can be approved and added into the scroll.
-
-\subsection{Registration Query}
-
-A client requesting \textit{example.tor} can use a Tor circuit to anonymously query committee nodes, or in fact any node holding the scroll, for the domain name. If the domain is taken, the client will receive the full registration (as specified above) as well as the digital signatures of the committee members who voted on that registration. This consensus and the registration itself can both be validated by the client's machine. The client can then extract \textit{pubKey} from the registration, hash it and truncate it, and look up the .onion in the traditional manner.
-
-
-
 
 \section{Fault Tolerance}
 
