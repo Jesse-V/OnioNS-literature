@@ -80,7 +80,42 @@ Each quorum node holds its page, the pages of the other quorum nodes on that day
 
 It then takes the SHA-384 of \textit{prevHash}, \textit{recordList}, and \textit{consensusDocHash} of that page, forming \textit{prevHash}. Secondly, it generates \textit{consensusDocHash} by hashing the morning's consensus document. Finally, it hashes the page and generates a digital signature of that hash, storing the result in \textit{pageSig}. The usage of \textit{recordList} is described below.
 
-\textit{TODO: diagram of a page chain and malicious branches}
+\begin{figure}[htbp]
+	\centering
+	\begin{tikzpicture}[node distance=2cm, main node/.style={circle, draw, font=\sffamily\Large\bfseries}]
+
+			\node[main node, fill=Bittersweet!50] (1) {10};
+			\node[main node, fill=Apricot!50] (2) [below of=1] {9};
+				\node[main node, fill=BurntOrange!50] (3) [right of=2] {1};
+			\node[main node, fill=ForestGreen!50] (4) [below of=2] {5};
+				\node[main node, fill=LimeGreen!50] (5) [right of=4] {4};
+				\node[main node, fill=OliveGreen!50] (6) [right of=5] {2};
+				\node[main node, fill=Goldenrod!50] (7) [right of=6] {1};
+			\node[main node, fill=Blue!50] (8) [below of=4] {9};
+				\node[main node, fill=Cyan!50] (9) [right of=8] {1};
+			
+			\tikzstyle{EdgeStyle}=[->, thick, blue]
+			
+			% main chain
+			\Edge[](8)(4)
+			\Edge[](4)(2)
+			\Edge[](2)(1)
+			
+			% day 4 branches
+			\Edge[](9)(5)
+			
+			% day 3 branches
+			\Edge[](5)(2)
+			\Edge[](6)(2)
+			\Edge[](7)(3)
+			
+			% day 2 branches
+			\Edge[](3)(1)
+			
+		\end{tikzpicture}
+	\caption{Sample page-chain on day 4. Quorum size is $ M = 10 $, the numbers represent quorum participants with the same page. Despite malicious collusion and misbehaving nodes on day 3, most of day 4's quorum choose the correct chain with $ 10 + 9 + 1 + 5 + 4 + 2 = 31 $ total participants.}
+	\label{fig:figure5}
+\end{figure}
 
 \subsection{Snapshot}
 
@@ -115,6 +150,8 @@ Tor nodes must perform a full synchronization with the quorum nodes or node(s) m
 To qualify as a candidate to be a quorum node, Tor nodes must publish a small amount of information that demonstrates that they have completed a full synchronization (described below) with the system and are ready to accept new records themselves. A simple and naive solution would be to have Tor nodes and client ask that node for this information to demonstrate its readiness, but this does not scale to the size of the Tor network because that node could be quickly overwhelmed by requests. The better solution is to publish and distribute the information through the consensus document. After a Tor node performs a synchronization, they generate a SHA-384 hash of the page-chain used by the majority of the quorum nodes in the previous day. This is not the same thing as the page-chain that the node itself may choose, but rather its information that everyone should easily agree upon, but that can only be determined by fetching and analysing the entire database. This does not thwart malicious collusion, but our system tolerates a low percentage of that, so we don't consider that a significant problem.
 
 The generated SHA-384 hash can then be embedded in the consensus document. Ideally this could be placed in a special field set aside for this purpose, but to easy integration with existing Tor infrastructure (particularly the authority nodes) and third-party websites that parse the consensus document (such as Globe or Atlas) we suggest appending the hash onto the Contact field, a user-defined entry that Tor relay operators use to list methods of contact such as email addresses and PGP keys. EsgalDNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends portions of any donations to that address, presumably to the Tor relay operator. To embed the hash, the hash is first converted to base64, truncated to 6 bytes, and surrounded by parenthesis. The result is appended to the end of the Contact field, and must be updated at least every 24 hours. To become a candidate for membership in the quorum, a node must be a fast and stable node (flags determined and assigned by authority nodes) and must publish this truncated hash that is in the majority of hashes published by other Tor nodes. This can be easily be determined by all parties holding a recent or archived copy of the consensus document.
+
+Synchronization occurs in O(n) time, where $ n $ is the number of days since since first page was generated. This is possible because each quorum node contains the pages from all other quorum nodes, so the synchronizing node only has to ask a single node in the quorum for the pages contained by all other sister quorum nodes for each day. Once the node has queried the nodes all the way back to the first quorum it can then follow the selection procedure described above in the Page section.
 
 \subsection{Registration Creation}
 
@@ -166,6 +203,56 @@ If a hidden service operator wishes to relinquish ownership rights over a domain
 \subsection{Broadcast}
 
 A hidden service operator uses a Tor circuit to contact a quorum node. For security purposes, they must use the same entry node that their hidden service uses. Once the three-hop circuit has been established, they can use their exit node to give a record to the quorum node. That quorum node will add the record to their snapshot, which will be propagated to other quorum nodes and merged into pages for long-term storage.
+
+\begin{figure}[htbp]
+	\centering
+	\begin{tikzpicture}[->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
+
+			\node[main node] (1) {$ Q_{1} $};
+			\node[main node] (2) [right of=1] {$ Q_{1} $};
+			\node[main node] (3) [right of=2] {};
+			\node[main node] (4) [right of=3] {$ Q_{1} $};
+
+			\node[main node] (5) [below of=1] {};
+			\node[main node] (6) [right of=5] {$ Q_{1} $};
+			\node[main node] (7) [right of=6] {};
+			\node[main node] (8) [right of=7] {};
+		  
+			\node[main node, font=\small] (9) [below of=5] {$ N_{middle} $};
+			\node[main node] (10) [right of=9] {};
+			\node[main node, font=\small] (11) [right of=10] {$ N_{exit} $};
+			\node[main node] (12) [right of=11] {$ Q_{1} $};
+
+			\node[main node] (13) [below of=9] {};
+			\node[main node] (14) [right of=13] {};
+			\node[main node, font=\small] (15) [right of=14] {$ N_{entry} $};
+			\node[main node] (16) [right of=15] {HS};
+			
+			% draw 1st and 2nd part of circuit
+			\tikzstyle{EdgeStyle}=[bend right=12, -, green]
+			\Edge[](16)(15)
+			\Edge[](9)(15)
+			
+			% draw last part of circuit
+			\tikzstyle{EdgeStyle}=[bend left=17, -, green]
+			\Edge[](9)(11)
+			
+			% draw record moving from exit to 1st q. node
+			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (6) to [bend left=20] (11){};
+			
+			% draw upper left propegation
+			\tikzstyle{EdgeStyle}=[bend left=12, ->, blue]
+			\Edge[](6)(2)
+			\Edge[](2)(1)
+			
+			% draw upper right propegation
+			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={snapshot}, raise=3pt}}] (6) to [bend right=18] (4){};
+			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={snapshot}, raise=3pt}}] (4) to [bend left=25] (12){};
+
+		\end{tikzpicture}
+	\caption{HS operator broadcasts a record though a circuit (green) to a quorum node. The record propagates through snapshots.}
+	\label{fig:figure5}
+\end{figure}
 
 \subsection{Registration Query}
 
