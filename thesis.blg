@@ -1,0 +1,75 @@
+This is BibTeX, Version 0.99d (TeX Live 2013/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: thesis.aux
+A level-1 auxiliary file: doc/abstract.aux
+A level-1 auxiliary file: doc/dedication.aux
+A level-1 auxiliary file: doc/introduction.aux
+A level-1 auxiliary file: doc/background.aux
+A level-1 auxiliary file: doc/requirements.aux
+A level-1 auxiliary file: doc/challenges.aux
+A level-1 auxiliary file: doc/existingWorks.aux
+A level-1 auxiliary file: doc/solution.aux
+A level-1 auxiliary file: doc/analysis.aux
+A level-1 auxiliary file: doc/results.aux
+A level-1 auxiliary file: doc/futureWork.aux
+A level-1 auxiliary file: doc/conclusion.aux
+The style file: IEEEtran.bst.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: thesis.bib
+-- IEEEtran.bst version 1.13 (2008/09/30) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+Warning--empty journal in NicolussiThesis2011
+Warning--empty journal in Ferdous2009
+Warning--empty journal in Stiegler2005
+Warning--empty journal in Okupski2014
+Warning--empty journal in SindarinDict
+Warning--empty year in SindarinDict
+
+Done.
+You've used 16 entries,
+            4039 wiz_defined-function locations,
+            911 strings with 9951 characters,
+and the built_in function-call counts, 7113 in all, are:
+= -- 559
+> -- 147
+< -- 15
++ -- 73
+- -- 32
+* -- 299
+:= -- 1246
+add.period$ -- 33
+call.type$ -- 16
+change.case$ -- 22
+chr.to.int$ -- 39
+cite$ -- 22
+duplicate$ -- 594
+empty$ -- 649
+format.name$ -- 38
+if$ -- 1546
+int.to.chr$ -- 0
+int.to.str$ -- 16
+missing$ -- 118
+newline$ -- 71
+num.names$ -- 16
+pop$ -- 322
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 2
+skip$ -- 545
+stack$ -- 0
+substring$ -- 118
+swap$ -- 351
+text.length$ -- 2
+text.prefix$ -- 0
+top$ -- 5
+type$ -- 16
+warning$ -- 6
+while$ -- 24
+width$ -- 18
+write$ -- 152
+(There were 6 warnings)

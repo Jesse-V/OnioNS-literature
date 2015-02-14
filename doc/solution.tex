@@ -3,71 +3,130 @@
 
 \section{Overview}
 
-I propose a new DNS system for Tor hidden services, which I am calling EsgalDNS. \textit{Esgal} is a Sindarin Elvish noun from the works of J.R.R Tolkien, meaning "veil" or "cover that hides".\cite{SindarinDict} EsgalDNS is a distributed DNS system embedded within the Tor network and powered by existing Tor nodes. It exists on top of the existing Tor hidden service infrastructure and is backwards compatible with the current hidden service protocol. EsgalDNS shares some design principles with Namecoin and other DNS systems, and its usage is analogous to the traditional Clearnet DNS system. The system supports a number of command and control operations, known as \textit{records}, including Query, Create, Modify, Move, Renew, and Delete. All records, aside from Query, are authenticated by digital signatures to ensure that only the operator of the hidden service issued them. These commands are processed by a subset of participating Tor nodes, described below.
+I propose a new DNS system for Tor hidden services, which I am calling EsgalDNS. \textit{Esgal} is a Sindarin Elvish noun from the works of J.R.R Tolkien, meaning "veil" or "cover that hides".\cite{SindarinDict} EsgalDNS is a distributed DNS system embedded within the Tor network on top of the existing Tor hidden service infrastructure. EsgalDNS shares some design principles with Namecoin and other DNS systems, and its usage is similar to the traditional Clearnet DNS system. At a high level, the system is powered at any given time by a randomly-chosen subset of Tor nodes, whose primary responsibilities are to receive new DNS records from hidden service operators, propagate the records to all parties, and save the records in a main long-term data structure. Other Tor nodes may mirror this data structure, distributing the load and responsibilities to many Tor nodes. The system supports a variety of command and control operations including Query, Create, Modify, Move, Renew, and Delete. 
 
 \section{Components}
 
 \subsection{Cryptographic Primitives}
 
-Our system makes use of cryptographic hash algorithms, digital signatures, and a pseudorandom number generator. As the cryptographic data within our system must persist for many years to come, we select well-established algorithms that we predict will remain strong against cryptographic analysis in the immediate future. In particular importance is the hash algorithm. We choose SHA-384 for most applications for its greater resistance to preimage, collision, and pseudo-collision attacks over SHA-256, which is itself significantly stronger than Tor's default hidden service hash algorithm, SHA-1. Like SHA-512, SHA-384 requires 80 rounds but its output is truncated to 48 bytes rather than the full 64, which saves space. For digital signatures, our default method is EMSA-PSS, (EMSA4) a probabilistic signature scheme defined by PKCS1 v2.1 and republished in 2003's RFC 3447, using a Tor node's 1024-bit RSA key with the SHA-384 digest to form the signature appendix. For signatures inside our proof-of-work scheme, we rely on $EMSA-PKCS1-v1_5$, (EMSA3) defined by 1998's RFC 2315. In contrast to EMSA-PSS, its deterministic nature prevents hidden service operators from bypassing the proof-of-work and brute-forcing the signature to validate the record. Our proof-of-work algorithm is scrypt, a key derivation function which is notable for its large memory and CPU requirements during its operation. In applications that require pseudorandom numbers from a known seed, we use the Mersenne Twister generator. In all instances the Mersenne Twister is initialized from the output of a hash algorithm, negating the generator's weakness of producing substandard random output from certain types of initial seeds.
+Our system makes use of cryptographic hash algorithms, digital signatures, proof-of-work, and a pseudorandom number generator. As the cryptographic data within our system must persist for many years to come, we select well-established algorithms that we predict will remain strong against cryptographic analysis in the immediate future.
+
+\begin{itemize}
+	\item Hash function - We choose SHA-384 for most applications for its greater resistance to preimage, collision, and pseudo-collision attacks over SHA-256, which is itself significantly stronger than Tor's default hidden service hash algorithm, SHA-1. Like SHA-512, SHA-384 requires 80 rounds but its output is truncated to 48 bytes rather than the full 64, which saves space.
+	\item Digital signatures - Our default method is EMSA-PSS, (EMSA4) a probabilistic signature scheme defined by PKCS1 v2.1 and republished in 2003's RFC 3447, using a Tor node's 1024-bit RSA key with the SHA-384 digest to form the signature appendix. For signatures inside our proof-of-work scheme, we rely on $EMSA-PKCS1-v1_5$, (EMSA3) defined by 1998's RFC 2315. In contrast to EMSA-PSS, its deterministic nature prevents hidden service operators from bypassing the proof-of-work and brute-forcing the signature to validate the record.
+	\item Proof-of-work - We select scrypt, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users.\cite{percival2009stronger} We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2.
+	\item Pseudorandom number generation - In applications that require pseudorandom numbers from a known seed, we use the Mersenne Twister generator. In all instances the Mersenne Twister is initialized from the output of a hash algorithm, negating the generator's weakness of producing substandard random output from certain types of initial seeds.
+\end{itemize}
 
 We use the JSON format to encode records and databases of records. JSON is significantly more compact than XML, but retains readability. Its support of basic primitive types is highly applicable to our needs. Additionally, we consider the JSON format safer than byte-level encoding.
 
 \subsection{Quorum}
 
-EsgalDNS may have many participants: any Tor nodes that has sufficient storage and bandwidth capacity may perform a full synchronization and mirror the complete DNS system. However, only a subset of them must perform the main duties of the system at any given time. EsgalDNS is primarily powered by a special subset of Tor nodes, called a \textit{quorum}. Both Tor clients and nodes can deterministically find the $ M $ nodes in the quorum from the signed consensus document published every hour by the authority nodes. We consider the document published at 00:00 GMT each day; first we take the SHA-384 of the document, then secondly initialize the Mersenne Twister pseudorandom number generator (PRNG) from the output. Third, we construct a numerical list of \textit{qualified} Tor nodes from the consensus document, and finally scramble that list using the PRNG. The first $ M $ nodes, numbered $ 1 .. M $, become the quorum. The requirements to qualify as a quorum node are described below.
+As a distributed system, EsgalDNS may have many participants; any machine with sufficient storage and bandwidth capacity --- including those outside the Tor network --- may perform a full synchronization with the EsgalDNS network and obtain a full mirror of all DNS information. Inside the Tor network, these participants are divided into three main categorizes: \textit{quorum} nodes, quorum node \textit{candidates}, and \textit{mirrors}. \textit{Mirrors} are Tor nodes that have performed a full synchronization and hold a complete copy of all DNS data structures. However, they are either not qualified or have opted out of being a quorum node \textit{candidate}. The requirements to become a candidate are described in the next section. Of those that qualify, the \textit{quorum} is chosen as a random subset from the \textit{candidate} list. The \textit{quorum} perform the main duties of the system, namely broadcasting and recording DNS records from hidden service operators. 
 
-\begin{figure}[htbp]
-	\centering
-	\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=2.5cm,
-			thick, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
+Any party at any time may derive the list of \textit{candidate} nodes and the \textit{quorum} from them by the following procedure:
 
-			\node[main node] (1) {$Q_{1}$};
-			\node[main node] (2) [right of=1] {};
-			\node[main node] (3) [right of=2] {$Q_{1}$};
-			\node[main node] (4) [right of=3] {$Q_{2}$};
+\begin{enumerate}
+	\item Obtain a remote or local archived copy of the consensus document, $ cd $, published 00:00 GMT that morning.
+	\item Extract the digital signature and verify $ cd $ against $ PK_{authorities} $.
+	\item Construct a numerical list, $ ql $ of qualified Tor nodes (defined below) from $ cd $.
+	\item Initialize the Mersenne Twister PRNG with SHA-384($ cd $).
+	\item Use the seeded PRNG to randomly scramble $ ql $.
+	\item Let the first $ M $ nodes, numbered $ 1 .. M $, define the \textit{quorum}.
+\end{enumerate}
 
-			\node[main node] (5) [below of=1] {$Q_{3}$};
-			\node[main node] (6) [right of=5] {$Q_{1}$};
-			\node[main node] (7) [right of=6] {$Q_{2}$};
-			\node[main node] (8) [right of=7] {};
-		  
-			\node[main node] (9) [below of=5] {};
-			\node[main node] (10) [right of=9] {$Q_{3}$};
-			\node[main node] (11) [right of=10] {$Q_{2}$};
-			\node[main node] (12) [right of=11] {};
+%\begin{figure}[htbp]
+%	\centering
+%	\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=2.5cm,
+%			thick, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
+%
+%			\node[main node] (1) {$Q_{1}$};
+%			\node[main node] (2) [right of=1] {};
+%			\node[main node] (3) [right of=2] {$Q_{1}$};
+%			\node[main node] (4) [right of=3] {$Q_{2}$};
+%
+%			\node[main node] (5) [below of=1] {$Q_{3}$};
+%			\node[main node] (6) [right of=5] {$Q_{1}$};
+%			\node[main node] (7) [right of=6] {$Q_{2}$};
+%			\node[main node] (8) [right of=7] {};
+%		  
+%			\node[main node] (9) [below of=5] {};
+%			\node[main node] (10) [right of=9] {$Q_{3}$};
+%			\node[main node] (11) [right of=10] {$Q_{2}$};
+%			\node[main node] (12) [right of=11] {};
+%
+%			\node[main node] (13) [below of=9] {};
+%			\node[main node] (14) [right of=13] {};
+%			\node[main node] (15) [right of=14] {};
+%			\node[main node] (16) [right of=15] {$Q_{3}$};
+%		  
+%			%http://www.texample.net/tikz/examples/tkz-berge/
+%			%http://www.texample.net/tikz/examples/graph/
+%			
+%			\tikzstyle{EdgeStyle}=[bend left, -, dotted]
+%			\tikzstyle{edge day1} = [draw, thick, -, black, dotted]
+%			\Edge[](1)(3)
+%			\draw[edge day1] (3) -- (6);
+%			
+%			\tikzstyle{edge day2} = [draw, thick, -, black, dotted]
+%			\draw[edge day2] (11) -- (7) -- (4);
+%			
+%			\tikzstyle{edge day3} = [draw, thick, -, black]
+%			\draw[edge day3] (5) -- (10) -- (16);
+%
+%		\end{tikzpicture}
+%	\caption{Past and present 3-member quorums in a 16-node network, day 3.}
+%	\label{fig:figure5}
+%\end{figure}
 
-			\node[main node] (13) [below of=9] {};
-			\node[main node] (14) [right of=13] {};
-			\node[main node] (15) [right of=14] {};
-			\node[main node] (16) [right of=15] {$Q_{3}$};
-		  
-			%http://www.texample.net/tikz/examples/tkz-berge/
-			%http://www.texample.net/tikz/examples/graph/
-			
-			\tikzstyle{EdgeStyle}=[bend left, -, dotted]
-			\tikzstyle{edge day1} = [draw, thick, -, black, dotted]
-			\Edge[](1)(3)
-			\draw[edge day1] (3) -- (6);
-			
-			\tikzstyle{edge day2} = [draw, thick, -, black, dotted]
-			\draw[edge day2] (11) -- (7) -- (4);
-			
-			\tikzstyle{edge day3} = [draw, thick, -, black]
-			\draw[edge day3] (5) -- (10) -- (16);
+The consensus document is an authenticated source of information and entropy that can be safely distributed publicly, so all parties --- in particular Tor nodes and clients --- agree on the members of the \textit{quorum}. As the \textit{quorum} is determined by the consensus document at the beginning of the day, \textit{quorum} nodes have an effective lifetime of 24 hours before they are replaced by a new \textit{quorum}.
 
-		\end{tikzpicture}
-	\caption{Past and present 3-member quorums in a 16-node network, day 3.}
-	\label{fig:figure5}
-\end{figure}
+\subsubsection{Qualifications}
 
-Since both clients and Tor nodes hold an authenticated and up-to-date copy of the consensus document, all involved parties are aware and agree on the members of the quorum. As we use the document at the beginning of each day, quorum nodes have an effective lifetime of 24 hours before their primary responsibilities are replaced by a new quorum. Since the health and status of the Tor network cannot be easily determined in advance, the quorum cannot be determined or known in advance until the new consensus document is published. This deterministic but unpredictably random nature makes the system more resilient to attackers attempting to force their node into the quorum for malicious purposes. Furthermore, as the digital signature from the authority nodes is embedded within the consensus document itself and all involved parties have the public keys of the authority nodes, past quorums can be securely derived from archives of the consensus document.
+It is essential that \textit{quorum} nodes have an up-to-date and complete copy of all DNS data and be ready to accept new information. Of equal importance, all \textit{quorum} members must have sufficient CPU and bandwidth capabilities to handle the influx of new records and the work involved with propagating these records to other Tor nodes. Fortunately, Tor's infrastructure already provides capabilities to easily find the second criteria: Tor nodes receive the \textit{fast}, \textit{stable}, \textit{running},  and \textit{valid} flags if they have demonstrated their ability to handle large amounts of traffic, have maintained a history of long uptime, are currently online, and have a correct configuration, respectively. As of February 2015, out of the ~7000 nodes participating in the Tor network, ~5400 of these node have these flags. These machines meet the second criteria for qualification as a \textit{quorum candidate}.
+
+To meet the first requirement, Tor nodes must demonstrate their readiness to accept new records. The na\"{i}ve solution to this problem would be have Tor nodes and clients simply ask the node if it was ready, and if so, for the necessary information that demonstrates it. However, this solution quickly runs into the problem of scaling; Tor has ~7000 nodes and ~2,250,000 daily users\cite{TorMetrics}: it is infeasible for any single node to handle queries from all of them. Therefore a better solution is to publish information to the authority nodes that all parties can see in the consensus document. To do this, a Tor node who has completed a full synchronization of the system performs the following:
+
+\begin{enumerate}
+	\item Select a \textit{page}-chain according to the rules specified below.
+	\item Generate a local \textit{NameCache} (described below), $ nc $ from the \textit{page}-chain.
+	\item Let $ s $ be SHA-384($ nc $).
+	\item Encode $ s $ to Base64 and truncate to 8 bytes.
+	\item Wrap the result in parentheses and append the result to the Contact field in the descriptor sent to the authority nodes.
+\end{enumerate}
+
+For this last step, while ideally this information could be placed in a special field set aside for this purpose, to ease integration with existing Tor infrastructure and third-party websites that parse the consensus document (such as Globe or Atlas) we use the Contact field, a user-defined optional entry that Tor relay operators typically use to list methods of contact such as email addresses and PGP keys. EsgalDNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends portions of any donations to that address, presumably to the Tor relay operator.
+
+The result is appended to the end of the Contact field, and must be updated at least every 24 hours. To become a candidate for membership in the quorum, a node must be a fast and stable node (flags determined and assigned by authority nodes) and must publish this truncated hash that is in the majority of hashes published by other Tor nodes. This can be easily be determined by all parties holding a recent or archived copy of the consensus document.
+
+
+
+% After a Tor node performs a synchronization, they generate a SHA-384 hash of the page-chain used by the majority of the quorum nodes in the previous day. This is not the same thing as the page-chain that the node itself may choose, but rather its information that everyone should easily agree upon, but that can only be determined by fetching and analysing the entire database. This does not thwart malicious collusion, but our system tolerates a low percentage of that, so we don't consider that a significant problem.
+
+The generated SHA-384 hash can then be embedded in the consensus document. 
+
+ To embed the hash, the hash is first converted to base64, truncated to 6 bytes, and surrounded by parenthesis. 
 
 \subsection{Page}
 
-A \textit{page} is long-term JSON-encoded textual database held by quorum nodes. It contains five fields, \textit{prevHash}, \textit{recordList}, \textit{consensusDocHash}, \textit{nodeKey}, and \textit{pageSig}. \textit{prevHash} is the SHA-384 hash of \textit{prevHash}, \textit{recordList}, and \textit{consensusDocHash} of a previous page. \textit{recordList} is an array of records, sorted in some globally deterministic manner. \textit{consensusDocHash} is the SHA-384 of the morning's consensus document. \textit{nodeKey} is the public key of the quorum node, which can hashed to find the node's fingerprint in the consensus document, or used directly to verify \textit{pageSig}, the digital signature of the preceding fields.
+A \textit{page} is long-term JSON-encoded textual database held by quorum nodes. It contains five fields, \textit{prevHash}, \textit{recordList}, \textit{consensusDocHash}, \textit{nodeFingerprint}, and \textit{pageSig}. 
 
-Each quorum node holds its page, the pages of the other quorum nodes on that day, and an archive of the consensus document. To generate its page, it first picks a page from the past quorums by the following method:
+\begin{description}
+	\item[prevHash] \hfill \\
+		The SHA-384 hash of \textit{prevHash}, \textit{recordList}, \textit{consensusDocHash}, and \textit{nodeKey} of a previous page.
+	\item[recordList] \hfill \\
+		An array of records, sorted alphabetical or in any other globally deterministic manner.
+	\item[consensusDocHash] \hfill \\
+		The SHA-384 of the morning's consensus document.
+	\item[nodeFingerprint] \hfill \\
+		The Tor fingerprint of the quorum node, found by generating a hash of the node's public key. This fingerprint is widely used in Tor infrastructure and in third-party tools as a unique identifier for individual Tor nodes.
+	\item[pageSig] \hfill \\
+		The digital signature of the preceding fields.
+\end{description}
+
+Each quorum node holds its page, the pages of the other quorum nodes on that day, and a single archive of the consensus document. 
+
+To generate its page, it first picks a page from the past quorums by the following method:
 
 %according to the following criteria
 
@@ -146,10 +205,6 @@ Where $ snap_{x} $ is the current snapshot at propagation iteration $ x $, at ea
 \subsection{Synchronization}
 
 Tor nodes must perform a full synchronization with the quorum nodes or node(s) mirroring the database before they are qualified to be picked as part of a quorum. Additionally, they may optionally synchronize in order to become a mirror of the database themselves.
-
-To qualify as a candidate to be a quorum node, Tor nodes must publish a small amount of information that demonstrates that they have completed a full synchronization (described below) with the system and are ready to accept new records themselves. A simple and naive solution would be to have Tor nodes and client ask that node for this information to demonstrate its readiness, but this does not scale to the size of the Tor network because that node could be quickly overwhelmed by requests. The better solution is to publish and distribute the information through the consensus document. After a Tor node performs a synchronization, they generate a SHA-384 hash of the page-chain used by the majority of the quorum nodes in the previous day. This is not the same thing as the page-chain that the node itself may choose, but rather its information that everyone should easily agree upon, but that can only be determined by fetching and analysing the entire database. This does not thwart malicious collusion, but our system tolerates a low percentage of that, so we don't consider that a significant problem.
-
-The generated SHA-384 hash can then be embedded in the consensus document. Ideally this could be placed in a special field set aside for this purpose, but to easy integration with existing Tor infrastructure (particularly the authority nodes) and third-party websites that parse the consensus document (such as Globe or Atlas) we suggest appending the hash onto the Contact field, a user-defined entry that Tor relay operators use to list methods of contact such as email addresses and PGP keys. EsgalDNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends portions of any donations to that address, presumably to the Tor relay operator. To embed the hash, the hash is first converted to base64, truncated to 6 bytes, and surrounded by parenthesis. The result is appended to the end of the Contact field, and must be updated at least every 24 hours. To become a candidate for membership in the quorum, a node must be a fast and stable node (flags determined and assigned by authority nodes) and must publish this truncated hash that is in the majority of hashes published by other Tor nodes. This can be easily be determined by all parties holding a recent or archived copy of the consensus document.
 
 Synchronization occurs in O(n) time, where $ n $ is the number of days since since first page was generated. This is possible because each quorum node contains the pages from all other quorum nodes, so the synchronizing node only has to ask a single node in the quorum for the pages contained by all other sister quorum nodes for each day. Once the node has queried the nodes all the way back to the first quorum it can then follow the selection procedure described above in the Page section.
 
@@ -255,6 +310,10 @@ A hidden service operator uses a Tor circuit to contact a quorum node. For secur
 \end{figure}
 
 \subsection{Registration Query}
+
+
+binary hashtable, fallback alphabetized hashes of names/subdomains
+
 
 When a Tor user wishes to visit example.tor, his client software must first perform a query to obtain the .onion address that corresponds to that domain name. The client must be able to verify that the received record originated from the desired hidden service, akin to SSL certificates on the Clearnet. Furthermore, the lookup must happen in an anonymous or privacy-enhanced manner and the details of the query must be handled behind-the-scenes, invisibly to the user. These policies satisfy our verifiability, privacy, and simplicity requirements.
 
