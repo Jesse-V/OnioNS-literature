@@ -8,3 +8,7 @@
 \contentsline {figure}{\numberline {5.2}{\ignorespaces A sample blockchain.\relax }}{18}{figure.caption.8}
 \contentsline {figure}{\numberline {6.1}{\ignorespaces Sample page-chain on day 4. Quorum size is $ M = 10 $, the numbers represent quorum participants with the same page. Despite malicious collusion and misbehaving nodes on day 3, most of day 4's quorum choose the correct chain with $ 10 + 9 + 1 + 5 + 4 + 2 = 31 $ total participants.\relax }}{26}{figure.caption.10}
 \contentsline {figure}{\numberline {6.2}{\ignorespaces HS operator broadcasts a record though a circuit (green) to a quorum node. The record propagates through snapshots.\relax }}{31}{figure.caption.11}
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Sample empty initial page, $ p_{1,1} $\relax }}{33}{figure.caption.12}
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Sample registration record from a hidden service. Note that the ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }}{34}{figure.caption.13}
+\contentsline {figure}{\numberline {6.5}{\ignorespaces Sample snapshot from $ c_{1} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }}{35}{figure.caption.14}
+\contentsline {figure}{\numberline {6.6}{\ignorespaces $ c_{1} $'s page, containing a single registration record.\relax }}{36}{figure.caption.15}
