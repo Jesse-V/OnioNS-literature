@@ -1,0 +1,71 @@
+This is BibTeX, Version 0.99d (TeX Live 2013/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: thesis.aux
+A level-1 auxiliary file: doc/abstract.aux
+A level-1 auxiliary file: doc/dedication.aux
+A level-1 auxiliary file: doc/introduction.aux
+A level-1 auxiliary file: doc/background.aux
+A level-1 auxiliary file: doc/requirements.aux
+A level-1 auxiliary file: doc/challenges.aux
+A level-1 auxiliary file: doc/existingWorks.aux
+A level-1 auxiliary file: doc/solution.aux
+A level-1 auxiliary file: doc/analysis.aux
+A level-1 auxiliary file: doc/results.aux
+A level-1 auxiliary file: doc/futureWork.aux
+A level-1 auxiliary file: doc/conclusion.aux
+The style file: IEEEtran.bst.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: thesis.bib
+-- IEEEtran.bst version 1.13 (2008/09/30) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+Warning--empty journal in nicolussi2011human
+Warning--empty journal in Okupski2014
+
+Done.
+You've used 16 entries,
+            4039 wiz_defined-function locations,
+            913 strings with 10002 characters,
+and the built_in function-call counts, 9125 in all, are:
+= -- 736
+> -- 175
+< -- 50
++ -- 93
+- -- 32
+* -- 396
+:= -- 1481
+add.period$ -- 36
+call.type$ -- 16
+change.case$ -- 23
+chr.to.int$ -- 123
+cite$ -- 18
+duplicate$ -- 700
+empty$ -- 811
+format.name$ -- 38
+if$ -- 2053
+int.to.chr$ -- 0
+int.to.str$ -- 16
+missing$ -- 133
+newline$ -- 71
+num.names$ -- 16
+pop$ -- 338
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 2
+skip$ -- 709
+stack$ -- 0
+substring$ -- 316
+swap$ -- 489
+text.length$ -- 9
+text.prefix$ -- 0
+top$ -- 5
+type$ -- 16
+warning$ -- 2
+while$ -- 40
+width$ -- 18
+write$ -- 163
+(There were 2 warnings)

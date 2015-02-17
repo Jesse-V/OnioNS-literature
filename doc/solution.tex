@@ -1,4 +1,5 @@
-\chapter{\uppercase{Solution}}
+
+\chapter{SOLUTION}
 
 \section{Overview}
 
@@ -36,6 +37,8 @@ Any party at any time may derive the list of \emph{candidate} nodes and the \emp
 
 The consensus document is an authenticated source of information and entropy that can be safely distributed publicly, so all parties --- in particular Tor nodes and clients --- agree on the members of the \emph{quorum}. As the \emph{quorum} is determined by the consensus document at the beginning of the day, \emph{quorum} nodes have an effective lifetime of 24 hours before they are replaced by a new \emph{quorum}.
 
+When a \emph{candidate} node becomes a member of the \emph{quorum}, it constructs a one-hop bidirectional Tor circuit to all other quorum nodes. These circuits are used for synchronization and must remain alive for the duration of that \emph{quorum}. Overall this creates $ n * (n - 1) / 2 $ new TCP/IP links among \emph{quorum} members.
+
 \subsubsection{Qualifications}
 
 It is essential that \emph{quorum} nodes have an up-to-date and complete copy of all DNS data and be ready to accept new information. Of equal importance, all \emph{quorum} members must have sufficient CPU and bandwidth capabilities to handle the influx of new records and the work involved with propagating these records to other Tor nodes. Fortunately, Tor's infrastructure already provides capabilities to easily find the second criteria: Tor nodes receive the \emph{fast}, \emph{stable}, \emph{running},  and \emph{valid} flags if they have demonstrated their ability to handle large amounts of traffic, have maintained a history of long uptime, are currently online, and have a correct configuration, respectively. As of February 2015, out of the ~7000 nodes participating in the Tor network, ~5400 of these node have these flags. These machines meet the second criteria for qualification as a \emph{quorum candidate}.
@@ -53,6 +56,8 @@ To meet the first requirement, Tor nodes must demonstrate their readiness to acc
 For this last step, while ideally this information could be placed in a special field set aside for this purpose, to ease integration with existing Tor infrastructure and third-party websites that parse the consensus document (such as Globe or Atlas) we use the Contact field, a user-defined optional entry that Tor relay operators typically use to list methods of contact such as email addresses and PGP keys. EsgalDNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends portions of any donations to that address, presumably to the Tor relay operator.
 
 The result is appended to the end of the Contact field, and must be updated at least every 24 hours. To become a candidate for membership in the quorum, a node must be a fast and stable node (flags determined and assigned by authority nodes) and must publish this truncated hash that is in the majority of hashes published by other Tor nodes. This can be easily be determined by all parties holding a recent or archived copy of the consensus document. The rules of the network will cause these hashes to be the same across all up-to-date parties, even if there are disagreements among them as to which page-chain to follow. This approach does not thwart malicious collusion, but our system tolerates a low percentage of that, so we don't consider that a significant problem.
+
+%todo: recycling of recods on other chains
 
 \subsection{Page}
 
@@ -79,112 +84,134 @@ To generate its page, it first picks a page from the past quorums by the followi
 
 \begin{enumerate}
 	\item Of all chains of pages in the database, ignore any invalid pages and any pages that form chains using those invalid pages. A page may be invalid if it contains records that do not follow specifications, its \emph{consensusDocHash} field does not match the hash of the consensus document on that day, or if \emph{pageSig} does not verify. Invalid pages may suggest that the quorum node was not fully synchronized, that it acted maliciously, or that there was data corruption.
-	\item From these valid chains, find the chain that has been used by the largest number of Tor quorum nodes (not counting today's quorum) and choose the most recent page.
+	\item From these valid chains, find the chain that contains the most back-links (not counting today's pages) and choose the most recent page.
 	\item If there are multiple chains that satisfy the second condition, choose from among them the page that contains the largest amount of records.
 	\item If the third condition cannot be resolved, choose from among them the page that is held by the smallest $ i $ in the $ M $ quorum nodes.
 \end{enumerate}
 
-It then takes the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of that page, forming \emph{prevHash}. Secondly, it generates \emph{consensusDocHash} by hashing the morning's consensus document. Finally, it hashes the page and generates a digital signature of that hash, storing the result in \emph{pageSig}. The usage of \emph{recordList} is described below.
+It then takes the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of that page, forming \emph{prevHash}. Secondly, it generates \emph{consensusDocHash} by hashing the morning's consensus document. Finally, it hashes the page and generates a digital signature of that hash, storing the result in \emph{pageSig}.
 
-\begin{figure}[htbp]
-	\centering
-	\begin{tikzpicture}[node distance=2cm, main node/.style={circle, draw, font=\sffamily\Large\bfseries}]
-
-			\node[main node, fill=Bittersweet!50] (1) {10};
-			\node[main node, fill=Apricot!50] (2) [below of=1] {9};
-				\node[main node, fill=BurntOrange!50] (3) [right of=2] {1};
-			\node[main node, fill=ForestGreen!50] (4) [below of=2] {5};
-				\node[main node, fill=LimeGreen!50] (5) [right of=4] {4};
-				\node[main node, fill=OliveGreen!50] (6) [right of=5] {2};
-				\node[main node, fill=Goldenrod!50] (7) [right of=6] {1};
-			\node[main node, fill=Blue!50] (8) [below of=4] {9};
-				\node[main node, fill=Cyan!50] (9) [right of=8] {1};
-			
-			\tikzstyle{EdgeStyle}=[->, thick, blue]
-			
-			% main chain
-			\Edge[](8)(4)
-			\Edge[](4)(2)
-			\Edge[](2)(1)
-			
-			% day 4 branches
-			\Edge[](9)(5)
-			
-			% day 3 branches
-			\Edge[](5)(2)
-			\Edge[](6)(2)
-			\Edge[](7)(3)
-			
-			% day 2 branches
-			\Edge[](3)(1)
-			
-		\end{tikzpicture}
-	\caption{Sample page-chain on day 4. Quorum size is $ M = 10 $, the numbers represent quorum participants with the same page. Despite malicious collusion and misbehaving nodes on day 3, most of day 4's quorum choose the correct chain with $ 10 + 9 + 1 + 5 + 4 + 2 = 31 $ total participants.}
-	\label{fig:figure5}
-\end{figure}
+%\begin{figure}[htbp]
+%	\centering
+%	\begin{tikzpicture}[node distance=2cm, main node/.style={circle, draw, font=\sffamily\Large\bfseries}]
+%
+%			\node[main node, fill=Bittersweet!50] (1) {10};
+%			\node[main node, fill=Apricot!50] (2) [below of=1] {9};
+%				\node[main node, fill=BurntOrange!50] (3) [right of=2] {1};
+%			\node[main node, fill=ForestGreen!50] (4) [below of=2] {5};
+%				\node[main node, fill=LimeGreen!50] (5) [right of=4] {4};
+%				\node[main node, fill=OliveGreen!50] (6) [right of=5] {2};
+%				\node[main node, fill=Goldenrod!50] (7) [right of=6] {1};
+%			\node[main node, fill=Blue!50] (8) [below of=4] {9};
+%				\node[main node, fill=Cyan!50] (9) [right of=8] {1};
+%			
+%			\tikzstyle{EdgeStyle}=[->, thick, blue]
+%			
+%			% main chain
+%			\Edge[](8)(4)
+%			\Edge[](4)(2)
+%			\Edge[](2)(1)
+%			
+%			% day 4 branches
+%			\Edge[](9)(5)
+%			
+%			% day 3 branches
+%			\Edge[](5)(2)
+%			\Edge[](6)(2)
+%			\Edge[](7)(3)
+%			
+%			% day 2 branches
+%			\Edge[](3)(1)
+%			
+%		\end{tikzpicture}
+%	\caption{Sample page-chain on day 4. Quorum size is $ M = 10 $, the numbers represent quorum participants with the same page. Despite malicious collusion and misbehaving nodes on day 3, most of day 4's quorum choose the correct chain with $ 10 + 9 + 1 + 5 + 4 + 2 = 31 $ total participants.}
+%	\label{fig:figure5}
+%\end{figure}
 
 \subsection{Snapshot}
 
-Similar to a page, a \emph{snapshot} is JSON-encoded textual database held by quorum nodes, but unlike pages, snapshots are short-term and volatile. They are used for propagating very new records and receiving records from other quorum nodes, and are only held and processed by quorum nodes in the current day. Snapshots contain three fields: \emph{originTime}, \emph{recentRecords}, and \emph{snapshotSig}, where \emph{originTime} is the timestamp when the snapshot was first created, \emph{recentRecords} is a list of DNS records, and \emph{snapshotSig} is the digital signature of \emph{originTime} and \emph{recentRecords}. When a hidden service operator informs a quorum node about a new record, the quorum node first confirms that the record is valid (described below) and if it is, it adds that record into \emph{recentRecords} and updates \emph{snapshotSig}. 
+Similar to a page, a \emph{snapshot} is JSON-encoded textual database held by quorum nodes, but unlike pages, snapshots are short-term and volatile. They are used for propagating very new records and receiving records from other quorum nodes, and are only held and processed by quorum nodes in the current day. Snapshots contain three fields: \emph{originTime}, \emph{recentRecords}, and \emph{snapshotSig}.
+
+\begin{description}
+	\item[originTime] \hfill \\
+		Unix time when the snapshot was first created.
+	\item[recentRecords] \hfill \\
+		A list of DNS records.
+	\item[snapshotSig] \hfill \\
+		The digital signature of \emph{originTime} and \emph{recentRecords}.
+\end{description}
+
+When a hidden service operator informs a quorum node about a new record, the quorum node first confirms that the record is valid (described below) and if it is, it adds that record into \emph{recentRecords} and updates \emph{snapshotSig}. 
 
 %todo: do I describe how records are validated?
 
-Where $ snap_{x} $ is the current snapshot at propagation iteration $ x $, at each 15 minute mark each active quorum node $ node_{j} $ performs the following:
+Where $ snap_{x} $ is the current snapshot at propagation iteration $ x $, at each 15 minute mark each active quorum node $ q_{j} $ performs the following:
 
 \begin{enumerate}
 	\item Generates a new snapshot, labelled $ snap_{x+1} $, sets \emph{originTime} to the current time, creates \emph{snapshotSig}, and sets $ snap_{x+1} $ to be the currently active snapshot for collecting new records.
-	\item Randomly selects $ M / 2 $ nodes from the $ M $ quorum nodes, defining \emph{swapSet}.
-	\item With each node $ node_{k} $ in \emph{swapSet}, it swaps $ snap_{x} $ and \emph{pageSig} with node $ node_{k} $, receiving a snapshot $ s_{x, k} $ and signature $ sig_{x, k} $, and then verifies the validity of $ s_{x, k} $. For efficiency, if $ node_{k} $ in turn selects $ node_{j} $, no swap will need to take place.
+	\item With each node $ q_{k} $ in the \emph{quorum}, $ q_{j} $ sends $ snap_{x} $ to $ q_{k} $, and receives $ s_{x, k} $ in return.
 	\item After all swapping is complete, $ node_{j} $
-		\begin{enumerate}
-			\item Archives $ snap_{x} $ and each $ s_{x, k} $ and $ sig_{x, k} $ for all $ k $ in \emph{swapSet}.
-			\item Updates its copy of $ node_{k} $'s page by merging in $ s_{x-4, k} $, then confirming that $ sig_{x, k} $ verifies against the generated page. If not, it asks $ node_{k} $ for its page so that the discrepancy can be resolved.
-			\item Updates its page by merging the contents of $ snap_{x-4} $ into \emph{recordList} and regenerates \emph{pageSig}.
-			\item Deletes $ snap_{x-4} $.
-			\item Increments $ x $.
-		\end{enumerate}
+	
+get sigs from other q nodes too to thwart manip	
+	
+%		\begin{enumerate}
+%			\item 
+%
+%
+%
+%	
+%	\item Randomly selects $ M / 2 $ nodes from the $ M $ quorum nodes, defining \emph{swapSet}.
+%	\item With each node $ node_{k} $ in \emph{swapSet}, it swaps $ snap_{x} $ and \emph{pageSig} with node $ node_{k} $, receiving a snapshot $ s_{x, k} $ and signature $ sig_{x, k} $, and then verifies the validity of $ s_{x, k} $. For efficiency, if $ node_{k} $ in turn selects $ node_{j} $, no swap will need to take place.
+%	\item After all swapping is complete, $ node_{j} $
+%		\begin{enumerate}
+%			\item Archives $ snap_{x} $ and each $ s_{x, k} $ and $ sig_{x, k} $ for all $ k $ in \emph{swapSet}.
+%			\item Updates its copy of $ node_{k} $'s page by merging in $ s_{x-4, k} $, then confirming that $ sig_{x, k} $ verifies against the generated page. If not, it asks $ node_{k} $ for its page so that the discrepancy can be resolved.
+%			\item Updates its page by merging the contents of $ snap_{x-4} $ into \emph{recordList} and regenerates \emph{pageSig}.
+%			\item Deletes $ snap_{x-4} $.
+%			\item Increments $ x $.
+%		\end{enumerate}
 \end{enumerate}
 
 
 % Page identification? Is 4b right? Need to swap all known snapshots! Delete old snapshots!
-\emph{TODO: this is incomplete. Quorum nodes send and receive a set of snapshots from other quorum nodes. They pass them along. After 4 rounds of share-with-50-percent the information should have reached all quorum nodes with a high probability, so the information can be safely added into the page and the signature updated. Likewise snapshots from other quorum nodes that are 4 rounds old can be added into its page, hence everyone will be in agreement, theoretically at least. Experiments needed and planned.}
+%\emph{TODO: this is incomplete. Quorum nodes send and receive a set of snapshots from other quorum nodes. They pass them along. After 4 rounds of share-with-50-percent the information should have reached all quorum nodes with a high probability, so the information can be safely added into the page and the signature updated. Likewise snapshots from other quorum nodes that are 4 rounds old can be added into its page, hence everyone will be in agreement, theoretically at least. Experiments needed and planned.}
 
 \subsection{Synchronization}
 
-Tor nodes must perform a full synchronization with the quorum nodes or node(s) mirroring the database before they are qualified to be picked as part of a quorum. Additionally, they may optionally synchronize in order to become a mirror of the database themselves.
+% todo: how to derive yesterday's consensus doc from today's info
 
-Synchronization occurs in O(n) time, where $ n $ is the number of days since since first page was generated. This is possible because each quorum node contains the pages from all other quorum nodes, so the synchronizing node only has to ask a single node in the quorum for the pages contained by all other sister quorum nodes for each day. Once the node has queried the nodes all the way back to the first quorum it can then follow the selection procedure described above in the Page section.
+Any machine Alice, including Tor nodes wishing to become a \emph{candidate} node, can perform a full synchronization against any other machine Bob that holds the whole database. Describing today as day $ x $, Alice queries Bob for the \emph{pages} from $ \textrm{day}_{x} $'s quorum, determines the \emph{quorum} for $ \textrm{day}_{x-1} $, asks one of them for their \emph{pages}, determines $ \textrm{day}_{x-2} $'s quorum, asks one of them, and so on. Synchronization takes O($ x $) time rather than O($ x * M $) time because each of the $ M $ \emph{quorum} nodes have a copy of the \emph{pages} from all other \emph{quorum} members. Once Alice has queried all the way back to $ x = 0 $, Alice can generate the \emph{NameCache} data structure and keep itself qualified by publishing its hash. If Alice is selected a \emph{quorum} node, Alice then must generate its own \emph{page} with the appropriate back-reference according to the rules of the network.
 
 \subsection{Registration Creation}
 
-Any hidden service operator may claim any domain name that is not currently in use. As domain names cannot be purchased from a central authority, it is necessary to implement a system that introduces a cost of ownership. This performs three main purposes: 1) thwarts potential flooding of system with domain registrations, 2) introduces a cost of investment that improves the availability of hidden services, and 3) makes domain squatting more difficulty, where someone claims one or more domains on a whim for the sole purpose of denying them to others. As hidden service operators typically remain anonymous, it is difficulty for one to contact them and request relinquishing of a domain, nor is there a central authority to force relinquishing through a court order or other formal means. Therefore we introduce a proof-of-work scheme that makes registration computationally intensive but is also easily verified by anyone.
+Any hidden service operator may claim any domain name that is not currently in use. As domain names cannot be purchased from a central authority, it is necessary to implement a system that introduces a cost of ownership. This performs three main purposes: 
 
-A domain registration consists of nine components: \emph{name}, \emph{subdomains}, \emph{contact}, \emph{timestamp}, \emph{consensusHash}, \emph{nonce}, \emph{pow}, \emph{recordSig}, and \emph{pubHSKey}. The variable \emph{central} consists of all fields except \emph{recordSig} and \emph{pow}.
+\begin{enumerate}
+	\item Thwarts potential flooding of system with domain registrations.
+	\item Introduces a cost of investment that improves the availability of hidden services.
+	\item Makes domain squatting more difficulty, where someone claims one or more domains on a whim for the sole purpose of denying them to others. As hidden service operators typically remain anonymous, it is difficulty for one to contact them and request relinquishing of a domain, nor is there a central authority to force relinquishing through a court order or other formal means.
+\end{enumerate}
 
-\begin{description}
-	\item[name] \hfill \\
-		A required field that specifies the domain name that the hidden service operator wishes to obtain, up to 32 characters in length. Domain names uses the .tor TLD.
-	\item[subdomains] \hfill \\
-		Names of the subdomains used before \emph{name} and their destinations. For example {"sample", "a.b.tor"} generates sample.example.tor that resolves to a.b.tor. They can also point to .onion addresses or traditional Clearnet domain names. Each subdomain and their destinations may each be up to 32 characters in length, and up to 16 subdomains may be registered per registration. This is an optional field.
-	\emph{contact} \hfill \\
-		The fingerprint of the HS operator's PGP key, if he has one. If not or if he chooses to withhold this information, this field is left blank. If the fingerprint is listed, clients may query a public key server for this fingerprint, obtain the operator's PGP public key, and contact him over encrypted email.
-	\emph{timestamp} \hfill \\
-		The UNIX timestamp of when the operator created the registration and began the proof-of-work to validate it. This is a required field.
-	\emph{consensusHash} \hfill \\
-		The SHA-384 of the morning's consensus document at the time of registration, encoded in base64. This a provable and irrefutable timestamp, since it can be matched against archives of the consensus document. Quorum nodes will not accept registration records that reference a consensus document more than 48 hours old. This is also required.
-	\emph{nonce} \hfill \\
-		A required field consisting of four bytes that serve as a source of randomness for the proof-of-work, described below.
-	\emph{pow} \hfill \\
-		16 bytes that demonstrate the result of the proof-of-work. Encoded in base64 and required.
-	\emph{recordSig} \hfill \\
-		The digital signature of all preceding fields, signed using the hidden service's private key. Encoded in base64 and required.
-	\emph{pubHSKey} \hfill \\
-		A required field holding the base64-encoding of the hidden service's public key.
-\end{description}
+Therefore we incorporate a proof-of-work scheme that makes registration computationally intensive but is also easily verified by anyone. A domain registration consists of eight components: \emph{nameList}, \emph{contact}, \emph{timestamp}, \emph{consensusHash}, \emph{nonce}, \emph{pow}, \emph{recordSig}, and \emph{pubHSKey}. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. Fields that are optional are blank unless specified, and all fields are encoded in base64, except for \emph{nameList}, \emph{contact}, and \emph{timestamp}, which are encoded in standard UTF-8.
 
-A record is made valid through the completion of the proof-of-work process. The hidden service operator must find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated, which effectively forces the computation to be performed by a machine owned by the HS operator. While this scheme would not entirely prevent the operator from outsourcing the computation to a cloud service or to a secondary offline resource, the other machine would need the hidden service private key to regenerate \emph{recordSig}, which the operator can't reveal for obvious security reasons. However, the secondary resource could perform the scrypt computations in batch without generating \emph{recordSig}, but it would always perform more than the necessary amount of computation because it would could not take the SHA-384 hash and thus know when to stop. Furthermore, offloading the computation would still incur a cost to the hidden service operator, who would have to pay another party for the consumed computational resources. Thus the scheme always requires some cost when claiming a domain name. The valid and complete record is then represented in JSON format when transmitted and stored by quorum nodes.
+\begin{center}
+    \begin{tabular}{ | l | l | p{9cm} |}
+    \hline
+    \textbf{Field} & \textbf{Required?} & \textbf{Description} \\ \hline
+    nameList & Yes & A list of domains or subdomains that the hidden service operator wishes to claim. Names can be up to 32 characters long, and may point to either .tor or .onion TLDs, or any subdomain. Names can be linked up to 16 deep. \\ \hline
+    contact & No & The fingerprint of the HS operator's PGP key, if he has one. If the fingerprint is listed, clients may query a public key server for this fingerprint, obtain the operator's PGP public key, and contact him over encrypted email. \\ \hline
+	timestamp & Yes & The UNIX timestamp of when the operator created the registration and began the proof-of-work to validate it. \\ \hline
+	consensusHash & Yes & The SHA-384 of the morning's consensus document at the time of registration. This a provable and irrefutable timestamp, since it can be matched against archives of the consensus document. Quorum nodes will not accept registration records that reference a consensus document more than 48 hours old. \\ \hline
+	nonce & Yes & Four bytes that serve as a source of randomness for the proof-of-work, described below. \\ \hline
+    pow & Yes & 16 bytes that demonstrate the result of the proof-of-work. \\ \hline
+    recordSig & Yes & The digital signature of all preceding fields, signed using the hidden service's private key. \\ \hline
+    pubHSKey & Yes & The public key of the hidden service. If the operator is claiming a subdomain of any depth, this key must match the \emph{pubHSKey} of the top domain name.\\ \hline
+    \end{tabular}
+\end{center}
 
-\emph{TODO: specify how difficulty increases to counteract Moore's Law. Also, is the pow even necessary, or can that be regenerated by anyone?}
+A record is made valid through the completion of the proof-of-work process. The hidden service operator must find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated, which effectively forces the computation to be performed by a machine owned by the HS operator. When the proof-of-work is complete, the valid and complete record is represented in JSON format for transmission to the \emph{quorum}.
+
+%\emph{TODO: specify how difficulty increases to counteract Moore's Law. Also, is the pow even necessary, or can that be regenerated by anyone?}
 
 \subsection{Record Modification}
 
@@ -192,38 +219,38 @@ A hidden service operator may wish to update his registration with more current 
 
 \subsection{Ownership Transfer}
 
-Domain names may be transferred to a new owner from one hidden service operator to another. The transfer record contains the public key and signature of the originating owner and the public key of the new owner. The proof-of-work cost is an eighth of generating the domain name in the first place.
+A hidden service operator may transfer one or more domains to a new owner. The transfer record contains the public key and signature of the originating owner and the public key of the new owner. Subdomains that are not explicitly moved to the new owner are invalid and can be reclaimed by the new owner if they wish. The proof-of-work cost is an eighth of domain registration.
 
 \subsection{Domain Renewal}
 
-Domain names expire every 64 days, so they must be renewed periodically. To do this, a hidden service operator generates a renewal record and broadcasts it to the quorum nodes. The proof-of-work cost is a fourth of generating the domain name in the first place.
+Domain names expire every 64 days, so they must be renewed periodically. To renew a domain, a hidden a hidden service operator generates a renewal record, which resets the countdown on that domain. Subdomains, as they must match the ownership of the top domain, have no expiration themselves but rather will expire when the domain does. The proof-of-work cost is a fourth of a registration record.
 
 \subsection{Registration Deletion}
 
-If a hidden service operator wishes to relinquish ownership rights over a domain name, they can issue a deletion record. This may happen if the hidden service key is compromised, the operator no longer has any use for the domain name, or for other reasons. The deletion record contains the hidden service public key and corresponding digital signature, and once issued to the quorum immediately triggers an expiration of that domain name, making it available to others by a creation record. There is no computational cost associated with a deletion record. 
+If a hidden service operator wishes to relinquish ownership rights over any name, they can issue a deletion record. In the case of a domain name, this may happen if the hidden service key is compromised, the operator no longer has any use for the domain, or for other reasons. The deletion record contains the hidden service public key and corresponding digital signature, and once issued to the \emph{quorum} immediately triggers an expiration of that name. If it is a domain name, that domain and all subdomains are made available to others. Names can be deleted at any time with no computational cost.
 
 \subsection{Broadcast}
 
-A hidden service operator uses a Tor circuit to contact a quorum node. For security purposes, they must use the same entry node that their hidden service uses. Once the three-hop circuit has been established, they can use their exit node to give a record to the quorum node. That quorum node will add the record to their snapshot, which will be propagated to other quorum nodes and merged into pages for long-term storage.
+A hidden service operator uses a Tor circuit to contact a \emph{quorum} node. For security purposes, they use the same circuit that their hidden service uses. They thus use their introduction point to give a record to a \emph{quorum} node, as illustrated in Figure ~\ref{fig:recordBroadcast}.
 
 \begin{figure}[htbp]
 	\centering
 	\begin{tikzpicture}[->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
 
 			\node[main node] (1) {$ Q_{1} $};
-			\node[main node] (2) [right of=1] {$ Q_{1} $};
+			\node[main node] (2) [right of=1] {$ Q_{2} $};
 			\node[main node] (3) [right of=2] {};
-			\node[main node] (4) [right of=3] {$ Q_{1} $};
+			\node[main node] (4) [right of=3] {$ Q_{3} $};
 
 			\node[main node] (5) [below of=1] {};
-			\node[main node] (6) [right of=5] {$ Q_{1} $};
+			\node[main node] (6) [right of=5] {$ Q_{5} $};
 			\node[main node] (7) [right of=6] {};
 			\node[main node] (8) [right of=7] {};
 		  
 			\node[main node, font=\small] (9) [below of=5] {$ N_{middle} $};
 			\node[main node] (10) [right of=9] {};
-			\node[main node, font=\small] (11) [right of=10] {$ N_{exit} $};
-			\node[main node] (12) [right of=11] {$ Q_{1} $};
+			\node[main node, font=\small] (11) [right of=10] {$ N_{ip} $};
+			\node[main node] (12) [right of=11] {$ Q_{4} $};
 
 			\node[main node] (13) [below of=9] {};
 			\node[main node] (14) [right of=13] {};
@@ -240,27 +267,24 @@ A hidden service operator uses a Tor circuit to contact a quorum node. For secur
 			\Edge[](9)(11)
 			
 			% draw record moving from exit to 1st q. node
-			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (6) to [bend left=20] (11){};
+			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (6) to [bend right=15] (11){};
 			
 			% draw upper left propegation
 			\tikzstyle{EdgeStyle}=[bend left=12, ->, blue]
 			\Edge[](6)(2)
-			\Edge[](2)(1)
+			\Edge[](6)(1)
 			
 			% draw upper right propegation
+			\tikzstyle{EdgeStyle}=[bend left=20, ->, blue]
+			\Edge[](6)(12)
 			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={snapshot}, raise=3pt}}] (6) to [bend right=18] (4){};
-			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={snapshot}, raise=3pt}}] (4) to [bend left=25] (12){};
 
 		\end{tikzpicture}
-	\caption{HS operator broadcasts a record though a circuit (green) to a quorum node. The record propagates through snapshots.}
-	\label{fig:figure5}
+	\caption{The hidden service operator uses his existing circuit (green) to inform \emph{quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph{snapshots} to all other \emph{quorum} nodes $ Q_{1..4} $, where it is recorded in \emph{pages} for long-term storage.}
+	\label{fig:recordBroadcast}
 \end{figure}
 
 \subsection{Registration Query}
-
-
-binary hashtable, fallback alphabetized hashes of names/subdomains
-
 
 When a Tor user wishes to visit example.tor, his client software must first perform a query to obtain the .onion address that corresponds to that domain name. The client must be able to verify that the received record originated from the desired hidden service, akin to SSL certificates on the Clearnet. Furthermore, the lookup must happen in an anonymous or privacy-enhanced manner and the details of the query must be handled behind-the-scenes, invisibly to the user. These policies satisfy our verifiability, privacy, and simplicity requirements.
 
@@ -292,10 +316,10 @@ At all levels, the server may return the introduction point for that hidden serv
 
 \subsection{Base Case}
 
-In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $, a hidden service Bob, and a Tor client Alice, the procedures are relatively simple. On $ \textrm{day}_{0} $, $ c_{1} $ generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} $, but does not accept records for this initial page. For reference, $ p_{1,1} $ appears as 
+In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $, a hidden service Bob, and a Tor client Alice, the procedures are relatively simple. On $ \textrm{day}_{0} $, $ c_{1} $ generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} $, but does not accept records for this initial page. $ p_{1,1} $ appears in Figure ~\ref{fig:emptyPage}.
 
 \begin{figure}
-\begin{lstlisting}
+	\begin{lstlisting}
 	{
 		"prevHash": 0,
 		"recordList": [],
@@ -303,12 +327,12 @@ In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $
 		"nodeFingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
 		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
 	}
-\end{lstlisting}
-\caption{Sample empty initial page, $ p_{1,1} $}
-\label{sampleLabel}
+	\end{lstlisting}
+	\caption{A sample empty \emph{page}, $ p_{1,1} $, encoded in JSON and base64.}
+	\label{fig:emptyPage}
 \end{figure}
 
-On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSF YjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears as:
+On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSF YjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears in Figure ~\ref{fig:sampleRecord}.
 
 \begin{figure}
 	\begin{lstlisting}
@@ -326,11 +350,11 @@ On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and gene
 		"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
 	}
 	\end{lstlisting}
-	\caption{Sample registration record from a hidden service. Note that the ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.}
-	\label{sampleLabel}
+	\caption{Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.}
+	\label{fig:sampleRecord}
 \end{figure}
 
-$ c_{1} $ adds this record to its snapshot, creating
+$ c_{1} $ adds this record to its snapshot, creating Figure ~\ref{fig:sampleSnapshot}.
 
 \begin{figure}
 	\begin{lstlisting}
@@ -352,13 +376,13 @@ $ c_{1} $ adds this record to its snapshot, creating
 	}
 	\end{lstlisting}
 	\caption{Sample snapshot from $ c_{1} $, containing one registration record $ r_{reg} $ from a hidden service.}
-	\label{sampleLabel}
+	\label{fig:sampleSnapshot}
 \end{figure}
 
-$ c_{1} $ can continue to accept and insert records in this way, but if $ r_{reg} $ is the only one that $ c_{1} $ receives, at the next 15 minute mark $ c_{1} $ will attempt to propagate this snapshot to other \emph{quorum} nodes. However, as $ c_{1} $ is the only \emph{quorum} node, nothing need happen here. $ c_{1} $ then adds $ r_{reg} $ into its page, creating $ p_{1,1} $:
+$ c_{1} $ can continue to accept and insert records in this way, but if $ r_{reg} $ is the only one that $ c_{1} $ receives, at the next 15 minute mark $ c_{1} $ will attempt to propagate this snapshot to other \emph{quorum} nodes. However, as $ c_{1} $ is the only \emph{quorum} node, nothing need happen here. $ c_{1} $ then adds $ r_{reg} $ into its page, creating $ p_{1,1} $, shown in Figure ~\ref{fig:c1page}.
 
 \begin{figure}
-\begin{lstlisting}
+	\begin{lstlisting}
 	{
 		"prevHash": 0,
 		"recordList": [
@@ -380,9 +404,9 @@ $ c_{1} $ can continue to accept and insert records in this way, but if $ r_{reg
 		"nodeFingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
 		"pageSig": "KO7FXtoTJmxceJYlW202c0WwRGRyU9m99IskcL9yv/wFQ4ubzbjVs8LQzwQub9kDJ8Htpc9rRZvneRRbusFv1nvaeJw+WgRt+Tck0uapndHKYaQcK3XTIFYdmT1lLm7QxSKjnIxgBkwKT0QWdGLUhuRgGe5CXmqrPeDfU/gsgLs="
 	}
-\end{lstlisting}
-\caption{$ c_{1} $'s page, containing a single registration record.}
-\label{sampleLabel}
+	\end{lstlisting}
+	\caption{$ c_{1} $'s page, containing a single registration record.}
+	\label{fig:c1page}
 \end{figure}
 
 This record $ \to $ snapshot $ \to $ page merge process continues for any new records, but assuming $ r_{reg} $ is the only record received that day, $ p_{1,1} $ will not change following the end of $ \textrm{day}_{1} $. On $ \textrm{day}_{2} $, $ c_{1} $, again a $ quorum $ member, will build a page $ p_{1,2} $ that links to $ p_{1,1} $, the latest page in the chain with the most links, now 2. Generally speaking, on day $ \textrm{day}_{n} $ $ c_{1} $ will select $ p_{1,n-1} $, as there is no other choice. It alone listens for new records, rejects new registrations if there is a name conflict, and ensure the validity of the entire page-chain database. The Tor client Alice, wishing to contact the hidden service Bob, may query $ c_{1} $ for ``example.tor'' and $ c_{1} $ returns $ r_{reg} $. Alice can then confirm the validity of $ r_{reg} $ herself, follow ``example.tor'' to ``exampleruyw6wgve.onion'', and finally perform the traditional hidden service lookup.
@@ -391,55 +415,74 @@ This record $ \to $ snapshot $ \to $ page merge process continues for any new re
 
 Extending the example to two \emph{candidates} $ c_{1} $ and $ c_{2} $, a mirror $ m_{1} $, a hidden service Bob, and a Tor client Alice, the purpose of the \emph{snapshot} and \emph{NameCache} data structures become more clear. As before, on $ \textrm{day}_{0} $, $ c_{1} $ and $ c_{2} $ both generate and sign initial empty pages but do not accept records. However, on $ \textrm{day}_{1} $, $ c_{1} $ and $ c_{2} $ 
 
+This is illustrated in Figure ~\ref{fig:bigPicture}.
+
 generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} $, but does not accept records for this initial page.
 
-\subsection{General Example}
+\begin{figure}[htbp]
+	\centering
+	\begin{tikzpicture}[->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
 
-Generally, with $ N \in \textbf{Z} $ \emph{candidate} nodes, a \emph{quorum} of size $ M \in \textbf{Z} $, $ H \in \textbf{Z} $ hidden services, and $ C \in \textbf{Z} $ clients,
+			\node[main node, font=\small] (1) {$ A_{entry} $};
+			\node[main node] (2) [right of=1] {};
+			\node[main node] (3) [right of=2] {Alice};
+			\node[main node] (4) [right of=3] {};
 
-%\begin{figure}[htbp]
-%	\centering
-%	\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=2.5cm,
-%			thick, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
-%
-%			\node[main node] (1) {$Q_{1}$};
-%			\node[main node] (2) [right of=1] {};
-%			\node[main node] (3) [right of=2] {$Q_{1}$};
-%			\node[main node] (4) [right of=3] {$Q_{2}$};
-%
-%			\node[main node] (5) [below of=1] {$Q_{3}$};
-%			\node[main node] (6) [right of=5] {$Q_{1}$};
-%			\node[main node] (7) [right of=6] {$Q_{2}$};
-%			\node[main node] (8) [right of=7] {};
-%		  
-%			\node[main node] (9) [below of=5] {};
-%			\node[main node] (10) [right of=9] {$Q_{3}$};
-%			\node[main node] (11) [right of=10] {$Q_{2}$};
-%			\node[main node] (12) [right of=11] {};
-%
-%			\node[main node] (13) [below of=9] {};
-%			\node[main node] (14) [right of=13] {};
-%			\node[main node] (15) [right of=14] {};
-%			\node[main node] (16) [right of=15] {$Q_{3}$};
-%		  
-%			%http://www.texample.net/tikz/examples/tkz-berge/
-%			%http://www.texample.net/tikz/examples/graph/
-%			
-%			\tikzstyle{EdgeStyle}=[bend left, -, dotted]
-%			\tikzstyle{edge day1} = [draw, thick, -, black, dotted]
-%			\Edge[](1)(3)
-%			\draw[edge day1] (3) -- (6);
+			\node[main node, font=\small] (5) [below of=1] {$ A_{exit} $};
+			\node[main node, font=\small] (6) [right of=5] {$ A_{middle} $};
+			\node[main node] (7) [right of=6] {$ c_{1} $};
+			\node[main node] (8) [right of=7] {$ c_{2} $};
+		  
+			\node[main node] (9) [below of=5] {};
+			\node[main node] (10) [right of=9] {$ m_{1} $};
+			\node[main node] (11) [right of=10] {};
+			\node[main node, font=\small] (12) [right of=11] {$ B_{ip} $};
+
+			\node[main node] (13) [below of=9] {};
+			\node[main node, font=\small] (14) [right of=13] {$ B_{middle} $};
+			\node[main node, font=\small] (15) [right of=14] {$ B_{entry} $};
+			\node[main node] (16) [right of=15] {Bob};
+		  
+			%http://www.texample.net/tikz/examples/tkz-berge/
+			%http://www.texample.net/tikz/examples/graph/
+			
+			\tikzstyle{EdgeStyle}=[bend right, -, green]
+			\Edge[](3)(1)
+			\tikzstyle{EdgeStyle}=[bend left=15, -, green]
+			\Edge[](1)(6)
+			\Edge[](5)(6)
+			
+			\draw[thick, <-, blue, postaction={decorate, decoration={text along path, text align=center, text={response}, raise=3pt}}] (5) to [bend right=15] (10){};
+			
+			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={sync}, raise=3pt}}] (10) to [bend right=15] (7){};
+			
+			\tikzstyle{EdgeStyle}=[bend right=15, -, green]
+			\Edge[](16)(15)
+			\Edge[](15)(14)
+			\tikzstyle{EdgeStyle}=[bend left=10, -, green]
+			\Edge[](14)(12)
+			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (12) to [bend left=15] (8){};
+			
+			\tikzstyle{EdgeStyle}=[-, gray]
+			\Edge[](7)(8)
+			
+			
+			%\draw[edge] (16) -- (15) -- (14) -- (12);
 %			
 %			\tikzstyle{edge day2} = [draw, thick, -, black, dotted]
 %			\draw[edge day2] (11) -- (7) -- (4);
 %			
 %			\tikzstyle{edge day3} = [draw, thick, -, black]
 %			\draw[edge day3] (5) -- (10) -- (16);
-%
-%		\end{tikzpicture}
-%	\caption{Past and present 3-member quorums in a 16-node network, day 3.}
-%	\label{fig:figure5}
-%\end{figure}
+
+		\end{tikzpicture}
+	\caption{The hidden service operator Bob anonymously sends a record to the \emph{quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph{quorum}, which Alice anonymously queries for Bob's domain name.}
+	\label{fig:bigPicture}
+\end{figure}
+
+\subsection{General Example}
+
+Generally, with $ N \in \textbf{Z} $ \emph{candidate} nodes, a \emph{quorum} of size $ M \in \textbf{Z} $, $ H \in \textbf{Z} $ hidden services, and $ C \in \textbf{Z} $ clients,
 
 \section{Fault Tolerance}
 

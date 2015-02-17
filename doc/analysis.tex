@@ -1,6 +1,5 @@
 
-
-\chapter{\uppercase{Analysis}}
+\chapter{ANALYSIS}
 
 general analysis...
 
@@ -45,6 +44,12 @@ Clearly Faythe needs to digitally sign and publish information that Bob can give
 When Alice requests a record from Bob, if the record $ r $ exists Bob can return it to Alice, thus proving its existence. If Bob claims that $ r $ does not exist and $ r $ would map to a bucket containing 0, Bob need only send to Alice $ col_{j} $ containing that bucket. Alice can check the digital signature and confirm for herself in O(1) time that no $ r $ maps there. If the bucket contains 1, Bob sends to Alice $ col_{j} $ containing the bucket and $ ht_{k} $ which would contain $ r $ if $ r $ existed, Alice then confirms both signatures, observes in O(1) time that $ col_{j} $ contains a 1 at $ r $'s mapping, and sees in O(log($ k $)) time that $ r $ does not exist in $ ht_{k} $. Thus in all cases Alice knows that Bob is not lying about the non-existence of $ r $, assuming that Faythe is trustworthy to Bob and thus to Alice.
 
 % what if only one $ r $ maps to bucket containing 1, but Bob says that the request doesn't exist? I think this is a non-problem, but must prove
+
+\subsection{Name Squatting and Record Flooding}
+
+Alice may attempt a denial-of-service attack by obtaining a set of names for the sole purpose of denying them to others. Alice may also wish to create many name requests and flood the \emph{quorum} with a large quantity of records. Both of these attacks are made computationally difficult and time-consuming for Alice because of the proof-of-work. If Alice has access to large computational resources or to custom hardware she may be able to process the PoW more efficiently than legitimate users, and this can be a concern.
+
+The proof-of-work scheme is carefully designed to limit Alice to the same capabilities as legitimate users, thus significantly deterring this attack. The use of scrypt makes custom hardware and massively-parallel computation expensive, and the digital signature in every record forces the hidden service operator to resign the fields for every iteration in the proof-of-work. While the scheme would not entirely prevent the operator from outsourcing the computation to a cloud service or to a secondary offline resource, the other machine would need the hidden service private key to regenerate \emph{recordSig}, which the operator can't reveal without compromising his security. However, the secondary resource could perform the scrypt computations in batch without generating \emph{recordSig}, but it would always perform more than the necessary amount of computation because it would could not generate the SHA-384 hash and thus know when to stop. Furthermore, offloading the computation would still incur a cost to the hidden service operator, who would have to pay another party for the consumed computational resources. Thus the scheme always requires some cost when claiming a domain name. 
 
 \section{Performance}
 
