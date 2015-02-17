@@ -16,7 +16,35 @@ If an attacker, Eve, controls some Tor nodes (who may be assumed to be colluding
 
 Eve may attempt to manipulate the consensus document in such a way that the SHA-384 hash is one of these $ k $ seeds. Eve may instruct her Tor nodes to upload a custom status report to the authority nodes in an attempt to maliciously manipulate the contents of the consensus document, but SHA-384's strong preimage resistance and the unknown state and number of Tor nodes outside Eve's control makes this attack infeasible. As of the time of this writing, the best preimage break of SHA-512 is only partial (57 out of 80 rounds in $ 2^{511} $ time\cite{li2012converting}) so the time to break preimage resistance of full SHA-384 is still $ 2^{384} $ operations. This also implies that Eve cannot determine in advance the next consensus document, so the new quorum cannot be predicted. If Eve has compromised at least some of the Tor authority nodes she has significantly more power in manipulating the consensus document for her own purposes, but this attack vector can also break the Tor network as a whole and is thus outside the scope of our analysis. Therefore, the computation required to maliciously generate the quorum puts this attack vector outside the reach of computationally-bound adversaries.
 
-Requirements for stable and fast nodes makes spinning up lots of nodes (LizardSquad) more challenging.
+EsgalDNS and the Tor network as a whole are both susceptible to Sybil attacks, though these attacks are made significantly more challenging by the slow building of trust in the Tor network. Eve may attempt to introduce large numbers of nodes under her control in an attempt to increase her chances of at least one of the becoming members of the \emph{quorum}. Sybil attacks are not unknown to Tor; in December 2014 the black hat hacking group LizardSquad launched ~3000 nodes in the Google Cloud in an attempt to intercept the majority of Tor traffic. However, as Tor authority nodes grant consensus weight to new Tor nodes very slowly, despite controlling a third of all Tor nodes, these 3,000 nodes moved 0.2743 percent of Tor traffic before they were banned from the Tor network. The Stable and Fast flags are also granted after weeks of uptime and a history of reliability. As nodes must have these flags to be qualified as a \emph{quorum} \emph{candidate}, these large-scale Sybil attacks are financially demanding and time-consuming for Eve.
+
+\subsection{Non-existence Forgery}
+
+In any client-server setting (such as queries to a central DNS server) one security concern is ensuring that the response is accurate and came from a trusted source rather than an MITM attacker. In other words, DNS records must be resistant to spoofing attacks. This is an existing weakness in the Clearnet DNS and other systems such as Namecoin. In Namecoin this can be resolved by obtaining a complete copy of the blockchain, and the most common solution on the Clearnet is to verify an SSL Certificate sent from the server against the requested domain name. Generally speaking, DNS records can be authenticated through digital signatures or certificates which anyone pre-loaded with the public keys can verify. In EsgalDNS, Tor clients have the public keys of all nodes, including the quorum, and can verify records against the hidden service's public key.
+
+While it is critical in a high-security environment for anyone to be able to verify DNS records, of equal importance is ensuring the verifiability of the non-existence of records. Namely, if client Alice queries a server Bob for a record from a trustworthy or verifiable source Faythe, if the record exists and is returned to Alice, Alice can verify that it came from Faythe. However, if the record does not exist, how can Alice be sure that Bob is not lying about its non-existence without querying Faythe for confirmation? Without a counter-measure to address this problem, this weakness can degenerate into a denial-of-service attack if Bob is malicious towards Alice.
+
+\subsubsection{Non-existence Map}
+
+Clearly Faythe needs to digitally sign and publish information that Bob can give to Alice to prove that a name does not exist. One of the primary challenges with this approach is that the space of possible names so vast that attempting to enumerate and digitally sign all names that are not taken is highly impractical. We solve this problem by using a very compact hashtable and a dynamic array to hold collisions. We call this data structure a \emph{Non-existence Map} and for practicality it is signed in pieces by Faythe and mirrored by Bob to Alice. It is assumed that Faythe is fully synchronized and up-to-date with the EsgalDNS network. Faythe generates the \emph{Non-existence Map} in the following way:
+
+\begin{enumerate}
+	\item Create an empty hashtable $ ht $ with $ a * n $ buckets, $ n $ is the number of item in \emph{NameCache}. $ ht $'s buckets are values, represented in binary, where a ``1'' indicates that at least one key maps to that bucket, and a ``0'' indicates that no key maps to that bucket. $ ht $ buckets need not remember keys matched into them.
+	\item Create a dynamic array $ col $.
+	\item For each name $ name $ in \emph{NameCache},
+	\begin{enumerate}
+		\item Generate $ i = \textnormal{SHA-384}(name) \bmod a * n $.
+		\item If bucket $ i $ in $ ht $ is 0, set bucket $ i $ to 1.
+		\item If bucket $ i $ in $ ht $ is 1, add the first $ k $ bytes of \textnormal{SHA-384}($ name $) to $ col $.
+	\end{enumerate}
+	\item Sort $ col $ by $ i $.
+	\item Divide $ col $ into $ x $ equal-sized sections and let $ col_{ 1 \le j \le x } $ be $ section_{j} $, $ j $, and $ \textnormal{signature}_{j, section_{j}} $.
+	\item Divide $ ht $ into $ y $ equal-sized sections and let $ ht_{ 1 \le k \le y } $ be $ section_{k} $, $ k $, and $ \textnormal{signature}_{k, section_{k}} $.
+\end{enumerate}
+
+When Alice requests a record from Bob, if the record $ r $ exists Bob can return it to Alice, thus proving its existence. If Bob claims that $ r $ does not exist and $ r $ would map to a bucket containing 0, Bob need only send to Alice $ col_{j} $ containing that bucket. Alice can check the digital signature and confirm for herself in O(1) time that no $ r $ maps there. If the bucket contains 1, Bob sends to Alice $ col_{j} $ containing the bucket and $ ht_{k} $ which would contain $ r $ if $ r $ existed, Alice then confirms both signatures, observes in O(1) time that $ col_{j} $ contains a 1 at $ r $'s mapping, and sees in O(log($ k $)) time that $ r $ does not exist in $ ht_{k} $. Thus in all cases Alice knows that Bob is not lying about the non-existence of $ r $, assuming that Faythe is trustworthy to Bob and thus to Alice.
+
+% what if only one $ r $ maps to bucket containing 1, but Bob says that the request doesn't exist? I think this is a non-problem, but must prove
 
 \section{Performance}
 

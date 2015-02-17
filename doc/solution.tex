@@ -2,7 +2,7 @@
 
 \section{Overview}
 
-I propose a new DNS system for Tor hidden services, which I am calling EsgalDNS. \emph{Esgal} is a Sindarin Elvish noun from the works of J.R.R Tolkien, meaning "veil" or "cover that hides".\cite{SindarinDict} EsgalDNS is a distributed DNS system embedded within the Tor network on top of the existing Tor hidden service infrastructure. EsgalDNS shares some design principles with Namecoin and other DNS systems, and its usage is similar to the traditional Clearnet DNS system. At a high level, the system is powered at any given time by a randomly-chosen subset of Tor nodes, whose primary responsibilities are to receive new DNS records from hidden service operators, propagate the records to all parties, and save the records in a main long-term data structure. Other Tor nodes may mirror this data structure, distributing the load and responsibilities to many Tor nodes. The system supports a variety of command and control operations including Query,s Create, Modify, Move, Renew, and Delete. 
+I propose a new DNS system for Tor hidden services, which I am calling EsgalDNS. \emph{Esgal} is a Sindarin Elvish noun from the works of J.R.R Tolkien, meaning ``veil'' or ``cover that hides''.\cite{SindarinDict} EsgalDNS is a distributed DNS system embedded within the Tor network on top of the existing Tor hidden service infrastructure. EsgalDNS shares some design principles with Namecoin and other DNS systems, and its usage is similar to the traditional Clearnet DNS system. At a high level, the system is powered at any given time by a randomly-chosen subset of Tor nodes, whose primary responsibilities are to receive new DNS records from hidden service operators, propagate the records to all parties, and save the records in a main long-term data structure. Other Tor nodes may mirror this data structure, distributing the load and responsibilities to many Tor nodes. The system supports a variety of command and control operations including Query,s Create, Modify, Move, Renew, and Delete. 
 
 \section{Components}
 
@@ -34,50 +34,6 @@ Any party at any time may derive the list of \emph{candidate} nodes and the \emp
 	\item Let the first $ M $ nodes, numbered $ 1 .. M $, define the \emph{quorum}.
 \end{enumerate}
 
-%\begin{figure}[htbp]
-%	\centering
-%	\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=2.5cm,
-%			thick, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
-%
-%			\node[main node] (1) {$Q_{1}$};
-%			\node[main node] (2) [right of=1] {};
-%			\node[main node] (3) [right of=2] {$Q_{1}$};
-%			\node[main node] (4) [right of=3] {$Q_{2}$};
-%
-%			\node[main node] (5) [below of=1] {$Q_{3}$};
-%			\node[main node] (6) [right of=5] {$Q_{1}$};
-%			\node[main node] (7) [right of=6] {$Q_{2}$};
-%			\node[main node] (8) [right of=7] {};
-%		  
-%			\node[main node] (9) [below of=5] {};
-%			\node[main node] (10) [right of=9] {$Q_{3}$};
-%			\node[main node] (11) [right of=10] {$Q_{2}$};
-%			\node[main node] (12) [right of=11] {};
-%
-%			\node[main node] (13) [below of=9] {};
-%			\node[main node] (14) [right of=13] {};
-%			\node[main node] (15) [right of=14] {};
-%			\node[main node] (16) [right of=15] {$Q_{3}$};
-%		  
-%			%http://www.texample.net/tikz/examples/tkz-berge/
-%			%http://www.texample.net/tikz/examples/graph/
-%			
-%			\tikzstyle{EdgeStyle}=[bend left, -, dotted]
-%			\tikzstyle{edge day1} = [draw, thick, -, black, dotted]
-%			\Edge[](1)(3)
-%			\draw[edge day1] (3) -- (6);
-%			
-%			\tikzstyle{edge day2} = [draw, thick, -, black, dotted]
-%			\draw[edge day2] (11) -- (7) -- (4);
-%			
-%			\tikzstyle{edge day3} = [draw, thick, -, black]
-%			\draw[edge day3] (5) -- (10) -- (16);
-%
-%		\end{tikzpicture}
-%	\caption{Past and present 3-member quorums in a 16-node network, day 3.}
-%	\label{fig:figure5}
-%\end{figure}
-
 The consensus document is an authenticated source of information and entropy that can be safely distributed publicly, so all parties --- in particular Tor nodes and clients --- agree on the members of the \emph{quorum}. As the \emph{quorum} is determined by the consensus document at the beginning of the day, \emph{quorum} nodes have an effective lifetime of 24 hours before they are replaced by a new \emph{quorum}.
 
 \subsubsection{Qualifications}
@@ -96,15 +52,7 @@ To meet the first requirement, Tor nodes must demonstrate their readiness to acc
 
 For this last step, while ideally this information could be placed in a special field set aside for this purpose, to ease integration with existing Tor infrastructure and third-party websites that parse the consensus document (such as Globe or Atlas) we use the Contact field, a user-defined optional entry that Tor relay operators typically use to list methods of contact such as email addresses and PGP keys. EsgalDNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends portions of any donations to that address, presumably to the Tor relay operator.
 
-The result is appended to the end of the Contact field, and must be updated at least every 24 hours. To become a candidate for membership in the quorum, a node must be a fast and stable node (flags determined and assigned by authority nodes) and must publish this truncated hash that is in the majority of hashes published by other Tor nodes. This can be easily be determined by all parties holding a recent or archived copy of the consensus document.
-
-
-
-% After a Tor node performs a synchronization, they generate a SHA-384 hash of the page-chain used by the majority of the quorum nodes in the previous day. This is not the same thing as the page-chain that the node itself may choose, but rather its information that everyone should easily agree upon, but that can only be determined by fetching and analysing the entire database. This does not thwart malicious collusion, but our system tolerates a low percentage of that, so we don't consider that a significant problem.
-
-The generated SHA-384 hash can then be embedded in the consensus document. 
-
- To embed the hash, the hash is first converted to base64, truncated to 6 bytes, and surrounded by parenthesis. 
+The result is appended to the end of the Contact field, and must be updated at least every 24 hours. To become a candidate for membership in the quorum, a node must be a fast and stable node (flags determined and assigned by authority nodes) and must publish this truncated hash that is in the majority of hashes published by other Tor nodes. This can be easily be determined by all parties holding a recent or archived copy of the consensus document. The rules of the network will cause these hashes to be the same across all up-to-date parties, even if there are disagreements among them as to which page-chain to follow. This approach does not thwart malicious collusion, but our system tolerates a low percentage of that, so we don't consider that a significant problem.
 
 \subsection{Page}
 
@@ -114,7 +62,7 @@ A \emph{page} is long-term JSON-encoded textual database held by quorum nodes. I
 	\item[prevHash] \hfill \\
 		The SHA-384 hash of \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, and \emph{nodeKey} of a previous page.
 	\item[recordList] \hfill \\
-		An array of records, sorted alphabetical or in any other globally deterministic manner.
+		An array of records, sorted alphabetically or in any other globally deterministic manner.
 	\item[consensusDocHash] \hfill \\
 		The SHA-384 of the morning's consensus document.
 	\item[nodeFingerprint] \hfill \\
@@ -130,7 +78,7 @@ To generate its page, it first picks a page from the past quorums by the followi
 %according to the following criteria
 
 \begin{enumerate}
-	\item Of all chains of pages in the database, ignore any invalid pages and any pages that form chains using those invalid pages. A page may be invalid if it contains records that do not follow the below specifications, its \emph{consensusDocHash} field does not match the hash of the consensus document on that day, or if \emph{pageSig} does not verify. Invalid pages may suggest that the quorum node was not fully synchronized, that it acted maliciously, or that there was data corruption.
+	\item Of all chains of pages in the database, ignore any invalid pages and any pages that form chains using those invalid pages. A page may be invalid if it contains records that do not follow specifications, its \emph{consensusDocHash} field does not match the hash of the consensus document on that day, or if \emph{pageSig} does not verify. Invalid pages may suggest that the quorum node was not fully synchronized, that it acted maliciously, or that there was data corruption.
 	\item From these valid chains, find the chain that has been used by the largest number of Tor quorum nodes (not counting today's quorum) and choose the most recent page.
 	\item If there are multiple chains that satisfy the second condition, choose from among them the page that contains the largest amount of records.
 	\item If the third condition cannot be resolved, choose from among them the page that is held by the smallest $ i $ in the $ M $ quorum nodes.
@@ -342,7 +290,9 @@ At all levels, the server may return the introduction point for that hidden serv
 
 \section{Examples and Structural Induction}
 
-In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $, a hidden service \emph{Bob}, and a Tor client \emph{Alice}, the procedures are simple. On $ \textrm{day}_{0} $, $ c_{1} $ generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} $, but does not accept records for this initial page. For reference, $ p_{1,1} $ appears as 
+\subsection{Base Case}
+
+In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $, a hidden service Bob, and a Tor client Alice, the procedures are relatively simple. On $ \textrm{day}_{0} $, $ c_{1} $ generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} $, but does not accept records for this initial page. For reference, $ p_{1,1} $ appears as 
 
 \begin{figure}
 \begin{lstlisting}
@@ -358,7 +308,7 @@ In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $
 \label{sampleLabel}
 \end{figure}
 
-On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSFYjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears as:
+On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSF YjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears as:
 
 \begin{figure}
 	\begin{lstlisting}
@@ -396,7 +346,9 @@ $ c_{1} $ adds this record to its snapshot, creating
 			}
 		],
 		"nodeFingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-		"snapshotSig": "FUgZLuFUbh0E0AKbrl1k7/4O7ucPvlr7QFkG1i9/mNFgyH/6TwNQ+d2Gsch/9FaN6ZjyHAnvjmSpRRSngR0UD20FwpAZ1vCVA0qO2yDZeuBd6DiNSkkdSueRHOF7OD95Rb04JmAk1jXjEgFb+BH3hUH54ZEaqlJvQ8tBQJ7YtAc="
+		"snapshotSig": "FUgZLuFUbh0E0AKbrl1k7/4O7ucPvlr7QFkG1i9/mNFgyH/6TwNQ+
+			d2Gsch/9FaN6ZjyHAnvjmSpRRSngR0UD20FwpAZ1vCVA0qO2yDZeuBd6DiNS
+			kkdSueRHOF7OD95Rb04JmAk1jXjEgFb+BH3hUH54ZEaqlJvQ8tBQJ7YtAc="
 	}
 	\end{lstlisting}
 	\caption{Sample snapshot from $ c_{1} $, containing one registration record $ r_{reg} $ from a hidden service.}
@@ -433,7 +385,61 @@ $ c_{1} $ can continue to accept and insert records in this way, but if $ r_{reg
 \label{sampleLabel}
 \end{figure}
 
-This record $ \to $ snapshot $ \to $ page merge process continues for any new records, but assuming $ r_{reg} $ is the only record received that day, $ p_{1,1} $ will not change following the end of $ \textrm{day}_{1} $. On $ \textrm{day}_{2} $, $ c_{1} $, again a $ quorum $ member, will build a page $ p_{1,2} $ that links to $ p_{1,1} $, the latest in the chain with the most links, now 2. Generally speaking, on day $ \textrm{day}_{n} $ $ c_{1} $ will select $ p_{1,n-1} $, as there is no other choice. It alone listens for new records, rejects new registrations if there is a name conflict, and ensure the validity of the entire page-chain database. The Tor client \emph{Alice}, wishing to contact the hidden service \emph{Bob}, may query $ c_{1} $ for ``example.tor'' and $ c_{1} $ returns $ r_{reg} $. \emph{Alice} can then confirm the validity of $ r_{reg} $ herself, follow ``example.tor'' to ``exampleruyw6wgve.onion'', and finally perform the traditional hidden service lookup.
+This record $ \to $ snapshot $ \to $ page merge process continues for any new records, but assuming $ r_{reg} $ is the only record received that day, $ p_{1,1} $ will not change following the end of $ \textrm{day}_{1} $. On $ \textrm{day}_{2} $, $ c_{1} $, again a $ quorum $ member, will build a page $ p_{1,2} $ that links to $ p_{1,1} $, the latest page in the chain with the most links, now 2. Generally speaking, on day $ \textrm{day}_{n} $ $ c_{1} $ will select $ p_{1,n-1} $, as there is no other choice. It alone listens for new records, rejects new registrations if there is a name conflict, and ensure the validity of the entire page-chain database. The Tor client Alice, wishing to contact the hidden service Bob, may query $ c_{1} $ for ``example.tor'' and $ c_{1} $ returns $ r_{reg} $. Alice can then confirm the validity of $ r_{reg} $ herself, follow ``example.tor'' to ``exampleruyw6wgve.onion'', and finally perform the traditional hidden service lookup.
+
+\subsection{First Expansion}
+
+Extending the example to two \emph{candidates} $ c_{1} $ and $ c_{2} $, a mirror $ m_{1} $, a hidden service Bob, and a Tor client Alice, the purpose of the \emph{snapshot} and \emph{NameCache} data structures become more clear. As before, on $ \textrm{day}_{0} $, $ c_{1} $ and $ c_{2} $ both generate and sign initial empty pages but do not accept records. However, on $ \textrm{day}_{1} $, $ c_{1} $ and $ c_{2} $ 
+
+generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} $, but does not accept records for this initial page.
+
+\subsection{General Example}
+
+Generally, with $ N \in \textbf{Z} $ \emph{candidate} nodes, a \emph{quorum} of size $ M \in \textbf{Z} $, $ H \in \textbf{Z} $ hidden services, and $ C \in \textbf{Z} $ clients,
+
+%\begin{figure}[htbp]
+%	\centering
+%	\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=2.5cm,
+%			thick, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
+%
+%			\node[main node] (1) {$Q_{1}$};
+%			\node[main node] (2) [right of=1] {};
+%			\node[main node] (3) [right of=2] {$Q_{1}$};
+%			\node[main node] (4) [right of=3] {$Q_{2}$};
+%
+%			\node[main node] (5) [below of=1] {$Q_{3}$};
+%			\node[main node] (6) [right of=5] {$Q_{1}$};
+%			\node[main node] (7) [right of=6] {$Q_{2}$};
+%			\node[main node] (8) [right of=7] {};
+%		  
+%			\node[main node] (9) [below of=5] {};
+%			\node[main node] (10) [right of=9] {$Q_{3}$};
+%			\node[main node] (11) [right of=10] {$Q_{2}$};
+%			\node[main node] (12) [right of=11] {};
+%
+%			\node[main node] (13) [below of=9] {};
+%			\node[main node] (14) [right of=13] {};
+%			\node[main node] (15) [right of=14] {};
+%			\node[main node] (16) [right of=15] {$Q_{3}$};
+%		  
+%			%http://www.texample.net/tikz/examples/tkz-berge/
+%			%http://www.texample.net/tikz/examples/graph/
+%			
+%			\tikzstyle{EdgeStyle}=[bend left, -, dotted]
+%			\tikzstyle{edge day1} = [draw, thick, -, black, dotted]
+%			\Edge[](1)(3)
+%			\draw[edge day1] (3) -- (6);
+%			
+%			\tikzstyle{edge day2} = [draw, thick, -, black, dotted]
+%			\draw[edge day2] (11) -- (7) -- (4);
+%			
+%			\tikzstyle{edge day3} = [draw, thick, -, black]
+%			\draw[edge day3] (5) -- (10) -- (16);
+%
+%		\end{tikzpicture}
+%	\caption{Past and present 3-member quorums in a 16-node network, day 3.}
+%	\label{fig:figure5}
+%\end{figure}
 
 \section{Fault Tolerance}
 
