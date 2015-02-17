@@ -163,6 +163,10 @@ When a hidden service operator informs a quorum node about a new record, the quo
 % Page identification? Is 4b right? Need to swap all known snapshots! Delete old snapshots!
 %\emph{TODO: this is incomplete. Quorum nodes send and receive a set of snapshots from other quorum nodes. They pass them along. After 4 rounds of share-with-50-percent the information should have reached all quorum nodes with a high probability, so the information can be safely added into the page and the signature updated. Likewise snapshots from other quorum nodes that are 4 rounds old can be added into its page, hence everyone will be in agreement, theoretically at least. Experiments needed and planned.}
 
+\subsection{NameCache}
+
+A \emph{NameCache} is a self-balancing binary search AVL tree of records. Once a machine has obtained a database of \emph{pages} from the \emph{quorum} it extracts the records from the \emph{pages} and adds them all into the \emph{NameCache}. The binary tree structure allows lookups to occur in O(log($ n $)) time, where $ n $ is the number of records.
+
 \subsection{Synchronization}
 
 % todo: how to derive yesterday's consensus doc from today's info
@@ -311,7 +315,7 @@ In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $
 	\label{fig:emptyPage}
 \end{figure}
 
-On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSF YjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears in Figure ~\ref{fig:sampleRecord}. $ c_{1} $ adds this record to its snapshot, creating Figure ~\ref{fig:sampleSnapshot}.
+On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSF YjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears in Figure ~\ref{fig:sampleRecord}. 
 
 \begin{figure}
 	\begin{lstlisting}
@@ -331,29 +335,6 @@ On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and gene
 	\end{lstlisting}
 	\caption{Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.}
 	\label{fig:sampleRecord}
-\end{figure}
-
-\begin{figure}
-	\begin{lstlisting}
-	{
-		"originTime": 1424042032,
-		"recentRecords: [
-			{
-				"prevHash": 0,
-				"recordList": 0,
-				"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-				"nodeFingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-				"pageSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-			}
-		],
-		"nodeFingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-		"snapshotSig": "FUgZLuFUbh0E0AKbrl1k7/4O7ucPvlr7QFkG1i9/mNFgyH/6TwNQ+
-			d2Gsch/9FaN6ZjyHAnvjmSpRRSngR0UD20FwpAZ1vCVA0qO2yDZeuBd6DiNS
-			kkdSueRHOF7OD95Rb04JmAk1jXjEgFb+BH3hUH54ZEaqlJvQ8tBQJ7YtAc="
-	}
-	\end{lstlisting}
-	\caption{Sample snapshot from $ c_{1} $, containing one registration record $ r_{reg} $ from a hidden service.}
-	\label{fig:sampleSnapshot}
 \end{figure}
 
 $ c_{1} $ can continue to accept and insert records in this way, but if $ r_{reg} $ is the only one that $ c_{1} $ receives, at the next 15 minute mark $ c_{1} $ will attempt to propagate this snapshot to other \emph{quorum} nodes. However, as $ c_{1} $ is the only \emph{quorum} node, that step is not necessary here. $ c_{1} $ then adds $ r_{reg} $ into its page, creating $ p_{1,1} $, shown in Figure ~\ref{fig:c1page}.
@@ -390,11 +371,34 @@ This record $ \to $ snapshot $ \to $ page merge process continues for any new re
 
 \subsection{First Expansion}
 
-Extending the example to two \emph{candidates} $ c_{1} $ and $ c_{2} $, a mirror $ m_{1} $, a hidden service Bob, and a Tor client Alice, the purpose of the \emph{snapshot} and \emph{NameCache} data structures become more clear. As before, on $ \textrm{day}_{0} $, $ c_{1} $ and $ c_{2} $ both generate and sign initial empty pages but do not accept records. However, on $ \textrm{day}_{1} $, $ c_{1} $ and $ c_{2} $ 
+%todo: ensure record titles (Registration) are capitalized everywhere
 
-This is illustrated in Figure ~\ref{fig:bigPicture}.
+Extending the example to two \emph{candidates} $ c_{1} $ and $ c_{2} $, a mirror $ m_{1} $, a hidden service Bob, and a Tor client Alice, the purpose of the \emph{snapshot} and \emph{NameCache} data structures become more clear. This is illustrated in Figure ~\ref{fig:bigPicture}. As before, on $ \textrm{day}_{0} $, $ c_{1} $ and $ c_{2} $ both generate and sign initial empty pages but do not accept records. On $ \textrm{day}_{1} $ however, $ c_{1} $ and $ c_{2} $ can both publish hashes of their empty \emph{NameCache} databases. Since there are no \emph{pages} to reference aside from the initial base \emph{pages}, $ c_{1} $ and $ c_{2} $ should both be in agreement and $ m_{1} $, Alice, and Bob can all see that they are \emph{candidates} because their published hashes are in the majority. However, if $ c_{2} $ acts maliciously and causes the rare event that the majority is evenly split, two \emph{quorums} will be generated, which $ c_{1} $ and $ c_{2} $ are each a part of. However, this unlikely scenario does not change the behaviour of the system and everything operates as before. In either case, Bob sends to $ c_{1 \le j \le 2} $ his Registration record. As before, $ c_{j} $ adds the record to its page and at the next 15 minute mark sends the \emph{snapshot} out to the other \emph{quorum} nodes. The snapshot is illustrated in Figure ~\ref{fig:sampleSnapshot}. Then $ c_{1} $ and $ c_{2} $ both have Bob's record, they both hold two pages, and they are in agreement as to the \emph{pages} and data they are using.
 
-generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} $, but does not accept records for this initial page.
+\begin{figure}
+	\begin{lstlisting}
+	{
+		"originTime": 1424042032,
+		"recentRecords: [
+			{
+				"prevHash": 0,
+				"recordList": 0,
+				"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
+				"nodeFingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
+				"pageSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
+			}
+		],
+		"nodeFingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
+		"snapshotSig": "FUgZLuFUbh0E0AKbrl1k7/4O7ucPvlr7QFkG1i9/mNFgyH/6TwNQ+
+			d2Gsch/9FaN6ZjyHAnvjmSpRRSngR0UD20FwpAZ1vCVA0qO2yDZeuBd6DiNS
+			kkdSueRHOF7OD95Rb04JmAk1jXjEgFb+BH3hUH54ZEaqlJvQ8tBQJ7YtAc="
+	}
+	\end{lstlisting}
+	\caption{Sample snapshot from $ c_{j} $, containing one registration record $ r_{reg} $ from a hidden service.}
+	\label{fig:sampleSnapshot}
+\end{figure}
+
+$ m_{1} $ mirrors the \emph{quorum}, so Alice can query $ m_{1} $ for a name and $ m_{1} $ returns the Registration or Ownership Transfer record, whichever appeared later. $ \textrm{day}_{1} $ the \emph{page}-chain has four links: the blank links in the two origin \emph{pages} and the two equal links from the two $ \textrm{day}_{1} $ \emph{pages} to the origin \emph{pages}. Therefore the \emph{quorum} on $ \textrm{day}_{2} $ (again $ c_{1} $ and $ c_{2} $) generate \emph{pages} that reference the $ \textrm{day}_{1} $ page, which the same for $ c_{1} $ and $ c_{2} $. As the days progress, if $ c_{1} $ and $ c_{2} $ ever disagree about the \emph{page} to use and the \emph{quorum} is therefore evenly split, by the rules of \emph{page} selection the following day's \emph{quorum} will choose whichever \emph{page} contains the most records, or $ c_{1} $'s \emph{page} if they are both equally sized.
 
 \begin{figure}[htbp]
 	\centering
@@ -443,15 +447,6 @@ generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} 
 			\tikzstyle{EdgeStyle}=[-, gray]
 			\Edge[](7)(8)
 			
-			
-			%\draw[edge] (16) -- (15) -- (14) -- (12);
-%			
-%			\tikzstyle{edge day2} = [draw, thick, -, black, dotted]
-%			\draw[edge day2] (11) -- (7) -- (4);
-%			
-%			\tikzstyle{edge day3} = [draw, thick, -, black]
-%			\draw[edge day3] (5) -- (10) -- (16);
-
 		\end{tikzpicture}
 	\caption{The hidden service operator Bob anonymously sends a record to the \emph{quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph{quorum}, which Alice anonymously queries for Bob's domain name.}
 	\label{fig:bigPicture}
@@ -459,11 +454,11 @@ generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} 
 
 \subsection{General Example}
 
-Generally, with $ N \in \textbf{Z} $ \emph{candidate} nodes, a \emph{quorum} of size $ M \in \textbf{Z} $, $ H \in \textbf{Z} $ hidden services, and $ C \in \textbf{Z} $ clients,
+Generally, there are $ N \in \textbf{Z} $ \emph{candidate} nodes $ c_{1..N} $, a \emph{quorum} $ q_{1..M} $ of size $ M \in \textbf{Z} $, $ H \in \textbf{Z} $ hidden services $ hs_{1..H} $, and $ C \in \textbf{Z} $ clients $ c_{1..C} $. The $ c_{1..N} $ nodes publish the hashes of their \emph{NameCache} structures and all parties can confirm that they remain \emph{candidate} nodes as long as their hashes are in the majority. In the unlikely scenario (the chance, assuming random behavior, is $ \frac{1}{2} ^ {\frac{N}{2}} $) that the majority is evenly split, $ M $ becomes twice as large as usual. A hidden service $ hs_{1 \le j \le H} $ uploads records to a \emph{quorum} node $ q_{1 \le k \le M} $. Every $ q_{1 \le l \le M} $ shares \emph{snapshots} every 15 minutes with all other $ q_{1 \le p \neq l \le M} $, so that all \emph{quorum} node contains the record from $ hs_{1 \le j \le H} $. These records are saved long-term in \emph{pages}, and every $ q_{1 \le k \le M} $ knows and can verify the \emph{pages} used by all \emph{quorum} members. Assuming perfect behavior and consistent uptime, these \emph{pages} should always be the same. In the event that they diverge, the rules of the network and \emph{page} selection dictate how to select the ``best'' \emph{page}. Any machine may become a \emph{mirror} by synchronizing against the \emph{quorum} and fetching all \emph{pages}. The $ c_{1 \le y \le C} $ can then query that \emph{mirror} for names and perform deep verification on the response. As all names link to either other .tor or .onion names and eventually lead to .onion names, any client can resolve a name into a hidden service .onion address and perform the hidden service lookup in the traditional manner.
 
 \section{Fault Tolerance}
 
-Tor nodes have no reliability guarantee and may disappear from the network momentarily or permanently at any time. 
+Tor nodes have no reliability guarantee and may disappear from the network momentarily or permanently at any time. Solution...
 
 
 
