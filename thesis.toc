@@ -28,7 +28,7 @@
 \contentsline {subsection}{\numberline {6.2.3}Page}{24}{subsection.6.2.3}
 \contentsline {subsection}{\numberline {6.2.4}Snapshot}{26}{subsection.6.2.4}
 \contentsline {subsection}{\numberline {6.2.5}Synchronization}{27}{subsection.6.2.5}
-\contentsline {subsection}{\numberline {6.2.6}Registration Creation}{27}{subsection.6.2.6}
+\contentsline {subsection}{\numberline {6.2.6}Registration Creation}{28}{subsection.6.2.6}
 \contentsline {subsection}{\numberline {6.2.7}Record Modification}{30}{subsection.6.2.7}
 \contentsline {subsection}{\numberline {6.2.8}Ownership Transfer}{30}{subsection.6.2.8}
 \contentsline {subsection}{\numberline {6.2.9}Domain Renewal}{30}{subsection.6.2.9}
@@ -39,20 +39,20 @@
 \contentsline {subsection}{\numberline {6.3.1}Base Case}{33}{subsection.6.3.1}
 \contentsline {subsection}{\numberline {6.3.2}First Expansion}{36}{subsection.6.3.2}
 \contentsline {subsection}{\numberline {6.3.3}General Example}{37}{subsection.6.3.3}
-\contentsline {section}{\numberline {6.4}Fault Tolerance}{37}{section.6.4}
-\contentsline {chapter}{\numberline {7}ANALYSIS}{38}{chapter.7}
-\contentsline {section}{\numberline {7.1}Security}{38}{section.7.1}
-\contentsline {subsection}{\numberline {7.1.1}Quorum-level Attacks}{38}{subsection.7.1.1}
-\contentsline {subsubsection}{Malicious Quorum Generation}{38}{section*.16}
-\contentsline {subsection}{\numberline {7.1.2}Non-existence Forgery}{39}{subsection.7.1.2}
-\contentsline {subsubsection}{Non-existence Map}{40}{section*.17}
-\contentsline {subsection}{\numberline {7.1.3}Name Squatting and Record Flooding}{41}{subsection.7.1.3}
-\contentsline {section}{\numberline {7.2}Performance}{42}{section.7.2}
-\contentsline {subsection}{\numberline {7.2.1}Load}{42}{subsection.7.2.1}
-\contentsline {chapter}{\numberline {8}RESULTS}{43}{chapter.8}
-\contentsline {section}{\numberline {8.1}Implementation}{43}{section.8.1}
-\contentsline {section}{\numberline {8.2}Discussion}{43}{section.8.2}
-\contentsline {subsection}{\numberline {8.2.1}Guarantees}{43}{subsection.8.2.1}
-\contentsline {chapter}{\numberline {9}FUTURE WORK}{44}{chapter.9}
-\contentsline {chapter}{\numberline {10}CONCLUSION}{45}{chapter.10}
-\contentsline {chapter}{REFERENCES}{46}{chapter.11}
+\contentsline {section}{\numberline {6.4}Fault Tolerance}{38}{section.6.4}
+\contentsline {chapter}{\numberline {7}ANALYSIS}{39}{chapter.7}
+\contentsline {section}{\numberline {7.1}Security}{39}{section.7.1}
+\contentsline {subsection}{\numberline {7.1.1}Quorum-level Attacks}{39}{subsection.7.1.1}
+\contentsline {subsubsection}{Malicious Quorum Generation}{39}{section*.16}
+\contentsline {subsection}{\numberline {7.1.2}Non-existence Forgery}{40}{subsection.7.1.2}
+\contentsline {subsubsection}{Non-existence Map}{41}{section*.17}
+\contentsline {subsection}{\numberline {7.1.3}Name Squatting and Record Flooding}{42}{subsection.7.1.3}
+\contentsline {section}{\numberline {7.2}Performance}{43}{section.7.2}
+\contentsline {subsection}{\numberline {7.2.1}Load}{43}{subsection.7.2.1}
+\contentsline {chapter}{\numberline {8}RESULTS}{44}{chapter.8}
+\contentsline {section}{\numberline {8.1}Implementation}{44}{section.8.1}
+\contentsline {section}{\numberline {8.2}Discussion}{44}{section.8.2}
+\contentsline {subsection}{\numberline {8.2.1}Guarantees}{44}{subsection.8.2.1}
+\contentsline {chapter}{\numberline {9}FUTURE WORK}{45}{chapter.9}
+\contentsline {chapter}{\numberline {10}CONCLUSION}{46}{chapter.10}
+\contentsline {chapter}{REFERENCES}{47}{chapter.11}

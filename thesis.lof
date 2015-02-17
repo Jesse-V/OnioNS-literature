@@ -7,7 +7,7 @@
 \contentsline {figure}{\numberline {5.1}{\ignorespaces Three traditional Namecoin transactions.\relax }}{17}{figure.caption.7}
 \contentsline {figure}{\numberline {5.2}{\ignorespaces A sample blockchain.\relax }}{18}{figure.caption.8}
 \contentsline {figure}{\numberline {6.1}{\ignorespaces The hidden service operator uses his existing circuit (green) to inform \emph {quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph {snapshots} to all other \emph {quorum} nodes $ Q_{1..4} $, where it is recorded in \emph {pages} for long-term storage.\relax }}{31}{figure.caption.10}
-\contentsline {figure}{\numberline {6.2}{\ignorespaces A sample empty \emph {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }}{33}{figure.caption.11}
+\contentsline {figure}{\numberline {6.2}{\ignorespaces A sample empty \emph {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }}{34}{figure.caption.11}
 \contentsline {figure}{\numberline {6.3}{\ignorespaces Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }}{34}{figure.caption.12}
 \contentsline {figure}{\numberline {6.4}{\ignorespaces Sample snapshot from $ c_{1} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }}{35}{figure.caption.13}
 \contentsline {figure}{\numberline {6.5}{\ignorespaces $ c_{1} $'s page, containing a single registration record.\relax }}{36}{figure.caption.14}

@@ -145,33 +145,20 @@ When a hidden service operator informs a quorum node about a new record, the quo
 
 %todo: do I describe how records are validated?
 
-Where $ snap_{x} $ is the current snapshot at propagation iteration $ x $, at each 15 minute mark each active quorum node $ q_{j} $ performs the following:
+\emph{Quorum} nodes then propagate these records to each other in such a way that each \emph{quorum} node knows the \emph{pages} of all other \emph{quorum} nodes. We now describe this record distribution process. Where $ snap_{x} $ is the current snapshot at propagation iteration $ x $, at each 15 minute mark each active quorum node $ q_{j} $ performs the following:
 
 \begin{enumerate}
 	\item Generates a new snapshot, labelled $ snap_{x+1} $, sets \emph{originTime} to the current time, creates \emph{snapshotSig}, and sets $ snap_{x+1} $ to be the currently active snapshot for collecting new records.
-	\item With each node $ q_{k} $ in the \emph{quorum}, $ q_{j} $ sends $ snap_{x} $ to $ q_{k} $, and receives $ s_{x, k} $ in return.
-	\item After all swapping is complete, $ node_{j} $
+	\item Merges $ snap_{x} $ into its \emph{page} and regenerates \emph{pageSig}.
+	\item With each node $ q_{k} $ in the \emph{quorum}, 
+		\begin{enumerate}
+			\item Sends $ snap_{x} $ and $ <pageSig_{q_{j}}, nodeFingerprint_{q_{j}}> $ to $ q_{k} $.
+			\item Receives $ s_{x, k} $ and $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ from $ q_{k} $.
+			\item Merges into $ s_{x, k} $ into its copy of $ q_{k} $'s \emph{page} and confirms that $ pageSig_{q_{k}} $ validates the result. If it does not, $ q_{k} $ was misbehaving and $ node_{j} $ should ask $ q_{k} $ for its \emph{page} to resolve the discrepancy.
+		\end{enumerate}
+	\item Increments $ x $.
 	
-get sigs from other q nodes too to thwart manip	
-	
-%		\begin{enumerate}
-%			\item 
-%
-%
-%
-%	
-%	\item Randomly selects $ M / 2 $ nodes from the $ M $ quorum nodes, defining \emph{swapSet}.
-%	\item With each node $ node_{k} $ in \emph{swapSet}, it swaps $ snap_{x} $ and \emph{pageSig} with node $ node_{k} $, receiving a snapshot $ s_{x, k} $ and signature $ sig_{x, k} $, and then verifies the validity of $ s_{x, k} $. For efficiency, if $ node_{k} $ in turn selects $ node_{j} $, no swap will need to take place.
-%	\item After all swapping is complete, $ node_{j} $
-%		\begin{enumerate}
-%			\item Archives $ snap_{x} $ and each $ s_{x, k} $ and $ sig_{x, k} $ for all $ k $ in \emph{swapSet}.
-%			\item Updates its copy of $ node_{k} $'s page by merging in $ s_{x-4, k} $, then confirming that $ sig_{x, k} $ verifies against the generated page. If not, it asks $ node_{k} $ for its page so that the discrepancy can be resolved.
-%			\item Updates its page by merging the contents of $ snap_{x-4} $ into \emph{recordList} and regenerates \emph{pageSig}.
-%			\item Deletes $ snap_{x-4} $.
-%			\item Increments $ x $.
-%		\end{enumerate}
 \end{enumerate}
-
 
 % Page identification? Is 4b right? Need to swap all known snapshots! Delete old snapshots!
 %\emph{TODO: this is incomplete. Quorum nodes send and receive a set of snapshots from other quorum nodes. They pass them along. After 4 rounds of share-with-50-percent the information should have reached all quorum nodes with a high probability, so the information can be safely added into the page and the signature updated. Likewise snapshots from other quorum nodes that are 4 rounds old can be added into its page, hence everyone will be in agreement, theoretically at least. Experiments needed and planned.}
@@ -286,31 +273,23 @@ A hidden service operator uses a Tor circuit to contact a \emph{quorum} node. Fo
 
 \subsection{Registration Query}
 
-When a Tor user wishes to visit example.tor, his client software must first perform a query to obtain the .onion address that corresponds to that domain name. The client must be able to verify that the received record originated from the desired hidden service, akin to SSL certificates on the Clearnet. Furthermore, the lookup must happen in an anonymous or privacy-enhanced manner and the details of the query must be handled behind-the-scenes, invisibly to the user. These policies satisfy our verifiability, privacy, and simplicity requirements.
+% todo: recursive resolution of the name, check for deleted or moved domains
 
-At startup, the Tor client software may build a circuit to a quorum node or to any node mirroring the database. He then asks the node server for the domain name. Depending on the verification level specified by the client, this could be limited or large amounts of information. As we mentioned in the requirements section, it is impractical to require the client to download the entire DNS database to perform verification, so instead the client can perform various degrees of verification with minimal information.
+When a Tor user Alice wishes to visit example.tor, her client software must perform a query to obtain the .onion address that corresponds to that domain name. To meet our original requirements, Alice must be able to verify that the received record originated from the desired hidden service (akin to SSL certificates on the Clearnet), the lookup must happen in a privacy-enhanced manner, and the details of the query must be handled behind-the-scenes, invisibly to the user.
 
-At level 1, the server returns just returns the creation record. The client software then extracts the fields, uses \emph{pubHSKey} to confirm that \emph{recordSig} verifies the record, then confirms the proof-of-work. The client then uses \emph{pubHSKey} to generate the hidden service .onion address (eight bytes of the base32-encoded SHA-1 hash of the PKCS.1 DER encoding of \emph{pubHSKey}) and looks up the hidden service in the traditional manner. The lookup fails if the service has not published a recent hidden service desciptor to the distributed hash table, otherwise the lookup goes through. End-to-end verification is complete when \emph{pubHSKey} can be successfully used to encrypt the hidden service cookie and the service proves that it can decrypt $ sec $.
+At startup, Alice builds a circuit to any \emph{candidate} node $ n_{s} $ that meets the qualification requirements previously described. Alice then asks $ n_{s} $ for the desired name and a verification level, which is 0 if not specified. As we mentioned in the Requirements section, it is impractical to require Alice to perform a full synchronization and download all \emph{pages} in order to verify the uniqueness and trustworthiness of a returned record. Therefore Alice can rely on her existing at least partial trust of the Tor network and perform various degrees of verification with minimal information.
 
-At level 2, the server return the record, the page that it was included in, the \emph{pageSig} from all quorum nodes on that day, and an archive of the consensus document. This is \emph{width verification}; the client can verify the authenticity of the consensus document, determine the old quorum members and their keys, hash the page, and then verify that all the \emph{pageSig}s verify against that hash. The client then proceeds with record verification and hidden service lookup, as specified in level 1.
+If Alice's verification level is 0, $ n_{s} $ returns only the Registration record or the Ownership Transfer record, whichever is newer. Alice extracts the fields, uses \emph{pubHSKey} to confirm that \emph{recordSig} verifies the record, then confirms the proof-of-work. Finally, Alice uses \emph{pubHSKey} to generate the hidden service .onion address (16 bytes of the base32-encoded SHA-1 hash of \emph{pubHSKey} in PKCS.1 DER encoding) and looks up the hidden service in the traditional manner. The lookup fails if the service has not published a recent hidden service desciptor to the distributed hash table, otherwise the lookup goes through. End-to-end verification is complete when \emph{pubHSKey} can be successfully used to encrypt the hidden service cookie and the service proves that it can decrypt $ sec $.
 
-At level 3, the server return the record, the page that contained that record, and the pages that form the chain below it. This is \emph{depth verification}; the client can confirm the length of the page-chain and records contained within. This is demanding both in computation and in bandwidth usage, but is an extremely thorough level of verification. 
+If Alice requests verification level 1, $ n_{s} $ returns the record, a \emph{page} from any \emph{quorum} node that contained it, and and an archive of the consensus document. Alice can verify the authenticity of the consensus document, can determine the \emph{quorum} and extract their keys, and verify the \emph{page} that $ n_{s} $ gave her. Alice then proceeds with record verification and hidden service lookup, as specified in level 1.
 
-\emph{TODO: at level 4, include consensus documents so that the old quorums can be found?}
+At level 2, $ n_{s} $ returns to Alice all material from level 1, but also includes \emph{pageSig} from all \emph{quorum} nodes on that day. This is width verification as Alice can confirm that the majority of the \emph{quorum} used that \emph{page}, and that $ n_{s} $ didn't pick a \emph{quorum} node that performed abnormally.
 
-At all levels, the server may return the introduction point for that hidden service, which the node can determine in advance by querying the distributed hash table and then cashing the result. This would significantly improve performance because the client can skip that step.
+At level 3, $ n_{s} $ returns the same as level 1, but also sends the \emph{pages} that form the chain below it. Alice can confirm this depth verification by following the \emph{page}-chain back in time, obtaining the old consensus documents, and verifying the \emph{pageSigs} and the records contained within every \emph{page}. This is a very thorough level of verification but is also very demanding in terms of computation and bandwidth usage.
 
-
-%At a high level, domain registrations are broadcasted through a Tor circuit to all committee nodes. Every node then analyses the registration as well as its knowledge of the chain and makes a decision. If the registration is invalid, the node rejects with an appropriate flag. If the domain name is already taken, the node returns a flag along with the pre-existing registration. Otherwise, it digitally signs its approval and the proposal itself and distributes this to the rest of the committee. It then waits for the rest of the committee votes. Since every Tor node has the up-to-date public keys of all other nodes due to the consensus documents, every committee member can verify the votes of all other committee members. Once the node confirms that all committee nodes received the same proposal and that a significant majority indicate that the domain is both valid and available, it adds the registration to its local storage. More importantly, the registration is recorded to an append-only endless scroll distributed within the Tor network. Thus domain names are consumed in a first-come-first-serve basis.
+As an optimization, $ n_{s} $ may have queried Tor's distributed hash table for the hidden service in advance and cached its introduction point. $ n_{s} $ can then return to Alice this introduction point, significantly improving performance on Alice's end because she would not need to query the hash table herself and can simply skip to building circuits to the hidden service.
 
 %The scroll is a distributed and highly redundant chained data structure that slowly rolls through the Tor network. The scroll is $ N $ by $ M $ in shape and consists of two primary components: \emph{blocks} and \emph{captures}. Blocks contain one or more captures, and blocks are duplicated across the $ M $ committee nodes. Each capture is a collection of information from one day; it contains the consensus document from the previous morning, a list of domain registrations approved that day, the approval sign-off digital signatures from the committee nodes on those registrations, the digital signatures from the committee indicating their approval of the integrity of the scroll, and the hash of the previous four captures. In this way, captures are fully verifiable and contain enough information to link to the previous capture, forming a chain. This chain is not held by any single Tor node, rather it is encapsulated within a rolling window of blocks $ N $ days deep. As the days progress, the captures in the oldest block are migrated to the current day's block, rolling the structure forward. Thus the scroll is divided across $ N $ blocks, with copies of each block held by $ M $ Tor nodes. I consider $ N = 16, M = 64 $ reasonable values, which would involve 1,024 nodes at any given time, although $ M $ can be easily changed even while the scroll is in use.
-
-%This distributed system provides the ability to confirm a given domain name is not already in use, without relying on a single central authority. Assuming that the committee nodes are honest in their vote and trustworthy in their nature, this achieves all three properties of Zooko's Triangle. Even if the committee nodes are malicious, I believe I can introduce sufficient countermeasures to make it infeasible for an attacker to successfully manipulate the system, assuming that the majority of the Tor network is trustworthy. More research, design, and implementation is needed, but this I believe is a very promising approach.
-
-
-% Each node then votes on the proposed registration. A vote consists of \emph{decision}, \emph{hash}, \emph{count}, \emph{root}, and \emph{signature} where \emph{decision} is either \emph{available}, \emph{unavailable}, or \emph{invalid}; \emph{hash} is the SHA256 of the registration it received; \emph{count} is the number of valid registrations it has in local storage; \emph{root} is the root node of the Merkle tree formed by those registrations; and \emph{signature} is the digital signature of the preceding fields.
-
-% \emph{count} and \emph{root} will both be used to keep nodes synchronized with one another. Although I won't go into detail here, my plan calls for out-of-date nodes to attempt to synchronize with the node that advertises the highest \emph{count}. Synchronization also involves checking the votes, so falsely advertising a high \emph{count} isn't sufficient to mislead the network. \emph{root} is useful because it enables quick verification that nodes have synchronized lists and the use of a Merkle tree in general allows efficient synchronization when a node is out-of-date.
 
 \section{Examples and Structural Induction}
 
@@ -332,7 +311,7 @@ In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $
 	\label{fig:emptyPage}
 \end{figure}
 
-On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSF YjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears in Figure ~\ref{fig:sampleRecord}.
+On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSF YjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears in Figure ~\ref{fig:sampleRecord}. $ c_{1} $ adds this record to its snapshot, creating Figure ~\ref{fig:sampleSnapshot}.
 
 \begin{figure}
 	\begin{lstlisting}
@@ -353,8 +332,6 @@ On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and gene
 	\caption{Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.}
 	\label{fig:sampleRecord}
 \end{figure}
-
-$ c_{1} $ adds this record to its snapshot, creating Figure ~\ref{fig:sampleSnapshot}.
 
 \begin{figure}
 	\begin{lstlisting}
@@ -379,7 +356,7 @@ $ c_{1} $ adds this record to its snapshot, creating Figure ~\ref{fig:sampleSnap
 	\label{fig:sampleSnapshot}
 \end{figure}
 
-$ c_{1} $ can continue to accept and insert records in this way, but if $ r_{reg} $ is the only one that $ c_{1} $ receives, at the next 15 minute mark $ c_{1} $ will attempt to propagate this snapshot to other \emph{quorum} nodes. However, as $ c_{1} $ is the only \emph{quorum} node, nothing need happen here. $ c_{1} $ then adds $ r_{reg} $ into its page, creating $ p_{1,1} $, shown in Figure ~\ref{fig:c1page}.
+$ c_{1} $ can continue to accept and insert records in this way, but if $ r_{reg} $ is the only one that $ c_{1} $ receives, at the next 15 minute mark $ c_{1} $ will attempt to propagate this snapshot to other \emph{quorum} nodes. However, as $ c_{1} $ is the only \emph{quorum} node, that step is not necessary here. $ c_{1} $ then adds $ r_{reg} $ into its page, creating $ p_{1,1} $, shown in Figure ~\ref{fig:c1page}.
 
 \begin{figure}
 	\begin{lstlisting}
