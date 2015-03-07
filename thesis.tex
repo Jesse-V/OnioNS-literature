@@ -18,6 +18,7 @@
 \usepackage{tikz}
 \usetikzlibrary{decorations.text}
 \usepackage{tkz-berge}
+\usepackage{mathtools}
 
 % for formatting code
 \lstset{
@@ -48,6 +49,10 @@
 \lstloadlanguages{
 	C++
  }
+
+% https://tex.stackexchange.com/questions/42271/floor-and-ceiling-functions
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
 
 \intextsep=10mm							% controls spacing before and after figures and tables
 \belowcaptionskip=-5mm
@@ -89,12 +94,12 @@
 	\preliminaries   % set frontmatter style
 
 	\maketitle
-	\makecopyright        % optional
+	%\makecopyright        % optional
 	
-	\include{doc/abstract}
+	%\include{doc/abstract}
 	%\include{doc/pubAbstract}
 	
-	\include{doc/dedication}  % optional
+	%\include{doc/dedication}  % optional
 	%\include{doc/acknowledgements}     % optional
 	\tableofcontents
 	%\listoftables

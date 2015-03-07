@@ -3,7 +3,7 @@
 
 \section{Overview}
 
-I propose a new DNS system for Tor hidden services, which I am calling EsgalDNS. \emph{Esgal} is a Sindarin Elvish noun from the works of J.R.R Tolkien, meaning ``veil'' or ``cover that hides''.\cite{SindarinDict} EsgalDNS is a distributed DNS system embedded within the Tor network on top of the existing Tor hidden service infrastructure. EsgalDNS shares some design principles with Namecoin and other DNS systems, and its usage is similar to the traditional Clearnet DNS system. At a high level, the system is powered at any given time by a randomly-chosen subset of Tor nodes, whose primary responsibilities are to receive new DNS records from hidden service operators, propagate the records to all parties, and save the records in a main long-term data structure. Other Tor nodes may mirror this data structure, distributing the load and responsibilities to many Tor nodes. The system supports a variety of command and control operations including Query,s Create, Modify, Move, Renew, and Delete. 
+I propose a new DNS system for Tor hidden services, which I am calling EsgalDNS. \emph{Esgal} is a Sindarin Elvish noun from the works of J.R.R Tolkien, meaning ``veil'' or ``cover that hides''.\cite{SindarinDict} EsgalDNS is a distributed DNS system embedded within the Tor network on top of the existing Tor hidden service infrastructure. EsgalDNS shares some design principles with Namecoin and its domain names resemble traditional domain names on the clearnet. At a high level, the system is powered at any given time by a randomly-chosen subset of Tor nodes, whose primary responsibilities are to receive new DNS records from hidden service operators, propagate the records to all parties, and save the records in a main long-term data structure. Other Tor nodes may mirror this data structure, distributing the load and responsibilities to many Tor nodes. The system supports a variety of command and control operations including Create, Domain Query, Onion Query, Modify, Move, Renew, and Delete.
 
 \section{Components}
 
@@ -20,76 +20,72 @@ Our system makes use of cryptographic hash algorithms, digital signatures, proof
 
 We use the JSON format to encode records and databases of records. JSON is significantly more compact than XML, but retains readability. Its support of basic primitive types is highly applicable to our needs. Additionally, we consider the JSON format safer than byte-level encoding.
 
-\subsection{Quorum}
+\subsection{Participants}
 
-As a distributed system, EsgalDNS may have many participants; any machine with sufficient storage and bandwidth capacity --- including those outside the Tor network --- may perform a full synchronization with the EsgalDNS network and obtain a full mirror of all DNS information. Inside the Tor network, these participants are divided into three main categorizes: \emph{quorum} nodes, quorum node \emph{candidates}, and \emph{mirrors}. \emph{Mirrors} are Tor nodes that have performed a full synchronization and hold a complete copy of all DNS data structures. However, they are either not qualified or have opted out of being a quorum node \emph{candidate}. The requirements to become a candidate are described in the next section. Of those that qualify, the \emph{quorum} is chosen as a random subset from the \emph{candidate} list. The \emph{quorum} perform the main duties of the system, namely broadcasting and recording DNS records from hidden service operators. 
+EsgalDNS is a distributed system and may have many participants; any machine with sufficient storage and bandwidth capacity --- including those outside the Tor network --- can obtain a full copy of all DNS information from EsgalDNS nodes. Inside the Tor network, these participants can be classified into three sets: \emph{mirrors}, quorum node \emph{candidates}, and \emph{quorum} nodes. The last set is of particular importance because \emph{quorum} nodes are the only participants to actively power EsgalDNS.
 
-Any party at any time may derive the list of \emph{candidate} nodes and the \emph{quorum} from them by the following procedure:
+\subsubsection{Mirrors}
+
+\emph{Mirrors} are Tor nodes that have performed a full synchronization (section ~\ref{sec:Synchronization}) against the network and hold a complete copy of all EsgalDNS data structures. This may optionally respond to passive queries from clients, but do not have power to modify any data structures. \emph{Mirrors} are the largest and simplest set of participants.
+
+\subsubsection{Quorum Node Candidates}
+
+Quorum node \emph{candidates} are \emph{mirrors} inside the Tor network that desire and qualify to become \emph{quorum} nodes. The first requirement is that they must be an up-to-date and complete \emph{mirror}, and secondly that they must have sufficient CPU and bandwidth capabilities to handle the influx of new records and the work involved with propagating these records to other \emph{mirrors}. These two requirements are essential and of equal importance for ensuring that \emph{quorum} node can accept new information and function correctly.
+
+To meet the first requirement, Tor nodes must demonstrate their readiness to accept new records. The na\"{i}ve solution is to have Tor nodes and clients simply ask the node if it was ready, and if so, to provide proof that it's up-to-date. However, this solution quickly runs into the problem of scaling; Tor has ~7000 nodes and ~2,250,000 daily users\cite{TorMetrics}: it is infeasible for any single node to handle queries from all of them. The more practical solution is to publish information to the authority nodes that will be distributed to all parties in the consensus document. Following a full synchronization, a \emph{mirror} publishes this information in the following manner:
 
 \begin{enumerate}
-	\item Obtain a remote or local archived copy of the consensus document, $ cd $, published 00:00 GMT that morning.
-	\item Extract the digital signature and verify $ cd $ against $ PK_{authorities} $.
-	\item Construct a numerical list, $ ql $ of qualified Tor nodes (defined below) from $ cd $.
+	\item Let $ nc $ be its local \emph{NameCache}, described in section ~\ref{sec:NameCache}.
+	\item Define $ s $ as SHA-384($ nc $).
+	\item Encode $ s $ in Base64 and truncate to 8 bytes.
+	\item Append the result to the Contact field in the relay descriptor sent to the authority nodes.
+\end{enumerate}
+
+While ideally this information could be placed in a special field set aside for this purpose, to ease integration with existing Tor infrastructure and third-party websites that parse the consensus document (such as Globe or Atlas) we use the Contact field, a user-defined optional entry that Tor relay operators typically use to list methods of contact such as email addresses and PGP keys. EsgalDNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends shares of donations to that address proportional to the relay's consensus weight.
+
+Of all sets of relays that publish the same hash, if \emph{mirror} $ m_{i} $ publishes a hash that is in the largest set, $ m_{i} $ meets the first qualification to become a quorum node \emph{candidate}. Relays must take care to refresh this hash whenever a new \emph{quorum} is chosen. Assuming complete honesty across all \emph{mirrors} in the Tor network, they will all publish the same hash and complete the first requirement.
+
+The second criteria requires Tor nodes to prove that has sufficient capabilities to handle the increase in communication and processing. Fortunately, Tor's infrastructure already provides a mechanism that can be utilized to prove reliability and capacity; Tor nodes fulfil the second requirement if they have the \emph{fast}, \emph{stable}, \emph{running}, and \emph{valid} flags. These demonstrate that they have the ability to handle large amounts of traffic, have maintained a history of long uptime, are currently online, and have a correct configuration, respectively. As of February 2015, out of the ~7000 nodes participating in the Tor network, ~5400 of these node have these flags and complete the second requirement.
+
+Both of these requirements can be determined in $ \mathcal{O}(n) $ time by anyone holding a recent or archived copy of the consensus document.
+
+\subsubsection{Quorum}
+
+\emph{Quorum} are randomly chosen from the set of quorum node \emph{candidates}. The \emph{quorum} perform the main duties of the system, namely receiving, broadcasting, and recording DNS records from hidden service operators. The \emph{quorum} can be derived from the pool of \emph{candidates} by performing by the following procedure:
+
+\begin{enumerate}
+	\item Let $ i $ be the current day. Obtain a remote or local archived copy of the most recent consensus document, $ cd $, published at 00:00 GMT on day $ \floor[\big]{\frac{i}{L}} $.
+	\item Extract the authorities' digital signatures, their signatures, and verify $ cd $ against $ PK_{authorities} $.
+	\item Construct a numerical list, $ ql $ of quorum node \emph{candidates} from $ cd $.
 	\item Initialize the Mersenne Twister PRNG with SHA-384($ cd $).
 	\item Use the seeded PRNG to randomly scramble $ ql $.
 	\item Let the first $ M $ nodes, numbered $ 1 .. M $, define the \emph{quorum}.
 \end{enumerate}
 
-The consensus document is an authenticated source of information and entropy that can be safely distributed publicly, so all parties --- in particular Tor nodes and clients --- agree on the members of the \emph{quorum}. As the \emph{quorum} is determined by the consensus document at the beginning of the day, \emph{quorum} nodes have an effective lifetime of 24 hours before they are replaced by a new \emph{quorum}.
-
-When a \emph{candidate} node becomes a member of the \emph{quorum}, it constructs a one-hop bidirectional Tor circuit to all other quorum nodes. These circuits are used for synchronization and must remain alive for the duration of that \emph{quorum}. Overall this creates $ n * (n - 1) / 2 $ new TCP/IP links among \emph{quorum} members.
-
-\subsubsection{Qualifications}
-
-It is essential that \emph{quorum} nodes have an up-to-date and complete copy of all DNS data and be ready to accept new information. Of equal importance, all \emph{quorum} members must have sufficient CPU and bandwidth capabilities to handle the influx of new records and the work involved with propagating these records to other Tor nodes. Fortunately, Tor's infrastructure already provides capabilities to easily find the second criteria: Tor nodes receive the \emph{fast}, \emph{stable}, \emph{running},  and \emph{valid} flags if they have demonstrated their ability to handle large amounts of traffic, have maintained a history of long uptime, are currently online, and have a correct configuration, respectively. As of February 2015, out of the ~7000 nodes participating in the Tor network, ~5400 of these node have these flags. These machines meet the second criteria for qualification as a \emph{quorum candidate}.
-
-To meet the first requirement, Tor nodes must demonstrate their readiness to accept new records. The na\"{i}ve solution to this problem would be have Tor nodes and clients simply ask the node if it was ready, and if so, for the necessary information that demonstrates it. However, this solution quickly runs into the problem of scaling; Tor has ~7000 nodes and ~2,250,000 daily users\cite{TorMetrics}: it is infeasible for any single node to handle queries from all of them. Therefore a better solution is to publish information to the authority nodes that all parties can see in the consensus document. To do this, a Tor node who has completed a full synchronization of the system performs the following:
-
-\begin{enumerate}
-	\item Select a \emph{page}-chain according to the rules specified below.
-	\item Generate a local \emph{NameCache} (described below), $ nc $ from the \emph{page}-chain.
-	\item Let $ s $ be SHA-384($ nc $).
-	\item Encode $ s $ to Base64 and truncate to 8 bytes.
-	\item Wrap the result in parentheses and append the result to the Contact field in the descriptor sent to the authority nodes.
-\end{enumerate}
-
-For this last step, while ideally this information could be placed in a special field set aside for this purpose, to ease integration with existing Tor infrastructure and third-party websites that parse the consensus document (such as Globe or Atlas) we use the Contact field, a user-defined optional entry that Tor relay operators typically use to list methods of contact such as email addresses and PGP keys. EsgalDNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends portions of any donations to that address, presumably to the Tor relay operator.
-
-The result is appended to the end of the Contact field, and must be updated at least every 24 hours. To become a candidate for membership in the quorum, a node must be a fast and stable node (flags determined and assigned by authority nodes) and must publish this truncated hash that is in the majority of hashes published by other Tor nodes. This can be easily be determined by all parties holding a recent or archived copy of the consensus document. The rules of the network will cause these hashes to be the same across all up-to-date parties, even if there are disagreements among them as to which page-chain to follow. This approach does not thwart malicious collusion, but our system tolerates a low percentage of that, so we don't consider that a significant problem.
-
-%todo: recycling of recods on other chains
+In this manner, all parties --- in particular Tor nodes and clients --- agree on the members of the \emph{quorum} and can derive them in $ \mathcal{O}(n) $ time. As the \emph{quorum} changes every $ L $ days, \emph{quorum} nodes have an effective lifetime of $ L $ days before they are replaced by a new \emph{quorum}. Old \emph{quorum} nodes then maintain their \emph{page} (section ~\ref{sec:Page}) as an archive and make it available to future \emph{quorums}.
 
 \subsection{Page}
+\label{sec:Page}
 
 A \emph{page} is long-term JSON-encoded textual database held by quorum nodes. It contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, \emph{nodeFingerprint}, and \emph{pageSig}. 
 
 \begin{description}
 	\item[prevHash] \hfill \\
-		The SHA-384 hash of \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, and \emph{nodeKey} of a previous page.
+		The SHA-384 hash of \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, and \emph{nodeFingerprint} of a previous page.
 	\item[recordList] \hfill \\
-		An array of records, sorted alphabetically or in any other globally deterministic manner.
+		An array of records, sorted in a deterministic manner such as alphabetically.
 	\item[consensusDocHash] \hfill \\
-		The SHA-384 of the morning's consensus document.
+		The SHA-384 of $ cd $.
 	\item[nodeFingerprint] \hfill \\
-		The Tor fingerprint of the quorum node, found by generating a hash of the node's public key. This fingerprint is widely used in Tor infrastructure and in third-party tools as a unique identifier for individual Tor nodes.
+		The fingerprint of the Tor node, found by generating a hash of the node's public key. This fingerprint is widely used in Tor infrastructure and in third-party tools as a unique identifier for individual Tor nodes.
 	\item[pageSig] \hfill \\
-		The digital signature of the preceding fields.
+		The digital signature, signed with the node's private key, of the SHA-384 of the preceding fields.
 \end{description}
 
-Each quorum node holds its page, the pages of the other quorum nodes on that day, and a single archive of the consensus document. 
+Let $ p_{j} $ be the most recent \emph{page} in the \emph{page}-chain chosen by quorum node \emph{candidate} $ c_{j} $. When $ c_{j} $ becomes a member of the \emph{quorum}, it constructs an empty \emph{page}. \emph{prevHash} is set as the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of $ p_{j} $. \emph{recordList} is set as an empty array, and \emph{consensusDocHash} and \emph{nodeFingerprint} are both defined. $ c_{j} $ then signs the preceding fields with its private key, saving the result in \emph{pageSig}. Finally, it constructs a one-hop bidirectional Tor circuit to all other \emph{quorum} nodes. These circuits are used for synchronization and must remain alive for the duration of that \emph{quorum}. Overall this creates $ \frac{M * (M - 1)}{2} $ new TCP/IP links among \emph{quorum} members.
 
-To generate its page, it first picks a page from the past quorums by the following method:
+%Each \emph{quorum} node holds its page, the pages of the other quorum nodes on that day, and a single archive of the consensus document. 
 
-%according to the following criteria
-
-\begin{enumerate}
-	\item Of all chains of pages in the database, ignore any invalid pages and any pages that form chains using those invalid pages. A page may be invalid if it contains records that do not follow specifications, its \emph{consensusDocHash} field does not match the hash of the consensus document on that day, or if \emph{pageSig} does not verify. Invalid pages may suggest that the quorum node was not fully synchronized, that it acted maliciously, or that there was data corruption.
-	\item From these valid chains, find the chain that contains the most back-links (not counting today's pages) and choose the most recent page.
-	\item If there are multiple chains that satisfy the second condition, choose from among them the page that contains the largest amount of records.
-	\item If the third condition cannot be resolved, choose from among them the page that is held by the smallest $ i $ in the $ M $ quorum nodes.
-\end{enumerate}
-
-It then takes the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of that page, forming \emph{prevHash}. Secondly, it generates \emph{consensusDocHash} by hashing the morning's consensus document. Finally, it hashes the page and generates a digital signature of that hash, storing the result in \emph{pageSig}.
 
 %\begin{figure}[htbp]
 %	\centering
@@ -130,48 +126,43 @@ It then takes the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{conse
 
 \subsection{Snapshot}
 
-Similar to a page, a \emph{snapshot} is JSON-encoded textual database held by quorum nodes, but unlike pages, snapshots are short-term and volatile. They are used for propagating very new records and receiving records from other quorum nodes, and are only held and processed by quorum nodes in the current day. Snapshots contain three fields: \emph{originTime}, \emph{recentRecords}, and \emph{snapshotSig}.
+Similar to a page, a \emph{snapshot} is JSON-encoded textual database held by \emph{quorum} nodes, but unlike pages, \emph{snapshots} are short-term and volatile. They are used for propagating very new records and receiving records from other active \emph{quorum} nodes. Snapshots contain three fields: \emph{originTime}, \emph{recentRecords}, \emph{nodeFingerprint}, and \emph{snapshotSig}.
 
 \begin{description}
 	\item[originTime] \hfill \\
 		Unix time when the snapshot was first created.
 	\item[recentRecords] \hfill \\
-		A list of DNS records.
+		A list of records.
+	\item[nodeFingerprint] \hfill \\
+		The fingerprint of the Tor node.
 	\item[snapshotSig] \hfill \\
-		The digital signature of \emph{originTime} and \emph{recentRecords}.
+		The digital signature of \emph{originTime}, \emph{nodeFingerprint}, and \emph{recentRecords}, signed using the node's private key.
 \end{description}
 
-When a hidden service operator informs a quorum node about a new record, the quorum node first confirms that the record is valid (described below) and if it is, it adds that record into \emph{recentRecords} and updates \emph{snapshotSig}. 
-
-%todo: do I describe how records are validated?
-
-\emph{Quorum} nodes then propagate these records to each other in such a way that each \emph{quorum} node knows the \emph{pages} of all other \emph{quorum} nodes. We now describe this record distribution process. Where $ snap_{x} $ is the current snapshot at propagation iteration $ x $, at each 15 minute mark each active quorum node $ q_{j} $ performs the following:
-
-\begin{enumerate}
-	\item Generates a new snapshot, labelled $ snap_{x+1} $, sets \emph{originTime} to the current time, creates \emph{snapshotSig}, and sets $ snap_{x+1} $ to be the currently active snapshot for collecting new records.
-	\item Merges $ snap_{x} $ into its \emph{page} and regenerates \emph{pageSig}.
-	\item With each node $ q_{k} $ in the \emph{quorum}, 
-		\begin{enumerate}
-			\item Sends $ snap_{x} $ and $ <pageSig_{q_{j}}, nodeFingerprint_{q_{j}}> $ to $ q_{k} $.
-			\item Receives $ s_{x, k} $ and $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ from $ q_{k} $.
-			\item Merges into $ s_{x, k} $ into its copy of $ q_{k} $'s \emph{page} and confirms that $ pageSig_{q_{k}} $ validates the result. If it does not, $ q_{k} $ was misbehaving and $ node_{j} $ should ask $ q_{k} $ for its \emph{page} to resolve the discrepancy.
-		\end{enumerate}
-	\item Increments $ x $.
-	
-\end{enumerate}
-
-% Page identification? Is 4b right? Need to swap all known snapshots! Delete old snapshots!
-%\emph{TODO: this is incomplete. Quorum nodes send and receive a set of snapshots from other quorum nodes. They pass them along. After 4 rounds of share-with-50-percent the information should have reached all quorum nodes with a high probability, so the information can be safely added into the page and the signature updated. Likewise snapshots from other quorum nodes that are 4 rounds old can be added into its page, hence everyone will be in agreement, theoretically at least. Experiments needed and planned.}
-
 \subsection{NameCache}
+\label{sec:NameCache}
 
-A \emph{NameCache} is a self-balancing binary search AVL tree of records. Once a machine has obtained a database of \emph{pages} from the \emph{quorum} it extracts the records from the \emph{pages} and adds them all into the \emph{NameCache}. The binary tree structure allows lookups to occur in O(log($ n $)) time, where $ n $ is the number of records.
+A \emph{NameCache} is a local cache of records. Its primary purpose is to allow lookups of existing records. Following a synchronization, a \emph{mirror} adds records in the \emph{page}-chain into the \emph{NameCache}. We suggest implementing a \emph{NameCache} as a self-balancing binary AVL tree so that lookups occur in $ \mathcal{O}(\log{}n) $ time.
+
+% todo: this works well for names, but how about for Moves?
 
 \subsection{Synchronization}
+\label{sec:Synchronization}
 
 % todo: how to derive yesterday's consensus doc from today's info
 
 Any machine Alice, including Tor nodes wishing to become a \emph{candidate} node, can perform a full synchronization against any other machine Bob that holds the whole database. Describing today as day $ x $, Alice queries Bob for the \emph{pages} from $ \textrm{day}_{x} $'s quorum, determines the \emph{quorum} for $ \textrm{day}_{x-1} $, asks one of them for their \emph{pages}, determines $ \textrm{day}_{x-2} $'s quorum, asks one of them, and so on. Synchronization takes O($ x $) time rather than O($ x * M $) time because each of the $ M $ \emph{quorum} nodes have a copy of the \emph{pages} from all other \emph{quorum} members. Once Alice has queried all the way back to $ x = 0 $, Alice can generate the \emph{NameCache} data structure and keep itself qualified by publishing its hash. If Alice is selected a \emph{quorum} node, Alice then must generate its own \emph{page} with the appropriate back-reference according to the rules of the network.
+
+%according to the following criteria
+
+\begin{enumerate}
+	\item Of all chains of pages in the database, ignore any invalid pages and any pages that form chains using those invalid pages. A page may be invalid if it contains records that do not follow specifications, its \emph{consensusDocHash} field does not match the hash of the consensus document on that day, or if \emph{pageSig} does not verify. Invalid pages may suggest that the quorum node was not fully synchronized, that it acted maliciously, or that there was data corruption.
+	\item From these valid chains, find the chain that contains the most back-links (not counting today's pages) and choose the most recent page.
+	\item If there are multiple chains that satisfy the second condition, choose from among them the page that contains the largest amount of records.
+	\item If the third condition cannot be resolved, choose from among them the page that is held by the smallest $ i $ in the $ M $ quorum nodes.
+\end{enumerate}
+
+% forming a chain of maximum length
 
 \subsection{Registration Creation}
 
@@ -224,6 +215,24 @@ If a hidden service operator wishes to relinquish ownership rights over any name
 
 A hidden service operator uses a Tor circuit to contact a \emph{quorum} node. For security purposes, they use the same circuit that their hidden service uses. They thus use their introduction point to give a record to a \emph{quorum} node, as illustrated in Figure ~\ref{fig:recordBroadcast}.
 
+\emph{Quorum} nodes then propagate these records to each other in such a way that each \emph{quorum} node knows the \emph{pages} of all other \emph{quorum} nodes. We now describe this record distribution process. Where $ snap_{x} $ is the current snapshot at propagation iteration $ x $, at each 15 minute mark each active quorum node $ q_{j} $ performs the following:
+
+\begin{enumerate}
+	\item Generates a new snapshot, labelled $ snap_{x+1} $, sets \emph{originTime} to the current time, creates \emph{snapshotSig}, and sets $ snap_{x+1} $ to be the currently active snapshot for collecting new records.
+	\item Merges $ snap_{x} $ into its \emph{page} and regenerates \emph{pageSig}.
+	\item With each node $ q_{k} $ in the \emph{quorum}, 
+		\begin{enumerate}
+			\item Sends $ snap_{x} $ and $ <pageSig_{q_{j}}, nodeFingerprint_{q_{j}}> $ to $ q_{k} $.
+			\item Receives $ s_{x, k} $ and $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ from $ q_{k} $.
+			\item Merges into $ s_{x, k} $ into its copy of $ q_{k} $'s \emph{page} and confirms that $ pageSig_{q_{k}} $ validates the result. If it does not, $ q_{k} $ was misbehaving and $ node_{j} $ should ask $ q_{k} $ for its \emph{page} to resolve the discrepancy.
+		\end{enumerate}
+	\item Increments $ x $.
+	
+\end{enumerate}
+
+% Page identification? Is 4b right? Need to swap all known snapshots! Delete old snapshots!
+%\emph{TODO: this is incomplete. Quorum nodes send and receive a set of snapshots from other quorum nodes. They pass them along. After 4 rounds of share-with-50-percent the information should have reached all quorum nodes with a high probability, so the information can be safely added into the page and the signature updated. Likewise snapshots from other quorum nodes that are 4 rounds old can be added into its page, hence everyone will be in agreement, theoretically at least. Experiments needed and planned.}
+
 \begin{figure}[htbp]
 	\centering
 	\begin{tikzpicture}[->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
@@ -275,6 +284,18 @@ A hidden service operator uses a Tor circuit to contact a \emph{quorum} node. Fo
 	\label{fig:recordBroadcast}
 \end{figure}
 
+When a hidden service operator informs a quorum node about a new record, the quorum node first confirms that the record is valid (described below) and if it is, it adds that record into \emph{recentRecords} and updates \emph{snapshotSig}. 
+
+
+
+
+
+
+
+
+
+
+
 \subsection{Registration Query}
 
 % todo: recursive resolution of the name, check for deleted or moved domains
@@ -283,7 +304,7 @@ When a Tor user Alice wishes to visit example.tor, her client software must perf
 
 At startup, Alice builds a circuit to any \emph{candidate} node $ n_{s} $ that meets the qualification requirements previously described. Alice then asks $ n_{s} $ for the desired name and a verification level, which is 0 if not specified. As we mentioned in the Requirements section, it is impractical to require Alice to perform a full synchronization and download all \emph{pages} in order to verify the uniqueness and trustworthiness of a returned record. Therefore Alice can rely on her existing at least partial trust of the Tor network and perform various degrees of verification with minimal information.
 
-If Alice's verification level is 0, $ n_{s} $ returns only the Registration record or the Ownership Transfer record, whichever is newer. Alice extracts the fields, uses \emph{pubHSKey} to confirm that \emph{recordSig} verifies the record, then confirms the proof-of-work. Finally, Alice uses \emph{pubHSKey} to generate the hidden service .onion address (16 bytes of the base32-encoded SHA-1 hash of \emph{pubHSKey} in PKCS.1 DER encoding) and looks up the hidden service in the traditional manner. The lookup fails if the service has not published a recent hidden service desciptor to the distributed hash table, otherwise the lookup goes through. End-to-end verification is complete when \emph{pubHSKey} can be successfully used to encrypt the hidden service cookie and the service proves that it can decrypt $ sec $.
+If Alice's verification level is 0, $ n_{s} $ returns only the Registration record or the Ownership Transfer record, whichever is newer. Alice extracts the fields, uses \emph{pubHSKey} to confirm that \emph{recordSig} verifies the record, then confirms the proof-of-work. Finally, Alice uses \emph{pubHSKey} to generate the hidden service .onion address (16 bytes of the base58-encoded SHA-1 hash of \emph{pubHSKey} in PKCS.1 DER encoding) and looks up the hidden service in the traditional manner. The lookup fails if the service has not published a recent hidden service desciptor to the distributed hash table, otherwise the lookup goes through. End-to-end verification is complete when \emph{pubHSKey} can be successfully used to encrypt the hidden service cookie and the service proves that it can decrypt $ sec $.
 
 If Alice requests verification level 1, $ n_{s} $ returns the record, a \emph{page} from any \emph{quorum} node that contained it, and and an archive of the consensus document. Alice can verify the authenticity of the consensus document, can determine the \emph{quorum} and extract their keys, and verify the \emph{page} that $ n_{s} $ gave her. Alice then proceeds with record verification and hidden service lookup, as specified in level 1.
 
