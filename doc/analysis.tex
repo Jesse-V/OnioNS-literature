@@ -28,9 +28,9 @@ While it is critical in a high-security environment for anyone to be able to ver
 Clearly Faythe needs to digitally sign and publish information that Bob can give to Alice to prove that a name does not exist. One of the primary challenges with this approach is that the space of possible names so vast that attempting to enumerate and digitally sign all names that are not taken is highly impractical. We solve this problem by using a very compact hashtable and a dynamic array to hold collisions. We call this data structure a \emph{Non-existence Map} and for practicality it is signed in pieces by Faythe and mirrored by Bob to Alice. It is assumed that Faythe is fully synchronized and up-to-date with the EsgalDNS network. Faythe generates the \emph{Non-existence Map} in the following way:
 
 \begin{enumerate}
-	\item Create an empty hashtable $ ht $ with $ a * n $ buckets, $ n $ is the number of item in \emph{NameCache}. $ ht $'s buckets are values, represented in binary, where a ``1'' indicates that at least one key maps to that bucket, and a ``0'' indicates that no key maps to that bucket. $ ht $ buckets need not remember keys matched into them.
+	\item Create an empty hashtable $ ht $ with $ a * n $ buckets, $ n $ is the number of item in \emph{Merkle Tree}. $ ht $'s buckets are values, represented in binary, where a ``1'' indicates that at least one key maps to that bucket, and a ``0'' indicates that no key maps to that bucket. $ ht $ buckets need not remember keys matched into them.
 	\item Create a dynamic array $ col $.
-	\item For each name $ name $ in \emph{NameCache},
+	\item For each name $ name $ in \emph{Merkle Tree},
 	\begin{enumerate}
 		\item Generate $ i = \textnormal{SHA-384}(name) \bmod a * n $.
 		\item If bucket $ i $ in $ ht $ is 0, set bucket $ i $ to 1.

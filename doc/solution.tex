@@ -22,11 +22,17 @@ We use the JSON format to encode records and databases of records. JSON is signi
 
 \section{Participants}
 
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.5\textwidth]{images/LucidCharts/Participants.png}
+	\caption{There are three sets of participants in the EsgalDNS network: \emph{mirrors}, quorum node \emph{candidates}, and \emph{quorum} members. The set of \emph{quorum} nodes is chosen from the pool of up-to-date \emph{mirrors} who are reliable nodes within the Tor network.}
+\end{figure}
+
 EsgalDNS is a distributed system and may have many participants; any machine with sufficient storage and bandwidth capacity --- including those outside the Tor network --- can obtain a full copy of all DNS information from EsgalDNS nodes. Inside the Tor network, these participants can be classified into three sets: \emph{mirrors}, quorum node \emph{candidates}, and \emph{quorum} nodes. The last set is of particular importance because \emph{quorum} nodes are the only participants to actively power EsgalDNS.
 
 \subsection{Mirrors}
 
-\emph{Mirrors} are Tor nodes that have performed a full synchronization (section ~\ref{sec:Synchronization}) against the network and hold a complete copy of all EsgalDNS data structures. This may optionally respond to passive queries from clients, but do not have power to modify any data structures. \emph{Mirrors} are the largest and simplest set of participants.
+\emph{Mirrors} are Tor nodes that have performed a full synchronization (section \ref{sec:Synchronization}) against the network and hold a complete copy of all EsgalDNS data structures. This may optionally respond to passive queries from clients, but do not have power to modify any data structures. \emph{Mirrors} are the largest and simplest set of participants.
 
 \subsection{Quorum Node Candidates}
 
@@ -35,7 +41,7 @@ Quorum node \emph{candidates} are \emph{mirrors} inside the Tor network that des
 To meet the first requirement, Tor nodes must demonstrate their readiness to accept new records. The na\"{i}ve solution is to have Tor nodes and clients simply ask the node if it was ready, and if so, to provide proof that it's up-to-date. However, this solution quickly runs into the problem of scaling; Tor has $ \approx $ 7000 nodes and $ \approx $ 2,250,000 daily users\cite{TorMetrics}: it is infeasible for any single node to handle queries from all of them. The more practical solution is to publish information to the authority nodes that will be distributed to all parties in the consensus document. Following a full synchronization, a \emph{mirror} publishes this information in the following manner:
 
 \begin{enumerate}
-	\item Let $ nc $ be its local \emph{NameCache}, described in section ~\ref{sec:NameCache}.
+	\item Let $ nc $ be its local \emph{Merkle Tree}, described in section \ref{sec:AVLTree}.
 	\item Define $ s $ as SHA-384($ nc $).
 	\item Encode $ s $ in Base64 and truncate to 8 bytes.
 	\item Append the result to the Contact field in the relay descriptor sent to the authority nodes.
@@ -63,9 +69,13 @@ Both of these requirements can be determined in $ \mathcal{O}(n) $ time by anyon
 	\item Let the first $ M $ nodes, numbered $ 1 .. M $, define the \emph{quorum}.
 \end{enumerate}
 
-In this manner, all parties --- in particular Tor nodes and clients --- agree on the members of the \emph{quorum} and can derive them in $ \mathcal{O}(n) $ time. As the \emph{quorum} changes every $ \Delta i $ days, \emph{quorum} nodes have an effective lifetime of $ \Delta i $ days before they are replaced by a new \emph{quorum}. Old \emph{quorum} nodes then maintain their \emph{page} (section ~\ref{sec:Page}) as an archive and make it available to future \emph{quorums}.
+In this manner, all parties --- in particular Tor nodes and clients --- agree on the members of the \emph{quorum} and can derive them in $ \mathcal{O}(n) $ time. As the \emph{quorum} changes every $ \Delta i $ days, \emph{quorum} nodes have an effective lifetime of $ \Delta i $ days before they are replaced by a new \emph{quorum}. Old \emph{quorum} nodes then maintain their \emph{page} (section \ref{sec:Page}) as an archive and make it available to future \emph{quorums}.
 
 \section{Data Structures}
+
+\subsection{Record}
+
+A record is a simple data structure issued by hidden service operators to \emph{quorum} members. There are a number of different types of records, each representing a corresponding control operation (section \ref{sec:Operations}). However, every record includes a public hidden service key, is self-signed, and (with the exception of Delete) contains a main domain name and all subdomains under that domain name. This allows records to be referenced by their domain names as all corresponding data is encapsulated within the record itself. The details of records, their construction, their transmission, and their application in the system are described in later sections.
 
 \subsection{Page}
 \label{sec:Page}
@@ -89,47 +99,15 @@ Each \emph{quorum} node has its own \emph{page}. If the nodes in $ quorum_{i - 1
 
 When a quorum node \emph{candidate} $ c_{j} $ becomes a member of the \emph{quorum}, it constructs an empty \emph{page}. If $ i = 0 $ then $ c_{j} $ sets \emph{prevHash} to zeros and generates \emph{nodeFingerprint} and \emph{pageSig}. Otherwise then $ i > 0 $ so \emph{prevHash} is set as the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of $ p_{i - 1} $. \emph{recordList} is set as an empty array, and \emph{consensusDocHash} and \emph{nodeFingerprint} are both defined. $ c_{j} $ then signs the preceding fields with its private key, saving the result in \emph{pageSig}. Finally, it constructs a one-hop bidirectional Tor circuit to all other \emph{quorum} nodes. These circuits are used for synchronization and must remain alive for the duration of that \emph{quorum}. Overall this creates $ \frac{M * (M - 1)}{2} $ new TCP/IP links among \emph{quorum} members.
 
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\textwidth]{images/LucidCharts/Page-chain.png}
+	\caption{An example \emph{page}-chain across four \emph{quorums}. Each \emph{page} contains a references to a previous \emph{page}, forming an distributed scrolling data structure. \emph{Quorums} 1 is semi-honest and maintains its uptime, and thus has identical \emph{pages}. \emph{Quorum} 2's largest cluster is likewise in agreement, but there are three nodes which are acting maliciously together and have changed their \emph{pages}. Node 5 in \emph{quorum} 3 references an old page in attempt to bypass \emph{quorum} 2's records, and nodes 6-7 are colluding with nodes 5-7 from \emph{quorum} 2. Finally, \emph{quorum} 3 has two nodes that acted honestly but did not record new records, so their \emph{page}-chains differ from the others. However, across all four days the largest clusters are honest nodes and thus integrity remains in the \emph{page}-chain.}
+\end{figure}
+
 
 %Each \emph{quorum} node holds its page, the pages of the other quorum nodes on that day, and a single archive of the consensus document. 
 
-% TODO: make cluster illustration
-
-%\begin{figure}[htbp]
-%	\centering
-%	\begin{tikzpicture}[node distance=2cm, main node/.style={circle, draw, font=\sffamily\Large\bfseries}]
-%
-%			\node[main node, fill=Bittersweet!50] (1) {10};
-%			\node[main node, fill=Apricot!50] (2) [below of=1] {9};
-%				\node[main node, fill=BurntOrange!50] (3) [right of=2] {1};
-%			\node[main node, fill=ForestGreen!50] (4) [below of=2] {5};
-%				\node[main node, fill=LimeGreen!50] (5) [right of=4] {4};
-%				\node[main node, fill=OliveGreen!50] (6) [right of=5] {2};
-%				\node[main node, fill=Goldenrod!50] (7) [right of=6] {1};
-%			\node[main node, fill=Blue!50] (8) [below of=4] {9};
-%				\node[main node, fill=Cyan!50] (9) [right of=8] {1};
-%			
-%			\tikzstyle{EdgeStyle}=[->, thick, blue]
-%			
-%			% main chain
-%			\Edge[](8)(4)
-%			\Edge[](4)(2)
-%			\Edge[](2)(1)
-%			
-%			% day 4 branches
-%			\Edge[](9)(5)
-%			
-%			% day 3 branches
-%			\Edge[](5)(2)
-%			\Edge[](6)(2)
-%			\Edge[](7)(3)
-%			
-%			% day 2 branches
-%			\Edge[](3)(1)
-%			
-%		\end{tikzpicture}
-%	\caption{Sample page-chain on day 4. Quorum size is $ M = 10 $, the numbers represent quorum participants with the same page. Despite malicious collusion and misbehaving nodes on day 3, most of day 4's quorum choose the correct chain with $ 10 + 9 + 1 + 5 + 4 + 2 = 31 $ total participants.}
-%	\label{fig:figure5}
-%\end{figure}
 
 \subsection{Snapshot}
 
@@ -146,19 +124,43 @@ Similar to a page, a \emph{snapshot} is JSON-encoded textual database held by \e
 		The digital signature of the preceding fields, signed using the node's private key.
 \end{description}
 
-\emph{Snapshots} are generated every $ \Delta s $ minutes. At the beginning of one of these intervals, a \emph{quorum} node generates an empty \emph{snapshot}. \emph{OriginTime} is set to the current Unix time, \emph{recentRecords} is an empty array, \emph{nodeFingerprint} is set the same as it is for a \emph{page}, and \emph{snapshotSig} is generated. As records are received, a \emph{quorum} node merges the record into their \emph{snapshot}, as described in section ~\ref{sec:Broadcast}.
+\emph{Snapshots} are generated every $ \Delta s $ minutes. At the beginning of one of these intervals, a \emph{quorum} node generates an empty \emph{snapshot}. \emph{OriginTime} is set to the current Unix time, \emph{recentRecords} is an empty array, \emph{nodeFingerprint} is set the same as it is for a \emph{page}, and \emph{snapshotSig} is generated. As records are received, a \emph{quorum} node merges the record into their \emph{snapshot}, as described in section \ref{sec:Broadcast}.
 
-\subsection{Name Cache}
-\label{sec:NameCache}
+\subsection{AVL Tree}
+\label{sec:AVLTree}
 
-A \emph{NameCache} is a local cache of records. Its primary purpose is to allow lookups of existing records. Following a synchronization, a \emph{mirror} adds records in the \emph{page}-chain into its local \emph{NameCache} database. We suggest implementing a \emph{NameCache} as a self-balancing binary AVL tree so that lookups occur in $ \mathcal{O}(\log{}n) $ time. The generation of a \emph{NameCache} is described in the next section.
+A self-balancing binary AVL tree is used as a local cache of existing records. Its nodes hold references to the location of records in a local copy of the \emph{page}-chain, and it is sorted by alphabetical comparison of domain names. As a \emph{page}-chain is a linear data structure that requires a $ \mathcal{O}(n) $ scan to find a record, the $ \mathcal{O}(n\log{}n) $ generation of an AVL tree cache allows lookups of domain names to occur in $ \mathcal{O}(\log{}n) $ time. An AVL tree is generated from a \emph{page}-chain, as described in section \ref{sec:Synchronization}.
+
+% todo: illustration of an AVL tree with pointers to page-chain records
+
+
+% this really could be a Merkle tree, then the top root could be published in the consensus doc
 
 % todo: this works well for names, but how about for Moves?
+% records that are less than a day old will have a hard time with the hashtable, but once in a page they are good
 
-\subsection{Binary Hashtable}
-\label{sec:BinaryHashtable}
+\subsection{Hashtable Bitset}
+
+%  and claim that a domain name does not exist when in fact it does
+
+% at startup, clients should be given the root of the Merkle tree for the hashtable collisions, or at least hashes in the tree
+
+A hashtable bitset is a special and highly compact adaptation of a traditional hashtable. Unlike its AVL tree counterpart, the purpose of the hashtable bitset is to prove the non-existence of a record. Demonstrating non-existence is a challenge often overlooked in DNS: even if the DNS records can be authenticated by a recipient, (i.e. an SSL certificate or EsgalDNS self-signed records) a DNS resolver may lie to a client and claim a false negative on the existence of a domain name. Aside from trusting the response of a central authority or a local DNS server, a client cannot easily determine the accuracy of this response without downloading all the records and checking for themselves, but this is impractical in most environments. Asking a central trusted authority or a group of authorities (e.g. the \emph{quorum}) for verification is a simple solution, but these queries introduce additional load upon the authorities. The hashtable bitset allows a set of trusted authorities to publish a digitally signed data structure that allows local resolvers to prove non-existence for any non-existent domain name in $ \mathcal{O}(1) $ time on average, and with minimal data sent to the client. We extend the data structure by resolving collisions in a manner that eliminates false negatives and allows the proof of non-existence claims in $ \mathcal{O}(\log{}n) $ in the worst case.
+
+Like an ordinary hashtable, the hashtable bitset maps keys to buckets, but in this application it is only necessary to track the existence of a domain name. Therefore we represent each bucket as a bit, creating a compact bitset of $ C * n $ size, where $ n $ is the number of existing domain names and $ c $ is some constant coefficient. The hashtable bitset records a ``1'' if a domain name exists, and a ``0'' if not. In the event of a hash collision, all records that map to that bucket should be added to an array list. Following the construction of the bitset, the array should be sorted alphabetically by domain name and then converted into a Merkle tree. A client can verify non-existence by confirming that the hash of the requested domain name points to a 0, or if it points to a 1 and the DNS resolver claims non-existence, the resolver must demonstrate it by sending the client the appropriate section of the Merkle tree, as described in section \ref{sec:DomainQuery}.
+
+Trusted authorities (e.g. the \emph{quorum} of size $ M $) can divide the bitset into $ Q $ sections, digitally sign each section, and digitally sign the root hash of the Merkle tree. This allows a DNS resolver to send a $ \frac{C * n}{Q} $-sized section of the bitset and its digital signatures to the client, rather than sending the entire bitmap, which may be larger than $ \frac{C * n}{Q} $ for some choices of $ C $, $ Q $, and the size of the signatures. The assembly of these signatures is detailed in \ref{sec:Broadcast}.
+
+Note that a Bloom filter with $ k $ hash functions could be used instead of a compact hashtable, but a Bloom filter would require sending up to $ k $ sections of buckets to the client. Therefore, we use a simple hashtable scheme, which is effectively a Bloom filter with $ k = 1 $.
+
+% Additionally, after signing, the Bloom filter would require $ \mathcal{O}(C * n * k * Q * M) $ space, rather than $ \mathcal{O}(C * n * Q * M) $
+
+% merkle tree: leafs contain <domain name, recordHash>?
+
+% since we already have in this application it is only necessary to track whether a domain name exists or not. Therefore we represent each bucket as a bit. 
 
 \section{Operations}
+\label{sec:Operations}
 
 \subsection{Synchronization}
 \label{sec:Synchronization}
@@ -169,16 +171,16 @@ Let $ i $ be the current day, $ \Delta i $ be the lifetime of the \emph{quorum},
 
 \begin{enumerate}
 	\item Alice obtains from Bob his $ \min(i,L) $ most recent \emph{pages} in his cached \emph{page}-chain.
-	\item Alice also obtains the SHA-384 hash, $ h_{p} $, of the concatenation of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} for the \emph{page} used by each \emph{quorum} node for all \emph{quorums} between $ i - \min(i,L) $ and $ i $. Note that each $ h_{p} $ is digitally signed by its respective \emph{quorum} node. See ~\ref{fig:Broadcast} for details on how this information is available to Bob.
-	\item Alice downloads the $ \frac{\min(i,L)}{\Delta i} $ consensus documents published every $ \Delta i $ days at 00:00 GMT between days $ i - \min(i,L) $ and $ i $. Alice may download these documents from Bob, but to lighten the burden on Bob she may also obtain them from any other source. Note that these documents compress very well under 7zip.
+	\item Alice also obtains the SHA-384 hash, $ h_{p} $, of the concatenation of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} for the \emph{page} used by each \emph{quorum} node for all \emph{quorums} between $ i - \min(i,L) $ and $ i $. Note that each $ h_{p} $ is digitally signed by its respective \emph{quorum} node. See section \ref{sec:Broadcast} for details on how this information is available to Bob.
+	\item Alice downloads the $ \frac{\min(i,L)}{\Delta i} $ consensus documents published every $ \Delta i $ days at 00:00 GMT between days $ i - \min(i,L) $ and $ i $. Alice may download these documents from Bob, but to lighten the burden on Bob she may also obtain them from any other source. Bob may have compressed these beforehand to save space: very high compression ratios are typically achieved under 7zip.
 	\item Starting with the oldest available consensus document and working forward to day $ \floor[\big]{\frac{i}{\Delta i}} $, 
 		\begin{enumerate}
-		\item Alice follows the procedures described in section ~\ref{sec:Quorum} to calculate the old \emph{quorum}.
-		\item She confirms that the oldest \emph{page} she received from Bob is held by the largest cluster of agreeing \emph{quorum} nodes.
-		\item Alice verifies the validity of the \emph{page} and the records contained within it.
-		\item Finally, Alice progresses to the next most recent \emph{page}, repeating the procedure but also verifying that the \emph{prevHash} refers the $ p_{i - 1} $ she was just examining. This process repeats until all $ \min(i,L) $ \emph{pages} have been verified.
+			\item Alice follows the procedures described in section \ref{sec:Quorum} to calculate the old \emph{quorum}.
+			\item She confirms that the oldest \emph{page} she received from Bob is held by the largest cluster of agreeing \emph{quorum} nodes.
+			\item Alice verifies the validity of the \emph{page} and the records contained within it.
+			\item Finally, Alice progresses to the next most recent \emph{page}, repeating the procedure but also verifying that the \emph{prevHash} refers the $ p_{i - 1} $ she was just examining. This process repeats until all $ \min(i,L) $ \emph{pages} have been verified.
 		\end{enumerate}
-	\item Alice extracts all records from the now-validated \emph{page}-chain and constructs two data structures which she stores locally: a \emph{NameCache} and a hashtable. The \emph{NameCache} is used to allow efficient lookups of existing records, while the hashtable's purpose is to prove the non-existence of records. The hashtable does not need to 
+	\item Alice extracts all records from the now-validated \emph{page}-chain and constructs two data structures which she stores locally: a \emph{Merkle Tree} and a hashtable. The \emph{Merkle Tree} is used to allow efficient lookups of existing records, while the hashtable's purpose is to prove the non-existence of records. The hashtable does not need to 
 	
 	Create, Modify, Move, Renew, and Delete.
 	\item Alice generates hashtable thing and signs it
@@ -191,7 +193,7 @@ Let $ i $ be the current day, $ \Delta i $ be the lifetime of the \emph{quorum},
 
 
 
- determines $ \textrm{day}_{x-2} $'s quorum, asks one of them, and so on. Synchronization takes O($ x $) time rather than O($ x * M $) time because each of the $ M $ \emph{quorum} nodes have a copy of the \emph{pages} from all other \emph{quorum} members. Once Alice has queried all the way back to $ x = 0 $, Alice can generate the \emph{NameCache} data structure and keep itself qualified by publishing its hash. If Alice is selected a \emph{quorum} node, Alice then must generate its own \emph{page} with the appropriate back-reference according to the rules of the network.
+ determines $ \textrm{day}_{x-2} $'s quorum, asks one of them, and so on. Synchronization takes O($ x $) time rather than O($ x * M $) time because each of the $ M $ \emph{quorum} nodes have a copy of the \emph{pages} from all other \emph{quorum} members. Once Alice has queried all the way back to $ x = 0 $, Alice can generate the \emph{Merkle Tree} data structure and keep itself qualified by publishing its hash. If Alice is selected a \emph{quorum} node, Alice then must generate its own \emph{page} with the appropriate back-reference according to the rules of the network.
 
 %according to the following criteria
 
@@ -199,57 +201,10 @@ Let $ i $ be the current day, $ \Delta i $ be the lifetime of the \emph{quorum},
 
 % forming a chain of maximum length
 
-\subsection{Registration Creation}
-
-Any hidden service operator may claim any domain name that is not currently in use. As domain names cannot be purchased from a central authority, it is necessary to implement a system that introduces a cost of ownership. This performs three main purposes: 
-
-\begin{enumerate}
-	\item Thwarts potential flooding of system with domain registrations.
-	\item Introduces a cost of investment that improves the availability of hidden services.
-	\item Makes domain squatting more difficulty, where someone claims one or more domains on a whim for the sole purpose of denying them to others. As hidden service operators typically remain anonymous, it is difficulty for one to contact them and request relinquishing of a domain, nor is there a central authority to force relinquishing through a court order or other formal means.
-\end{enumerate}
-
-Therefore we incorporate a proof-of-work scheme that makes registration computationally intensive but is also easily verified by anyone. A domain registration consists of eight components: \emph{nameList}, \emph{contact}, \emph{timestamp}, \emph{consensusHash}, \emph{nonce}, \emph{pow}, \emph{recordSig}, and \emph{pubHSKey}. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. Fields that are optional are blank unless specified, and all fields are encoded in base64, except for \emph{nameList}, \emph{contact}, and \emph{timestamp}, which are encoded in standard UTF-8.
-
-\begin{center}
-    \begin{tabular}{ | l | l | p{9cm} |}
-    \hline
-    \textbf{Field} & \textbf{Required?} & \textbf{Description} \\ \hline
-    nameList & Yes & A list of domains or subdomains that the hidden service operator wishes to claim. Names can be up to 32 characters long, and may point to either .tor or .onion TLDs, or any subdomain. Names can be linked up to 16 deep. \\ \hline
-    contact & No & The fingerprint of the HS operator's PGP key, if he has one. If the fingerprint is listed, clients may query a public key server for this fingerprint, obtain the operator's PGP public key, and contact him over encrypted email. \\ \hline
-	timestamp & Yes & The UNIX timestamp of when the operator created the registration and began the proof-of-work to validate it. \\ \hline
-	consensusHash & Yes & The SHA-384 of the morning's consensus document at the time of registration. This a provable and irrefutable timestamp, since it can be matched against archives of the consensus document. Quorum nodes will not accept registration records that reference a consensus document more than 48 hours old. \\ \hline
-	nonce & Yes & Four bytes that serve as a source of randomness for the proof-of-work, described below. \\ \hline
-    pow & Yes & 16 bytes that demonstrate the result of the proof-of-work. \\ \hline
-    recordSig & Yes & The digital signature of all preceding fields, signed using the hidden service's private key. \\ \hline
-    pubHSKey & Yes & The public key of the hidden service. If the operator is claiming a subdomain of any depth, this key must match the \emph{pubHSKey} of the top domain name.\\ \hline
-    \end{tabular}
-\end{center}
-
-A record is made valid through the completion of the proof-of-work process. The hidden service operator must find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated, which effectively forces the computation to be performed by a machine owned by the HS operator. When the proof-of-work is complete, the valid and complete record is represented in JSON format for transmission to the \emph{quorum}.
-
-%\emph{TODO: specify how difficulty increases to counteract Moore's Law. Also, is the pow even necessary, or can that be regenerated by anyone?}
-
-\subsection{Record Modification}
-
-A hidden service operator may wish to update his registration with more current information. He can generate and broadcast a modification record, which contains updates to the field. The proof-of-work cost is a fourth of registration creation.
-
-\subsection{Ownership Transfer}
-
-A hidden service operator may transfer one or more domains to a new owner. The transfer record contains the public key and signature of the originating owner and the public key of the new owner. Subdomains that are not explicitly moved to the new owner are invalid and can be reclaimed by the new owner if they wish. The proof-of-work cost is an eighth of domain registration.
-
-\subsection{Domain Renewal}
-
-Domain names expire every 64 days, so they must be renewed periodically. To renew a domain, a hidden a hidden service operator generates a renewal record, which resets the countdown on that domain. Subdomains, as they must match the ownership of the top domain, have no expiration themselves but rather will expire when the domain does. The proof-of-work cost is a fourth of a registration record.
-
-\subsection{Registration Deletion}
-
-If a hidden service operator wishes to relinquish ownership rights over any name, they can issue a deletion record. In the case of a domain name, this may happen if the hidden service key is compromised, the operator no longer has any use for the domain, or for other reasons. The deletion record contains the hidden service public key and corresponding digital signature, and once issued to the \emph{quorum} immediately triggers an expiration of that name. If it is a domain name, that domain and all subdomains are made available to others. Names can be deleted at any time with no computational cost.
-
 \subsection{Broadcast}
 \label{sec:Broadcast}
 
-A hidden service operator uses a Tor circuit to contact a \emph{quorum} node. For security purposes, they use the same circuit that their hidden service uses. They thus use their introduction point to give a record to a \emph{quorum} node, as illustrated in Figure ~\ref{fig:recordBroadcast}.
+A hidden service operator uses a Tor circuit to contact a \emph{quorum} node. For security purposes, they use the same circuit that their hidden service uses. They thus use their introduction point to give a record to a \emph{quorum} node, as illustrated in Figure \ref{fig:recordBroadcast}.
 
 \emph{Quorum} nodes then propagate these records to each other in such a way that each \emph{quorum} node knows the \emph{pages} of all other \emph{quorum} nodes. We now describe this record distribution process. Where $ snap_{x} $ is the current snapshot at propagation iteration $ x $, at each 15 minute mark each active quorum node $ q_{j} $ performs the following:
 
@@ -322,21 +277,64 @@ A hidden service operator uses a Tor circuit to contact a \emph{quorum} node. Fo
 	\label{fig:recordBroadcast}
 \end{figure}
 
-When a hidden service operator informs a quorum node about a new record, the quorum node first confirms that the record is valid (described below) and if it is, it adds that record into \emph{recentRecords} and updates \emph{snapshotSig}. 
+When a hidden service operator informs a quorum node about a new record, the quorum node first confirms that the record is valid (described below) and if it is, it adds that record into \emph{recentRecords} and updates \emph{snapshotSig}.
 
 
 
+\subsection{Create}
+
+Any hidden service operator may claim any domain name that is not currently in use. As domain names cannot be purchased from a central authority, it is necessary to implement a system that introduces a cost of ownership. This performs three main purposes: 
+
+\begin{enumerate}
+	\item Thwarts potential flooding of system with domain registrations.
+	\item Introduces a cost of investment that improves the availability of hidden services.
+	\item Makes domain squatting more difficulty, where someone claims one or more domains on a whim for the sole purpose of denying them to others. As hidden service operators typically remain anonymous, it is difficulty for one to contact them and request relinquishing of a domain, nor is there a central authority to force relinquishing through a court order or other formal means.
+\end{enumerate}
+
+Therefore we incorporate a proof-of-work scheme that makes registration computationally intensive but is also easily verified by anyone. A domain registration consists of eight components: \emph{nameList}, \emph{contact}, \emph{timestamp}, \emph{consensusHash}, \emph{nonce}, \emph{pow}, \emph{recordSig}, and \emph{pubHSKey}. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. Fields that are optional are blank unless specified, and all fields are encoded in base64, except for \emph{nameList}, \emph{contact}, and \emph{timestamp}, which are encoded in standard UTF-8.
+
+\begin{center}
+    \begin{tabular}{ | l | l | p{9cm} |}
+    \hline
+    \textbf{Field} & \textbf{Required?} & \textbf{Description} \\ \hline
+    nameList & Yes & A list of domains or subdomains that the hidden service operator wishes to claim. Names can be up to 32 characters long, and may point to either .tor or .onion TLDs, or any subdomain. Names can be linked up to 16 deep. \\ \hline
+    contact & No & The fingerprint of the HS operator's PGP key, if he has one. If the fingerprint is listed, clients may query a public key server for this fingerprint, obtain the operator's PGP public key, and contact him over encrypted email. \\ \hline
+	timestamp & Yes & The UNIX timestamp of when the operator created the registration and began the proof-of-work to validate it. \\ \hline
+	consensusHash & Yes & The SHA-384 of the morning's consensus document at the time of registration. This a provable and irrefutable timestamp, since it can be matched against archives of the consensus document. Quorum nodes will not accept registration records that reference a consensus document more than 48 hours old. \\ \hline
+	nonce & Yes & Four bytes that serve as a source of randomness for the proof-of-work, described below. \\ \hline
+    pow & Yes & 16 bytes that demonstrate the result of the proof-of-work. \\ \hline
+    recordSig & Yes & The digital signature of all preceding fields, signed using the hidden service's private key. \\ \hline
+    pubHSKey & Yes & The public key of the hidden service. If the operator is claiming a subdomain of any depth, this key must match the \emph{pubHSKey} of the top domain name.\\ \hline
+    \end{tabular}
+\end{center}
+
+A record is made valid through the completion of the proof-of-work process. The hidden service operator must find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated, which effectively forces the computation to be performed by a machine owned by the HS operator. When the proof-of-work is complete, the valid and complete record is represented in JSON format for transmission to the \emph{quorum}.
+
+%\emph{TODO: specify how difficulty increases to counteract Moore's Law. Also, is the pow even necessary, or can that be regenerated by anyone?}
+
+\subsection{Modify}
+
+A hidden service operator may wish to update his registration with more current information. He can generate and broadcast a modification record, which contains updates to the field. The proof-of-work cost is a fourth of registration creation.
+
+\subsection{Move}
+
+A hidden service operator may transfer one or more domains to a new owner. The transfer record contains the public key and signature of the originating owner and the public key of the new owner. Subdomains that are not explicitly moved to the new owner are invalid and can be reclaimed by the new owner if they wish. The proof-of-work cost is an eighth of domain registration.
+
+\subsection{Renew}
+
+Domain names expire every 64 days, so they must be renewed periodically. To renew a domain, a hidden a hidden service operator generates a renewal record, which resets the countdown on that domain. Subdomains, as they must match the ownership of the top domain, have no expiration themselves but rather will expire when the domain does. The proof-of-work cost is a fourth of a registration record.
+
+\subsection{Delete}
+
+If a hidden service operator wishes to relinquish ownership rights over any name, they can issue a deletion record. In the case of a domain name, this may happen if the hidden service key is compromised, the operator no longer has any use for the domain, or for other reasons. The deletion record contains the hidden service public key and corresponding digital signature, and once issued to the \emph{quorum} immediately triggers an expiration of that name. If it is a domain name, that domain and all subdomains are made available to others. Names can be deleted at any time with no computational cost.
 
 
-
-
-
-
-
-
-\subsection{Registration Query}
+\subsection{Domain Query}
+\label{sec:DomainQuery}
 
 % todo: recursive resolution of the name, check for deleted or moved domains
+
+% queries: first check the hashtable, then check the AVL tree
 
 When a Tor user Alice wishes to visit example.tor, her client software must perform a query to obtain the .onion address that corresponds to that domain name. To meet our original requirements, Alice must be able to verify that the received record originated from the desired hidden service (akin to SSL certificates on the Clearnet), the lookup must happen in a privacy-enhanced manner, and the details of the query must be handled behind-the-scenes, invisibly to the user.
 
@@ -354,11 +352,13 @@ As an optimization, $ n_{s} $ may have queried Tor's distributed hash table for 
 
 %The scroll is a distributed and highly redundant chained data structure that slowly rolls through the Tor network. The scroll is $ N $ by $ M $ in shape and consists of two primary components: \emph{blocks} and \emph{captures}. Blocks contain one or more captures, and blocks are duplicated across the $ M $ committee nodes. Each capture is a collection of information from one day; it contains the consensus document from the previous morning, a list of domain registrations approved that day, the approval sign-off digital signatures from the committee nodes on those registrations, the digital signatures from the committee indicating their approval of the integrity of the scroll, and the hash of the previous four captures. In this way, captures are fully verifiable and contain enough information to link to the previous capture, forming a chain. This chain is not held by any single Tor node, rather it is encapsulated within a rolling window of blocks $ N $ days deep. As the days progress, the captures in the oldest block are migrated to the current day's block, rolling the structure forward. Thus the scroll is divided across $ N $ blocks, with copies of each block held by $ M $ Tor nodes. I consider $ N = 16, M = 64 $ reasonable values, which would involve 1,024 nodes at any given time, although $ M $ can be easily changed even while the scroll is in use.
 
+\subsection{Onion Query}
+
 \section{Examples and Structural Induction}
 
 \subsection{Base Case}
 
-In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $, a hidden service Bob, and a Tor client Alice, the procedures are relatively simple. On $ \textrm{day}_{0} $, $ c_{1} $ generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} $, but does not accept records for this initial page. $ p_{1,1} $ appears in Figure ~\ref{fig:emptyPage}.
+In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $, a hidden service Bob, and a Tor client Alice, the procedures are relatively simple. On $ \textrm{day}_{0} $, $ c_{1} $ generates an initial page $ p_{1,1} $ containing no records and signs $ p_{1,1} $, but does not accept records for this initial page. $ p_{1,1} $ appears in Figure \ref{fig:emptyPage}.
 
 \begin{figure}
 	\begin{lstlisting}
@@ -374,7 +374,7 @@ In the most trivial base case of a single quorum node \emph{candidate} $ c_{1} $
 	\label{fig:emptyPage}
 \end{figure}
 
-On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSF YjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears in Figure ~\ref{fig:sampleRecord}. 
+On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and generates a new page, $ p_{2,1} $, that references $ p_{1,1} $, a chain with 0 references, the most in the database. The hidden service \emph{Bob} hashes the consensus document, generating \emph{T/q7q052MgJGLfH1mBGUQSF YjwVn9VvOWBoOmevPZgY=} which is then fed into the Mersenne Twister to scramble the list of \emph{candidate} nodes. Since $ c_{1} $ is the only \emph{candidate}, he is chosen a member of the \emph{quorum}. Bob then builds a circuit to $ c_{1} $, and sends him a registration record, $ r_{reg} $, which appears in Figure \ref{fig:sampleRecord}. 
 
 \begin{figure}
 	\begin{lstlisting}
@@ -396,7 +396,7 @@ On $ \textrm{day}_{1} $, $ c_{1} $ examines its database of page-chains and gene
 	\label{fig:sampleRecord}
 \end{figure}
 
-$ c_{1} $ can continue to accept and insert records in this way, but if $ r_{reg} $ is the only one that $ c_{1} $ receives, at the next 15 minute mark $ c_{1} $ will attempt to propagate this snapshot to other \emph{quorum} nodes. However, as $ c_{1} $ is the only \emph{quorum} node, that step is not necessary here. $ c_{1} $ then adds $ r_{reg} $ into its page, creating $ p_{1,1} $, shown in Figure ~\ref{fig:c1page}.
+$ c_{1} $ can continue to accept and insert records in this way, but if $ r_{reg} $ is the only one that $ c_{1} $ receives, at the next 15 minute mark $ c_{1} $ will attempt to propagate this snapshot to other \emph{quorum} nodes. However, as $ c_{1} $ is the only \emph{quorum} node, that step is not necessary here. $ c_{1} $ then adds $ r_{reg} $ into its page, creating $ p_{1,1} $, shown in Figure \ref{fig:c1page}.
 
 \begin{figure}
 	\begin{lstlisting}
@@ -432,7 +432,7 @@ This record $ \to $ snapshot $ \to $ page merge process continues for any new re
 
 %todo: ensure record titles (Registration) are capitalized everywhere
 
-Extending the example to two \emph{candidates} $ c_{1} $ and $ c_{2} $, a mirror $ m_{1} $, a hidden service Bob, and a Tor client Alice, the purpose of the \emph{snapshot} and \emph{NameCache} data structures become more clear. This is illustrated in Figure ~\ref{fig:bigPicture}. As before, on $ \textrm{day}_{0} $, $ c_{1} $ and $ c_{2} $ both generate and sign initial empty pages but do not accept records. On $ \textrm{day}_{1} $ however, $ c_{1} $ and $ c_{2} $ can both publish hashes of their empty \emph{NameCache} databases. Since there are no \emph{pages} to reference aside from the initial base \emph{pages}, $ c_{1} $ and $ c_{2} $ should both be in agreement and $ m_{1} $, Alice, and Bob can all see that they are \emph{candidates} because their published hashes are in the majority. However, if $ c_{2} $ acts maliciously and causes the rare event that the majority is evenly split, two \emph{quorums} will be generated, which $ c_{1} $ and $ c_{2} $ are each a part of. However, this unlikely scenario does not change the behaviour of the system and everything operates as before. In either case, Bob sends to $ c_{1 \le j \le 2} $ his Registration record. As before, $ c_{j} $ adds the record to its page and at the next 15 minute mark sends the \emph{snapshot} out to the other \emph{quorum} nodes. The snapshot is illustrated in Figure ~\ref{fig:sampleSnapshot}. Then $ c_{1} $ and $ c_{2} $ both have Bob's record, they both hold two pages, and they are in agreement as to the \emph{pages} and data they are using.
+Extending the example to two \emph{candidates} $ c_{1} $ and $ c_{2} $, a mirror $ m_{1} $, a hidden service Bob, and a Tor client Alice, the purpose of the \emph{snapshot} and \emph{Merkle Tree} data structures become more clear. This is illustrated in Figure \ref{fig:bigPicture}. As before, on $ \textrm{day}_{0} $, $ c_{1} $ and $ c_{2} $ both generate and sign initial empty pages but do not accept records. On $ \textrm{day}_{1} $ however, $ c_{1} $ and $ c_{2} $ can both publish hashes of their empty \emph{Merkle Tree} databases. Since there are no \emph{pages} to reference aside from the initial base \emph{pages}, $ c_{1} $ and $ c_{2} $ should both be in agreement and $ m_{1} $, Alice, and Bob can all see that they are \emph{candidates} because their published hashes are in the majority. However, if $ c_{2} $ acts maliciously and causes the rare event that the majority is evenly split, two \emph{quorums} will be generated, which $ c_{1} $ and $ c_{2} $ are each a part of. However, this unlikely scenario does not change the behaviour of the system and everything operates as before. In either case, Bob sends to $ c_{1 \le j \le 2} $ his Registration record. As before, $ c_{j} $ adds the record to its page and at the next 15 minute mark sends the \emph{snapshot} out to the other \emph{quorum} nodes. The snapshot is illustrated in Figure \ref{fig:sampleSnapshot}. Then $ c_{1} $ and $ c_{2} $ both have Bob's record, they both hold two pages, and they are in agreement as to the \emph{pages} and data they are using.
 
 \begin{figure}
 	\begin{lstlisting}
@@ -513,7 +513,7 @@ $ m_{1} $ mirrors the \emph{quorum}, so Alice can query $ m_{1} $ for a name and
 
 \subsection{General Example}
 
-Generally, there are $ N \in \textbf{Z} $ \emph{candidate} nodes $ c_{1..N} $, a \emph{quorum} $ q_{1..M} $ of size $ M \in \textbf{Z} $, $ H \in \textbf{Z} $ hidden services $ hs_{1..H} $, and $ C \in \textbf{Z} $ clients $ c_{1..C} $. The $ c_{1..N} $ nodes publish the hashes of their \emph{NameCache} structures and all parties can confirm that they remain \emph{candidate} nodes as long as their hashes are in the majority. In the unlikely scenario (the chance, assuming random behavior, is $ \frac{1}{2} ^ {\frac{N}{2}} $) that the majority is evenly split, $ M $ becomes twice as large as usual. A hidden service $ hs_{1 \le j \le H} $ uploads records to a \emph{quorum} node $ q_{1 \le k \le M} $. Every $ q_{1 \le l \le M} $ shares \emph{snapshots} every 15 minutes with all other $ q_{1 \le p \neq l \le M} $, so that all \emph{quorum} node contains the record from $ hs_{1 \le j \le H} $. These records are saved long-term in \emph{pages}, and every $ q_{1 \le k \le M} $ knows and can verify the \emph{pages} used by all \emph{quorum} members. Assuming perfect behavior and consistent uptime, these \emph{pages} should always be the same. In the event that they diverge, the rules of the network and \emph{page} selection dictate how to select the ``best'' \emph{page}. Any machine may become a \emph{mirror} by synchronizing against the \emph{quorum} and fetching all \emph{pages}. The $ c_{1 \le y \le C} $ can then query that \emph{mirror} for names and perform deep verification on the response. As all names link to either other .tor or .onion names and eventually lead to .onion names, any client can resolve a name into a hidden service .onion address and perform the hidden service lookup in the traditional manner.
+Generally, there are $ N \in \textbf{Z} $ \emph{candidate} nodes $ c_{1..N} $, a \emph{quorum} $ q_{1..M} $ of size $ M \in \textbf{Z} $, $ H \in \textbf{Z} $ hidden services $ hs_{1..H} $, and $ C \in \textbf{Z} $ clients $ c_{1..C} $. The $ c_{1..N} $ nodes publish the hashes of their \emph{Merkle Tree} structures and all parties can confirm that they remain \emph{candidate} nodes as long as their hashes are in the majority. In the unlikely scenario (the chance, assuming random behavior, is $ \frac{1}{2} ^ {\frac{N}{2}} $) that the majority is evenly split, $ M $ becomes twice as large as usual. A hidden service $ hs_{1 \le j \le H} $ uploads records to a \emph{quorum} node $ q_{1 \le k \le M} $. Every $ q_{1 \le l \le M} $ shares \emph{snapshots} every 15 minutes with all other $ q_{1 \le p \neq l \le M} $, so that all \emph{quorum} node contains the record from $ hs_{1 \le j \le H} $. These records are saved long-term in \emph{pages}, and every $ q_{1 \le k \le M} $ knows and can verify the \emph{pages} used by all \emph{quorum} members. Assuming perfect behavior and consistent uptime, these \emph{pages} should always be the same. In the event that they diverge, the rules of the network and \emph{page} selection dictate how to select the ``best'' \emph{page}. Any machine may become a \emph{mirror} by synchronizing against the \emph{quorum} and fetching all \emph{pages}. The $ c_{1 \le y \le C} $ can then query that \emph{mirror} for names and perform deep verification on the response. As all names link to either other .tor or .onion names and eventually lead to .onion names, any client can resolve a name into a hidden service .onion address and perform the hidden service lookup in the traditional manner.
 
 
 

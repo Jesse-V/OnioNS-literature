@@ -6,52 +6,57 @@
 \@writefile{toc}{\contentsline {section}{\numberline {3.1}Overview}{6}{section.3.1}}
 \@writefile{toc}{\contentsline {section}{\numberline {3.2}Cryptographic Primitives}{6}{section.3.2}}
 \citation{percival2009stronger}
-\citation{TorMetrics}
-\@writefile{toc}{\contentsline {section}{\numberline {3.3}Participants}{8}{section.3.3}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}Participants}{7}{section.3.3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces There are three sets of participants in the EsgalDNS network: \emph  {mirrors}, quorum node \emph  {candidates}, and \emph  {quorum} members. The set of \emph  {quorum} nodes is chosen from the pool of up-to-date \emph  {mirrors} who are reliable nodes within the Tor network.\relax }}{8}{figure.caption.4}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3.1}Mirrors}{8}{subsection.3.3.1}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3.2}Quorum Node Candidates}{8}{subsection.3.3.2}}
+\citation{TorMetrics}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3.3}Quorum}{10}{subsection.3.3.3}}
 \newlabel{sec:Quorum}{{3.3.3}{10}{Quorum}{subsection.3.3.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.4}Data Structures}{10}{section.3.4}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.1}Page}{10}{subsection.3.4.1}}
-\newlabel{sec:Page}{{3.4.1}{10}{Page}{subsection.3.4.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.2}Snapshot}{12}{subsection.3.4.2}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.3}Name Cache}{12}{subsection.3.4.3}}
-\newlabel{sec:NameCache}{{3.4.3}{12}{Name Cache}{subsection.3.4.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.4}Binary Hashtable}{13}{subsection.3.4.4}}
-\newlabel{sec:BinaryHashtable}{{3.4.4}{13}{Binary Hashtable}{subsection.3.4.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.5}Operations}{13}{section.3.5}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.1}Synchronization}{13}{subsection.3.5.1}}
-\newlabel{sec:Synchronization}{{3.5.1}{13}{Synchronization}{subsection.3.5.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.2}Registration Creation}{14}{subsection.3.5.2}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.3}Record Modification}{17}{subsection.3.5.3}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.4}Ownership Transfer}{17}{subsection.3.5.4}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.5}Domain Renewal}{17}{subsection.3.5.5}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.6}Registration Deletion}{17}{subsection.3.5.6}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.7}Broadcast}{18}{subsection.3.5.7}}
-\newlabel{sec:Broadcast}{{3.5.7}{18}{Broadcast}{subsection.3.5.7}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces The hidden service operator uses his existing circuit (green) to inform \emph  {quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph  {snapshots} to all other \emph  {quorum} nodes $ Q_{1..4} $, where it is recorded in \emph  {pages} for long-term storage.\relax }}{19}{figure.caption.4}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}Data Structures}{11}{section.3.4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.1}Record}{11}{subsection.3.4.1}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.2}Page}{11}{subsection.3.4.2}}
+\newlabel{sec:Page}{{3.4.2}{11}{Page}{subsection.3.4.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.3}Snapshot}{12}{subsection.3.4.3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces An example \emph  {page}-chain across four \emph  {quorums}. Each \emph  {page} contains a references to a previous \emph  {page}, forming an distributed scrolling data structure. \emph  {Quorums} 1 is semi-honest and maintains its uptime, and thus has identical \emph  {pages}. \emph  {Quorum} 2's largest cluster is likewise in agreement, but there are three nodes which are acting maliciously together and have changed their \emph  {pages}. Node 5 in \emph  {quorum} 3 references an old page in attempt to bypass \emph  {quorum} 2's records, and nodes 6-7 are colluding with nodes 5-7 from \emph  {quorum} 2. Finally, \emph  {quorum} 3 has two nodes that acted honestly but did not record new records, so their \emph  {page}-chains differ from the others. However, across all four days the largest clusters are honest nodes and thus integrity remains in the \emph  {page}-chain.\relax }}{13}{figure.caption.5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.4}AVL Tree}{14}{subsection.3.4.4}}
+\newlabel{sec:AVLTree}{{3.4.4}{14}{AVL Tree}{subsection.3.4.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.5}Hashtable Bitset}{14}{subsection.3.4.5}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.5}Operations}{15}{section.3.5}}
+\newlabel{sec:Operations}{{3.5}{15}{Operations}{section.3.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.1}Synchronization}{15}{subsection.3.5.1}}
+\newlabel{sec:Synchronization}{{3.5.1}{15}{Synchronization}{subsection.3.5.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.2}Broadcast}{17}{subsection.3.5.2}}
+\newlabel{sec:Broadcast}{{3.5.2}{17}{Broadcast}{subsection.3.5.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces The hidden service operator uses his existing circuit (green) to inform \emph  {quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph  {snapshots} to all other \emph  {quorum} nodes $ Q_{1..4} $, where it is recorded in \emph  {pages} for long-term storage.\relax }}{18}{figure.caption.6}}
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{fig:recordBroadcast}{{3.1}{19}{The hidden service operator uses his existing circuit (green) to inform \emph {quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph {snapshots} to all other \emph {quorum} nodes $ Q_{1..4} $, where it is recorded in \emph {pages} for long-term storage.\relax }{figure.caption.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.8}Registration Query}{19}{subsection.3.5.8}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces A sample empty \emph  {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }}{21}{figure.caption.5}}
-\newlabel{fig:emptyPage}{{3.2}{21}{A sample empty \emph {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }{figure.caption.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.6}Examples and Structural Induction}{21}{section.3.6}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.1}Base Case}{21}{subsection.3.6.1}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }}{22}{figure.caption.6}}
-\newlabel{fig:sampleRecord}{{3.3}{22}{Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }{figure.caption.6}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.4}{\ignorespaces $ c_{1} $'s page, containing a single registration record.\relax }}{23}{figure.caption.7}}
-\newlabel{fig:c1page}{{3.4}{23}{$ c_{1} $'s page, containing a single registration record.\relax }{figure.caption.7}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.2}First Expansion}{23}{subsection.3.6.2}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.3}General Example}{24}{subsection.3.6.3}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.5}{\ignorespaces Sample snapshot from $ c_{j} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }}{25}{figure.caption.8}}
-\newlabel{fig:sampleSnapshot}{{3.5}{25}{Sample snapshot from $ c_{j} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }{figure.caption.8}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.6}{\ignorespaces The hidden service operator Bob anonymously sends a record to the \emph  {quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph  {quorum}, which Alice anonymously queries for Bob's domain name.\relax }}{26}{figure.caption.9}}
-\newlabel{fig:bigPicture}{{3.6}{26}{The hidden service operator Bob anonymously sends a record to the \emph {quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph {quorum}, which Alice anonymously queries for Bob's domain name.\relax }{figure.caption.9}{}}
+\newlabel{fig:recordBroadcast}{{3.3}{18}{The hidden service operator uses his existing circuit (green) to inform \emph {quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph {snapshots} to all other \emph {quorum} nodes $ Q_{1..4} $, where it is recorded in \emph {pages} for long-term storage.\relax }{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.3}Create}{18}{subsection.3.5.3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.4}Modify}{21}{subsection.3.5.4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.5}Move}{21}{subsection.3.5.5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.6}Renew}{21}{subsection.3.5.6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.7}Delete}{21}{subsection.3.5.7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.8}Domain Query}{22}{subsection.3.5.8}}
+\newlabel{sec:DomainQuery}{{3.5.8}{22}{Domain Query}{subsection.3.5.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.9}Onion Query}{23}{subsection.3.5.9}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.6}Examples and Structural Induction}{23}{section.3.6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.1}Base Case}{23}{subsection.3.6.1}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.4}{\ignorespaces A sample empty \emph  {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }}{24}{figure.caption.7}}
+\newlabel{fig:emptyPage}{{3.4}{24}{A sample empty \emph {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }{figure.caption.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.5}{\ignorespaces Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }}{25}{figure.caption.8}}
+\newlabel{fig:sampleRecord}{{3.5}{25}{Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.2}First Expansion}{25}{subsection.3.6.2}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.6}{\ignorespaces $ c_{1} $'s page, containing a single registration record.\relax }}{26}{figure.caption.9}}
+\newlabel{fig:c1page}{{3.6}{26}{$ c_{1} $'s page, containing a single registration record.\relax }{figure.caption.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.7}{\ignorespaces Sample snapshot from $ c_{j} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }}{27}{figure.caption.10}}
+\newlabel{fig:sampleSnapshot}{{3.7}{27}{Sample snapshot from $ c_{j} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }{figure.caption.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.8}{\ignorespaces The hidden service operator Bob anonymously sends a record to the \emph  {quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph  {quorum}, which Alice anonymously queries for Bob's domain name.\relax }}{28}{figure.caption.11}}
+\newlabel{fig:bigPicture}{{3.8}{28}{The hidden service operator Bob anonymously sends a record to the \emph {quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph {quorum}, which Alice anonymously queries for Bob's domain name.\relax }{figure.caption.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.3}General Example}{28}{subsection.3.6.3}}
 \@setckpt{doc/solution}{
-\setcounter{page}{27}
+\setcounter{page}{30}
 \setcounter{equation}{0}
-\setcounter{enumi}{4}
+\setcounter{enumi}{3}
 \setcounter{enumii}{3}
 \setcounter{enumiii}{0}
 \setcounter{enumiv}{0}
@@ -64,7 +69,7 @@
 \setcounter{subsubsection}{0}
 \setcounter{paragraph}{0}
 \setcounter{subparagraph}{0}
-\setcounter{figure}{6}
+\setcounter{figure}{8}
 \setcounter{table}{0}
 \setcounter{savemainpageno}{0}
 \setcounter{savefrontpageno}{3}
