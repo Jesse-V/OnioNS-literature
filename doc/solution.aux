@@ -1,50 +1,55 @@
 \relax 
 \providecommand\hyper@newdestlabel[2]{}
 \citation{SindarinDict}
-\@writefile{toc}{\contentsline {chapter}{\numberline {6}SOLUTION}{20}{chapter.6}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}SOLUTION}{6}{chapter.3}}
 \@writefile{loa}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {section}{\numberline {6.1}Overview}{20}{section.6.1}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.2}Components}{20}{section.6.2}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.1}Cryptographic Primitives}{20}{subsection.6.2.1}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.1}Overview}{6}{section.3.1}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}Cryptographic Primitives}{6}{section.3.2}}
 \citation{percival2009stronger}
 \citation{TorMetrics}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.2}Participants}{22}{subsection.6.2.2}}
-\@writefile{toc}{\contentsline {subsubsection}{Mirrors}{22}{section*.9}}
-\@writefile{toc}{\contentsline {subsubsection}{Quorum Node Candidates}{22}{section*.10}}
-\@writefile{toc}{\contentsline {subsubsection}{Quorum}{24}{section*.11}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.3}Page}{24}{subsection.6.2.3}}
-\newlabel{sec:Page}{{6.2.3}{24}{Page}{subsection.6.2.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.4}Snapshot}{25}{subsection.6.2.4}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.5}NameCache}{26}{subsection.6.2.5}}
-\newlabel{sec:NameCache}{{6.2.5}{26}{NameCache}{subsection.6.2.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.6}Synchronization}{26}{subsection.6.2.6}}
-\newlabel{sec:Synchronization}{{6.2.6}{26}{Synchronization}{subsection.6.2.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.7}Registration Creation}{27}{subsection.6.2.7}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.8}Record Modification}{30}{subsection.6.2.8}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.9}Ownership Transfer}{30}{subsection.6.2.9}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.10}Domain Renewal}{30}{subsection.6.2.10}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.11}Registration Deletion}{30}{subsection.6.2.11}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.12}Broadcast}{31}{subsection.6.2.12}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.1}{\ignorespaces The hidden service operator uses his existing circuit (green) to inform \emph  {quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph  {snapshots} to all other \emph  {quorum} nodes $ Q_{1..4} $, where it is recorded in \emph  {pages} for long-term storage.\relax }}{32}{figure.caption.12}}
-\newlabel{fig:recordBroadcast}{{6.1}{32}{The hidden service operator uses his existing circuit (green) to inform \emph {quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph {snapshots} to all other \emph {quorum} nodes $ Q_{1..4} $, where it is recorded in \emph {pages} for long-term storage.\relax }{figure.caption.12}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.13}Registration Query}{32}{subsection.6.2.13}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.2}{\ignorespaces A sample empty \emph  {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }}{34}{figure.caption.13}}
-\newlabel{fig:emptyPage}{{6.2}{34}{A sample empty \emph {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }{figure.caption.13}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.3}Examples and Structural Induction}{34}{section.6.3}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.1}Base Case}{34}{subsection.6.3.1}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.3}{\ignorespaces Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }}{35}{figure.caption.14}}
-\newlabel{fig:sampleRecord}{{6.3}{35}{Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }{figure.caption.14}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.4}{\ignorespaces $ c_{1} $'s page, containing a single registration record.\relax }}{36}{figure.caption.15}}
-\newlabel{fig:c1page}{{6.4}{36}{$ c_{1} $'s page, containing a single registration record.\relax }{figure.caption.15}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.2}First Expansion}{36}{subsection.6.3.2}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.3}General Example}{37}{subsection.6.3.3}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.5}{\ignorespaces Sample snapshot from $ c_{j} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }}{38}{figure.caption.16}}
-\newlabel{fig:sampleSnapshot}{{6.5}{38}{Sample snapshot from $ c_{j} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }{figure.caption.16}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.6}{\ignorespaces The hidden service operator Bob anonymously sends a record to the \emph  {quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph  {quorum}, which Alice anonymously queries for Bob's domain name.\relax }}{39}{figure.caption.17}}
-\newlabel{fig:bigPicture}{{6.6}{39}{The hidden service operator Bob anonymously sends a record to the \emph {quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph {quorum}, which Alice anonymously queries for Bob's domain name.\relax }{figure.caption.17}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.4}Fault Tolerance}{39}{section.6.4}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}Participants}{8}{section.3.3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.1}Mirrors}{8}{subsection.3.3.1}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.2}Quorum Node Candidates}{8}{subsection.3.3.2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.3}Quorum}{10}{subsection.3.3.3}}
+\newlabel{sec:Quorum}{{3.3.3}{10}{Quorum}{subsection.3.3.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}Data Structures}{10}{section.3.4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.1}Page}{10}{subsection.3.4.1}}
+\newlabel{sec:Page}{{3.4.1}{10}{Page}{subsection.3.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.2}Snapshot}{12}{subsection.3.4.2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.3}Name Cache}{12}{subsection.3.4.3}}
+\newlabel{sec:NameCache}{{3.4.3}{12}{Name Cache}{subsection.3.4.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.4}Binary Hashtable}{13}{subsection.3.4.4}}
+\newlabel{sec:BinaryHashtable}{{3.4.4}{13}{Binary Hashtable}{subsection.3.4.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.5}Operations}{13}{section.3.5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.1}Synchronization}{13}{subsection.3.5.1}}
+\newlabel{sec:Synchronization}{{3.5.1}{13}{Synchronization}{subsection.3.5.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.2}Registration Creation}{14}{subsection.3.5.2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.3}Record Modification}{17}{subsection.3.5.3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.4}Ownership Transfer}{17}{subsection.3.5.4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.5}Domain Renewal}{17}{subsection.3.5.5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.6}Registration Deletion}{17}{subsection.3.5.6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.7}Broadcast}{18}{subsection.3.5.7}}
+\newlabel{sec:Broadcast}{{3.5.7}{18}{Broadcast}{subsection.3.5.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces The hidden service operator uses his existing circuit (green) to inform \emph  {quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph  {snapshots} to all other \emph  {quorum} nodes $ Q_{1..4} $, where it is recorded in \emph  {pages} for long-term storage.\relax }}{19}{figure.caption.4}}
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:recordBroadcast}{{3.1}{19}{The hidden service operator uses his existing circuit (green) to inform \emph {quorum} node $ Q_{5} $ of the new record. $ Q_{5} $ then distributes it via \emph {snapshots} to all other \emph {quorum} nodes $ Q_{1..4} $, where it is recorded in \emph {pages} for long-term storage.\relax }{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.8}Registration Query}{19}{subsection.3.5.8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces A sample empty \emph  {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }}{21}{figure.caption.5}}
+\newlabel{fig:emptyPage}{{3.2}{21}{A sample empty \emph {page}, $ p_{1,1} $, encoded in JSON and base64.\relax }{figure.caption.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.6}Examples and Structural Induction}{21}{section.3.6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.1}Base Case}{21}{subsection.3.6.1}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }}{22}{figure.caption.6}}
+\newlabel{fig:sampleRecord}{{3.3}{22}{Sample registration record from a hidden service, encoded in JSON and base64. The ``sub.example.tor'' $ \to $ ``example.tor'' $ \to $ ``exampleruyw6wgve.onion'' references can be resolved recursively.\relax }{figure.caption.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.4}{\ignorespaces $ c_{1} $'s page, containing a single registration record.\relax }}{23}{figure.caption.7}}
+\newlabel{fig:c1page}{{3.4}{23}{$ c_{1} $'s page, containing a single registration record.\relax }{figure.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.2}First Expansion}{23}{subsection.3.6.2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.3}General Example}{24}{subsection.3.6.3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.5}{\ignorespaces Sample snapshot from $ c_{j} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }}{25}{figure.caption.8}}
+\newlabel{fig:sampleSnapshot}{{3.5}{25}{Sample snapshot from $ c_{j} $, containing one registration record $ r_{reg} $ from a hidden service.\relax }{figure.caption.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.6}{\ignorespaces The hidden service operator Bob anonymously sends a record to the \emph  {quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph  {quorum}, which Alice anonymously queries for Bob's domain name.\relax }}{26}{figure.caption.9}}
+\newlabel{fig:bigPicture}{{3.6}{26}{The hidden service operator Bob anonymously sends a record to the \emph {quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph {quorum}, which Alice anonymously queries for Bob's domain name.\relax }{figure.caption.9}{}}
 \@setckpt{doc/solution}{
-\setcounter{page}{40}
+\setcounter{page}{27}
 \setcounter{equation}{0}
 \setcounter{enumi}{4}
 \setcounter{enumii}{3}
@@ -53,9 +58,9 @@
 \setcounter{footnote}{0}
 \setcounter{mpfootnote}{0}
 \setcounter{part}{0}
-\setcounter{chapter}{6}
-\setcounter{section}{4}
-\setcounter{subsection}{0}
+\setcounter{chapter}{3}
+\setcounter{section}{6}
+\setcounter{subsection}{3}
 \setcounter{subsubsection}{0}
 \setcounter{paragraph}{0}
 \setcounter{subparagraph}{0}
@@ -76,9 +81,9 @@
 \setcounter{algocfline}{0}
 \setcounter{algocfproc}{0}
 \setcounter{algocf}{0}
-\setcounter{Item}{32}
+\setcounter{Item}{39}
 \setcounter{Hfootnote}{0}
-\setcounter{bookmark@seq@number}{21}
+\setcounter{bookmark@seq@number}{15}
 \setcounter{tkz@gr@a}{0}
 \setcounter{tkz@gr@b}{0}
 \setcounter{tkz@gr@c}{0}
@@ -93,5 +98,5 @@
 \setcounter{tkza@tmp}{0}
 \setcounter{parentequation}{0}
 \setcounter{lstlisting}{0}
-\setcounter{section@level}{1}
+\setcounter{section@level}{2}
 }
