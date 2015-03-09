@@ -3,21 +3,29 @@
 
 \section{Assumptions and Threat Model}
 
-One of the primary assumptions that I make in this system is that not all Tor nodes can be trusted. Some of them may be run by malicious operators, curious researchers, or experimenting developers. They may be wiretapped, the Tor software modified and recompiled, or they may otherwise behave in an abnormal fashion. I assume that adversaries have control over some of the Tor network, they have access to large amounts of computational and financial resources, and that they have access to portions of Internet traffic, including portions of Tor traffic. I also assume that they do not have global and total Internet monitoring capabilities and I make no attempt to defend against such an attacker, although it should be noted this is an assumption also made by Tor. I work under the belief that attackers are not capable of cryptographically breaking properly-implemented TLS connections and their modern components, particularly the AES cipher, ECDHE key exchange, and the SHA2 series of digests, and that they maintain no backdoors in the Botan and OpenSSL implementations of these algorithms. Lastly, I assume that adversaries monitor and may attempt to modify the DNS record databases, but I assume that at least 50 percent of the Tor network is trustworthy and behave normally in accordance with Tor and EsgalDNS specifications.
+The design of EsgalDNS on several main assumptions and threat vectors:
+
+\begin{itemize}
+  \item Not all Tor nodes can be trusted. It is already well-known in the Tor community that some Tor nodes are run by malicious operators, curious researchers, experimenting developers, or government organizations. Nodes can be wiretapped, become semi-honest, or behave in an abnormal fashion. However, the majority of Tor nodes are honest and trustworthy: a reasonable assumption considering that Tor's large userbase must make this assumption when using Tor for anonymity or privacy-enhancement purposes.
+  \item For an $ M $-sized set chosen randomly from Tor nodes that have the stable and fast flags, $ \ceil[\big]{\frac{M}{2}} $ or more of them are at least semi-honest.
+  \item The amount of dishonest Tor nodes does not increase in response to the inclusion of EsgalDNS into Tor infrastructure. Specifically, that if an attacker Eve can predict the next set of \emph{quorum} nodes (section \ref{sec:Quorum}) that Eve does not have enough time to make those nodes dishonest. This is a reasonable assumption because regular Tor traffic is far more valuable to an attacker than DNS data is, so penetration of the Tor network would have occurred already if Eve meant to introduce disruption. EsgalDNS data structures are almost all public anyway.
+  \item Adversaries have access to some of Tor inter-node traffic and to portions of general Internet communication. However, attackers do not have not have a global view of Internet traffic; namely they cannot always correlate connections into the Tor network with connections out of the Tor network. This assumption is also made by the Tor community and developers. No attempt is made to defend against a global attacker from either Tor or EsgalDNS.
+  \item Adversaries are not breaking properly-implemented Tor circuits and their modern components, namely TLS 1.2, the AES cipher, ECDHE key exchange, and the SHA2 series of digests, and that they maintain no backdoors in the Botan and OpenSSL implementations of these algorithms.
+\end{itemize}
 
 \section{Design Principles}
 
 Tor's high security environment is challenging to the inclusion of additional capabilities, even to systems that are backwards compatible to existing infrastructure. Anonymity, privacy, and general security are of paramount importance. We enumerate a short list of requirements for any secure DNS system designed for safe use by Tor clients. We later show how existing works do not meet these requirements and how we overcome these challenges with EsgalDNS.
 
 \begin{enumerate}
-	\item The registrations must be anonymous; it should be infeasible to identify the registrant from the registration, including over the wire.
-	\item Lookups must be anonymous or at least privacy-enhanced; it should not be trivial to determine what hidden services a client is interested in.
-	\item Registrations must be publicly confirmable; clients must be able to verify that the registration came from the desired hidden service and that the registration is not a forgery.
-	\item Registrations must be securely unique, or have an extremely high chance of being securely unique such as when this property relies on the collision-free property of cryptographic hashes.
+	\item The registrations must be anonymous; it should be infeasible to identify the registrant from the registration.
+	\item Lookups must be anonymous or at least privacy-enhanced; it should not be trivial to determine both a client's identity and the hidden service that the client is requesting.
+	\item Registrations must be publicly confirmable; all parties must be able to verify that the registration came from the desired hidden service and that the registration is not a forgery. % todo: EsgalDNS should show the resolved .onion to confirm this
+	\item Registrations must be securely unique, or have an extremely high chance of being securely unique such as when this property relies on the collision-free property of cryptographic hash functions.
 	\item It must be distributed. The Tor community will adamantly reject any centralized solution for Tor hidden services for security reasons, as centralized control makes correlations easy, violating our first two requirements.
 	\item It must remain simple to use. Usability is key as most Tor users are not security experts. Tor hides non-essential details like routing information behind the scenes, so additional software should follow suite.
 	\item It must remain backwards compatible; the existing Tor infrastructure must still remain functional.
-	\item It should not be feasible to maliciously modify or falsify registrations in the database or in transit, even though insider attacks.
+	\item It should not be feasible to maliciously modify or falsify registrations in the database or in transit though insider attacks.
 \end{enumerate}
 
 Several additional objectives, although they are not requirements, revolve around performance: it should be assumed that it is impractical for clients to download the entirety or large portions of the DNS database in order to verify any of the requirements, a DNS system should take a reasonable amount of time to resolve domain name queries, and that the system should not introduce any significant load on client computers.
