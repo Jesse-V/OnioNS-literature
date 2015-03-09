@@ -281,23 +281,28 @@ Any hidden service operator may claim any second-level domain name that is not c
 	\item Makes domain squatting more difficulty, where someone claims one or more second-level domains on a whim for the sole purpose of denying them to others. As hidden service operators typically remain anonymous, it is difficulty for one to contact them and request relinquishing of a domain, nor is there a central authority to force relinquishing through a court order or other formal means.
 \end{enumerate}
 
-Therefore we incorporate a proof-of-work scheme that makes registration computationally intensive but is also easily verified by anyone. A Create record consists of nine components: \emph{type}, \emph{nameList}, \emph{contact}, \emph{timestamp}, \emph{consensusHash}, \emph{nonce}, \emph{pow}, \emph{recordSig}, and \emph{pubHSKey}. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. Fields that are optional are blank unless specified, and all fields are encoded in base64, except for \emph{nameList}, \emph{contact}, and \emph{timestamp}, which are encoded in standard UTF-8.
+Therefore we incorporate a proof-of-work scheme that makes registration computationally intensive but is also easily verified by anyone. A Create record consists of nine components: \emph{type}, \emph{nameList}, \emph{contact}, \emph{timestamp}, \emph{consensusHash}, \emph{nonce}, \emph{pow}, \emph{recordSig}, and \emph{pubHSKey}. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. Fields that are optional are blank unless specified, and all fields are encoded in base64, except for \emph{nameList}, \emph{contact}, and \emph{timestamp}, which are encoded in standard UTF-8. These are defined in Table \ref{table:createTable}.
 
+\renewcommand{\arraystretch}{1.75} % increase spacing between columns
 \begin{center}
-    \begin{tabular}{ | l | l | p{9cm} |}
+    \begin{longtabu}{ | l | c | p{9.5cm} |}
     \hline
-    \textbf{Field} & \textbf{Required?} & \textbf{Description} \\ \hline
-    type & Yes & A textual label containing the type of record. In this case, \emph{type} is set to ``Create''. \\ \hline
-    nameList & Yes & An array list of up to 24 domain names. Each domain name consists of one or more textual labels prefixing the .tor TLD, delimited by dots. Thus a second-level domain would be example.tor. Domain names can point to other domain names with either .tor or .onion TLDs; this is similar to the Clearnet DNS where domains can be chained but eventually resolve to an IP address. There can be up to eight name-separator pairs prefixing the TLD, and each name can be up to 32 characters long. Domain names must use a second-level domain listed in this field so that hidden service operators cannot claim subdomains on a base domain name that they do not own. \\ \hline
-    contact & No & The fingerprint of the HS operator's PGP key, if he has one. If the fingerprint is listed, clients may query a public keyserver for this fingerprint, obtain the operator's PGP public key, and contact him over encrypted email. \\ \hline
-	timestamp & Yes & The UNIX timestamp of when the operator created the registration and began the proof-of-work to validate it. \\ \hline
-	consensusHash & Yes & The SHA-384 hash of the morning's consensus document at the time of registration. This is a provable timestamp, since it can be matched against archives of the consensus document. Quorum nodes will not accept registration records that reference a consensus document more than 48 hours old. \\ \hline
-	nonce & Yes & Four bytes that serve as a source of randomness for the proof-of-work, described below. \\ \hline
-    pow & Yes & 16 bytes that demonstrate the result of the proof-of-work. \\ \hline
-    recordSig & Yes & The digital signature of all preceding fields, signed using the hidden service's private key. \\ \hline
-    pubHSKey & Yes & The public key of the hidden service. If the operator is claiming a subdomain of any depth, this key must match the \emph{pubHSKey} of the top domain name.\\ \hline
-    \end{tabular}
+    \textbf{Field} & \textbf{Required?} & \textbf{Description} \\
+    type & Yes & A textual label containing the type of record. In this case, \emph{type} is set to ``Create''. \\
+    nameList & Yes & An array list of up to 24 domain names. Each domain name consists of one or more textual labels prefixing the .tor TLD, delimited by dots. Thus a second-level domain would be example.tor. Domain names can point to other domain names with either .tor or .onion TLDs; this is similar to the Clearnet DNS where domains can be chained but eventually resolve to an IP address. There can be up to eight name-separator pairs prefixing the TLD, and each name can be up to 32 characters long. Domain names must use a second-level domain listed in this field so that hidden service operators cannot claim subdomains on a base domain name that they do not own. \\
+    contact & No & The fingerprint of the HS operator's PGP key, if he has one. If the fingerprint is listed, clients may query a public keyserver for this fingerprint, obtain the operator's PGP public key, and contact him over encrypted email. \\
+	timestamp & Yes & The UNIX timestamp of when the operator created the registration and began the proof-of-work to validate it. \\
+	consensusHash & Yes & The SHA-384 hash of the morning's consensus document at the time of registration. This is a provable timestamp, since it can be matched against archives of the consensus document. Quorum nodes will not accept registration records that reference a consensus document more than 48 hours old. \\
+	nonce & Yes & Four bytes that serve as a source of randomness for the proof-of-work, described below. \\
+    pow & Yes & 16 bytes that demonstrate the result of the proof-of-work. \\
+    recordSig & Yes & The digital signature of all preceding fields, signed using the hidden service's private key. \\
+    pubHSKey & Yes & The public key of the hidden service. If the operator is claiming a subdomain of any depth, this key must match the \emph{pubHSKey} of the top domain name.\\
+    \hline
+    \caption{Fields in the Create record. Every record is self-signed and requires the solving of proof-of-work before it is valid.}
+    \end{longtabu}
+	\label{table:createTable}
 \end{center}
+% todo: table label and table reference do not match
 
 A record is made valid through the completion of the proof-of-work process. The hidden service operator must find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done. The \emph{difficulty} is doubled every 1460 days. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated, which effectively forces the computation to be performed by a machine owned by the HS operator. When the proof-of-work is complete, the valid and complete record is represented in JSON format for transmission to the \emph{quorum}.
 
