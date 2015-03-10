@@ -23,7 +23,7 @@ Tor's high security environment is challenging to the inclusion of additional ca
 	\item Registrations must be publicly confirmable; all parties must be able to verify that the registration came from the desired hidden service and that the registration is not a forgery. % todo: EsgalDNS should show the resolved .onion to confirm this
 	\item Registrations must be securely unique, or have an extremely high chance of being securely unique such as when this property relies on the collision-free property of cryptographic hash functions.
 	\item It must be distributed. The Tor community will adamantly reject any centralized solution for Tor hidden services for security reasons, as centralized control makes correlations easy, violating our first two requirements.
-	\item It must remain simple to use. Usability is key as most Tor users are not security experts. Tor hides non-essential details like routing information behind the scenes, so additional software should follow suite.
+	\item It must remain simple to use. Usability is key as most Tor users are not security experts. Tor hides non-essential details like routing information behind the scenes, so additional software should follow suite. % suite, is that correct?
 	\item It must remain backwards compatible; the existing Tor infrastructure must still remain functional.
 	\item It should not be feasible to maliciously modify or falsify registrations in the database or in transit though insider attacks.
 \end{enumerate}
