@@ -48,7 +48,9 @@ Unlike Namecoin, EsgalDNS' \emph{page}-chain is of $ L $ days in maximal length.
 	\item Prevents the data structure from growing to an unmanageable size.
 \end{enumerate}
 
-\section{Reliability on Unreliable Hosts}
+\section{Reliability}
+
+%  on Unreliable Hosts
 
 Tor nodes have no reliability guarantee and may disappear from the network momentarily or permanently at any time. Old \emph{quorums} may disappear from the network without consequence of data loss, as their data is cloned by current \emph{mirrors}. So long as the \emph{quorum} nodes remain up for the $ \Delta i $ days that they are active, the system will suffer no loss of functionality. Nodes that become temporarily unavailable will have out-of-sync \emph{pages} and will have to fetch recent records from other \emph{quorum} nodes in the time of their absence. 
 
