@@ -1,7 +1,7 @@
 Thesis
 ======
 
-EsgalDNS: Tor-Powered Distributed DNS for Tor Hidden Services
+OnioNS: Tor-Powered Distributed DNS for Tor Hidden Services
 
 Installation
 ======

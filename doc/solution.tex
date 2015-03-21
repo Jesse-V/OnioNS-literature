@@ -3,13 +3,13 @@
 
 \section{Overview}
 
-We propose a new distributed DNS, which we are calling EsgalDNS, or Esgal Domain Name System. \emph{Esgal} is a Sindarin Elvish noun from the works of J.R.R Tolkien, meaning ``veil'' or ``cover that hides''.\cite{SindarinDict} The system translates .tor domain names to .onion hidden service addresses using syntax adapted from the Clearnet DNS. In this chapter, first we describe the construction and contents of a distributed append-only ledger called a ``page-chain'', a data structure that holds DNS records and functionally resembles Namecoin's blockchain. Secondly, we describe how this page-chain can be used by the Tor network to power a publicly-verifiable distributed DNS system on top of existing Tor hidden service infrastructure. At a high level, EsgalDNS' master page-chain is maintained by a randomly-selected rotating set of high-capacity Tor nodes. Other Tor nodes may mirror the page-chain, distributing the load and responsibilities across the network. The system supports a variety of command and control operations including Create, Domain Query, Onion Query, Modify, Move, Renew, and Delete.
+We propose Onion Name Service, or OnioNS for short. The system translates .tor domain names to .onion hidden service addresses using syntax adapted from the Clearnet DNS. In this chapter, first we describe the construction and contents of a distributed append-only ledger called a ``page-chain'', a data structure that holds DNS records and functionally resembles Namecoin's blockchain. Secondly, we describe how this page-chain can be used by the Tor network to power a publicly-verifiable distributed DNS system on top of existing Tor hidden service infrastructure. At a high level, OnionNS' master page-chain is maintained by a randomly-selected rotating set of high-capacity Tor nodes. Other Tor nodes may mirror the page-chain, distributing the load and responsibilities across the network. The system supports a variety of command and control operations including Create, Domain Query, Onion Query, Modify, Move, Renew, and Delete.
 
 % modify, move, and renew all renew, delete instantly cancels the record
 
 \section{Cryptographic Primitives}
 
-EsgalDNS makes use of cryptographic hash algorithms, digital signatures, proof-of-work, and a pseudorandom number generator. We now describe our choices of fundamental cryptographic algorithms.
+OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of-work, and a pseudorandom number generator. We now describe our choices of fundamental cryptographic algorithms.
 
 \begin{itemize}
 	\item Hash function - We choose SHA-384 for most applications for its greater resistance to preimage, collision, and pseudo-collision attacks over SHA-256, which is itself significantly stronger than Tor's default hidden service hash algorithm, SHA-1. SHA-384 is included in the National Security Agency's Suite B Cryptography for protecting up to Top Secret information.
@@ -22,7 +22,7 @@ We use the JSON format to encode records and databases of records. JSON is signi
 
 \section{Data Structures}
 
-EsgalDNS uses five main data structures: records, snapshots, pages, AVL trees, and a hashtable bitset. Here we describe these structures and how an individual machine can use them. The design assumes that the machine has access to Tor's consensus documents and can verify them; here we use the consensus documents as both a source of network and cryptographic information and as an agreed-upon time-based one-time password. In other words, the machine holding these structures can be assumed to be a Tor client.
+OnionNS uses five main data structures: records, snapshots, pages, AVL trees, and a hashtable bitset. Here we describe these structures and how an individual machine can use them. The design assumes that the machine has access to Tor's consensus documents and can verify them; here we use the consensus documents as both a source of network and cryptographic information and as an agreed-upon time-based one-time password. In other words, the machine holding these structures can be assumed to be a Tor client.
 
 \subsection{Record}
 
@@ -35,9 +35,9 @@ EsgalDNS uses five main data structures: records, snapshots, pages, AVL trees, a
 \end{figure}
 
 % relative vs against
-A record is a simple data structure that represents a single DNS operation. Every record contains a public signing key, is self-signed, and contains a full list of domain names claimed by the issuer. Anyone may claim any second-level domain name that is not currently in use. There are five different types of records, each representing a corresponding control operation: Create, Modify, Move, Renew, and Delete. 
+A record is a simple data structure that represents a single DNS operation. Every record contains a public signing key, is self-signed, and contains a full list of domain names claimed by the issuer. Anyone may claim any second-level domain name that is not currently in use. There are five different types of records, each representing a corresponding control operation: Create, Modify, Move, Renew, and Delete.
 
-As a distributed system has no central authorities from which one can purchase domain names, it is necessary to implement a system that introduces a cost of ownership. This fulfils three main purposes: 
+As a distributed system has no central authorities from which one can purchase domain names, it is necessary to implement a system that introduces a cost of ownership. This fulfils three main purposes:
 
 \begin{enumerate}
 	\item Significantly reduces the threat of record flooding.
@@ -117,9 +117,9 @@ A \emph{snapshot} is JSON-encoded textual database designed as a short-term and 
 \subsection{Page}
 \label{sec:Page}
 
-A \emph{page} is long-term JSON-encoded textual database used for archival of records. Each page contains a link to a previous page, forming an append-only public ledger known as a page-chain. In section \ref{sec:Algorithms} we describe how an individual machine can maintain its own page-chain and in section \ref{sec:TorApplication} we detail how nodes in the Tor network can maintain a common page-chain. In any fully-connected network where all participants know everyone's public keys, the page-chain becomes publicly confirmable and can be used for distributed DNS. 
+A \emph{page} is long-term JSON-encoded textual database used for archival of records. Each page contains a link to a previous page, forming an append-only public ledger known as a page-chain. In section \ref{sec:Algorithms} we describe how an individual machine can maintain its own page-chain and in section \ref{sec:TorApplication} we detail how nodes in the Tor network can maintain a common page-chain. In any fully-connected network where all participants know everyone's public keys, the page-chain becomes publicly confirmable and can be used for distributed DNS.
 
-Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, \emph{fingerprint}, and \emph{pageSig}. 
+Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, \emph{fingerprint}, and \emph{pageSig}.
 
 \begin{description}
 	\item[prevHash] \hfill \\
@@ -165,7 +165,7 @@ Note that a Bloom filter with $ k $ hash functions could be used instead of a co
 
 % merkle tree: leafs contain <domain name, recordHash>?
 
-% since we already have in this application it is only necessary to track whether a domain name exists or not. Therefore we represent each bucket as a bit. 
+% since we already have in this application it is only necessary to track whether a domain name exists or not. Therefore we represent each bucket as a bit.
 
 \subsection{Trie}
 
@@ -180,7 +180,7 @@ This following description assumes that Alice is maintaining a local page-chain 
 
 %The Modify operation renews the ownership of second-level domain names, so a record of the domain name must already exist in the page-chain and be less than $ L $ days old. Once received, \emph{quorum} nodes update the leaf in their AVL trees with the modified record.
 
-Alice creates an initial EsgalDNS database by the following procedure. Let $ i $ be the current day, and let $ \Delta i $ be the lifetime in days of a individual page.
+Alice creates an initial OnionNS database by the following procedure. Let $ i $ be the current day, and let $ \Delta i $ be the lifetime in days of a individual page.
 
 \begin{enumerate}
 	\item Download a copy of the consensus document $ cd $ published at at 00:00 GMT on day $ \floor[\big]{\frac{i}{\Delta i}} $.
@@ -216,7 +216,7 @@ Every $ \Delta s $ minutes, Alice
 	\item Increments $ x $.
 \end{enumerate}
 
-Every $ \Delta i $ days, Alice 
+Every $ \Delta i $ days, Alice
 
 \begin{enumerate}
 	\item Creates a new page $ p_{i + 1} $ and sets its \emph{prevHash} to SHA-384(\emph{prevHash} + \emph{recordList} + \emph{consensusDocHash}) from $ p_{i} $.
@@ -271,17 +271,17 @@ Once the synchronization is complete, Bob can confirm the integrity, authenticit
 
 When used inside a fully connected network such as Tor, individual nodes continue to hold their own page-chains and if they share snapshots with each other the network will, under ideal conditions, maintain a common page-chain and general database. This is possible if the Faythe character is represented by the whole or part of the rest of the network. Specifically, rather than flush $ s_{x} $ every $ \Delta s $ minutes to a single trusted source and check their \emph{pageSig}s, the communication happens with many authorities. In this situation, distributed DNS can be achieved.
 
-EsgalDNS is a distributed system and may have many participants; any machine with sufficient storage and bandwidth capacity --- including those outside the Tor network --- can obtain a full copy of all DNS information from EsgalDNS nodes. Inside the Tor network, these participants can be classified into three sets: \emph{mirrors}, quorum node \emph{candidates}, and \emph{quorum} nodes. The last set is of particular importance because \emph{quorum} nodes are the only participants to actively power EsgalDNS.
+OnionNS is a distributed system and may have many participants; any machine with sufficient storage and bandwidth capacity --- including those outside the Tor network --- can obtain a full copy of all DNS information from OnionNS nodes. Inside the Tor network, these participants can be classified into three sets: \emph{mirrors}, quorum node \emph{candidates}, and \emph{quorum} nodes. The last set is of particular importance because \emph{quorum} nodes are the only participants to actively power OnionNS.
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=0.5\textwidth]{images/LucidCharts/Participants.png}
-	\caption{There are three sets of participants in the EsgalDNS network: \emph{mirrors}, quorum node \emph{candidates}, and \emph{quorum} members. The set of \emph{quorum} nodes is chosen from the pool of up-to-date \emph{mirrors} who are reliable nodes within the Tor network.}
+	\caption{There are three sets of participants in the OnionNS network: \emph{mirrors}, quorum node \emph{candidates}, and \emph{quorum} members. The set of \emph{quorum} nodes is chosen from the pool of up-to-date \emph{mirrors} who are reliable nodes within the Tor network.}
 \end{figure}
 
 \subsection{Mirrors}
 
-\emph{Mirrors} are Tor nodes that have performed a full synchronization (section \ref{sec:Synchronization}) against the network and hold a complete copy of all EsgalDNS data structures. This may optionally respond to passive queries from clients, but do not have power to modify any data structures. \emph{Mirrors} are the largest and simplest set of participants.
+\emph{Mirrors} are Tor nodes that have performed a full synchronization (section \ref{sec:Synchronization}) against the network and hold a complete copy of all OnionNS data structures. This may optionally respond to passive queries from clients, but do not have power to modify any data structures. \emph{Mirrors} are the largest and simplest set of participants.
 
 \subsection{Quorum Node Candidates}
 
@@ -295,7 +295,7 @@ To meet the first requirement, Tor nodes must demonstrate their readiness to acc
 	\item Append the result to the Contact field in the relay descriptor sent to the authority nodes.
 \end{enumerate}
 
-While ideally this information could be placed in a special field set aside for this purpose, to ease integration with existing Tor infrastructure and third-party websites that parse the consensus document (such as Globe or Atlas) we use the Contact field, a user-defined optional entry that Tor relay operators typically use to list methods of contact such as email addresses and PGP keys. EsgalDNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends shares of donations to that address proportional to the relay's consensus weight.
+While ideally this information could be placed in a special field set aside for this purpose, to ease integration with existing Tor infrastructure and third-party websites that parse the consensus document (such as Globe or Atlas) we use the Contact field, a user-defined optional entry that Tor relay operators typically use to list methods of contact such as email addresses and PGP keys. OnionNS would not be the first system to embed special information in the Contact field; onion-tip.com identifies Bitcoin addresses in the field and then sends shares of donations to that address proportional to the relay's consensus weight.
 
 On weakness with this approach is that because this hash is published in the 00:00 GMT descriptor, an adversary could very easily forge the hash for the 01:00 GMT descriptor and onward and thus broadcast the correct hash without ever performing a synchronization. One possible solution is to combine this hash publication with a Time-based One-time Password Algorithm (TOTP) at a 1 hour time interval. Although this would not thwart collusion or the publishing of the hash elsewhere, it would make the attack non-trivial.
 
@@ -354,7 +354,7 @@ This process is illustrated in figure \ref{fig:recordBroadcast}.
 			\node[main node] (6) [right of=5] {$ Q_{4} $};
 			\node[main node] (7) [right of=6] {};
 			\node[main node] (8) [right of=7] {};
-		  
+
 			\node[main node, font=\small] (9) [below of=5] {$ N_{middle} $};
 			\node[main node] (10) [right of=9] {};
 			\node[main node, font=\small] (11) [right of=10] {$ N_{ip} $};
@@ -364,27 +364,27 @@ This process is illustrated in figure \ref{fig:recordBroadcast}.
 			\node[main node] (14) [right of=13] {};
 			\node[main node, font=\small] (15) [right of=14] {$ N_{entry} $};
 			\node[main node] (16) [right of=15] {HS};
-			
+
 			% draw 1st and 2nd part of circuit
 			\tikzstyle{EdgeStyle}=[bend right=12, -, green]
 			\Edge[](16)(15)
 			\Edge[](9)(15)
-			
+
 			% draw last part of circuit
 			\tikzstyle{EdgeStyle}=[bend left=17, -, green]
 			\Edge[](9)(11)
-			
+
 			% draw record moving from exit to 1st q. node
 			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (6) to [bend right=15] (11){};
-			
+
 			% draw verification with second q. node
 			\draw[thick, red, ->, postaction={decorate}] (12) to [bend left=15] (11){};
-			
+
 			% draw upper left propegation
 			\tikzstyle{EdgeStyle}=[bend left=12, ->, blue]
 			\Edge[](6)(2)
 			\Edge[](6)(1)
-			
+
 			% draw upper right propegation
 			\tikzstyle{EdgeStyle}=[bend left=20, ->, blue]
 			\Edge[](6)(12)
@@ -468,7 +468,7 @@ Bob creates a Create record in which she claims "example.tor" as pointing to her
 			\node[main node, font=\small] (6) [right of=5] {$ A_{middle} $};
 			\node[main node] (7) [right of=6] {};
 			\node[main node] (8) [right of=7] {};
-		  
+
 			\node[main node] (9) [below of=5] {};
 			\node[main node] (10) [right of=9] {Carol};
 			\node[main node] (11) [right of=10] {};
@@ -478,27 +478,27 @@ Bob creates a Create record in which she claims "example.tor" as pointing to her
 			\node[main node, font=\small] (14) [right of=13] {$ B_{middle} $};
 			\node[main node, font=\small] (15) [right of=14] {$ B_{entry} $};
 			\node[main node] (16) [right of=15] {Bob};
-		  
+
 			%http://www.texample.net/tikz/examples/tkz-berge/
 			%http://www.texample.net/tikz/examples/graph/
-			
+
 			\tikzstyle{EdgeStyle}=[bend right, -, green]
 			\Edge[](3)(1)
 			\tikzstyle{EdgeStyle}=[bend left=15, -, green]
 			\Edge[](1)(6)
 			\Edge[](5)(6)
-			
+
 			\draw[thick, <-, blue, postaction={decorate, decoration={text along path, text align=center, text={response}, raise=3pt}}] (5) to [bend right=15] (10){};
-			
+
 			%\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={sync}, raise=3pt}}] (10) to [bend right=15] (7){};
-			
+
 			\tikzstyle{EdgeStyle}=[bend right=15, -, green]
 			\Edge[](16)(15)
 			\Edge[](15)(14)
 			\tikzstyle{EdgeStyle}=[bend left=10, -, green]
 			\Edge[](14)(12)
 			\draw[thick, blue, <-, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (10) to [bend left=15] (12){};
-			
+
 		\end{tikzpicture}
 	\caption{The hidden service Bob anonymously sends a record to a trusted server Carol, who adds it to her page-chain. Alice later anonymously queries Carol for Bob's domain name, and Carol returns Bob's record.}
 	\label{fig:baseCaseFig}
@@ -591,7 +591,7 @@ to do...
 %			\node[main node, font=\small] (6) [right of=5] {$ A_{middle} $};
 %			\node[main node] (7) [right of=6] {$ c_{1} $};
 %			\node[main node] (8) [right of=7] {$ c_{2} $};
-%		  
+%
 %			\node[main node] (9) [below of=5] {};
 %			\node[main node] (10) [right of=9] {$ m_{1} $};
 %			\node[main node] (11) [right of=10] {};
@@ -601,30 +601,30 @@ to do...
 %			\node[main node, font=\small] (14) [right of=13] {$ B_{middle} $};
 %			\node[main node, font=\small] (15) [right of=14] {$ B_{entry} $};
 %			\node[main node] (16) [right of=15] {Bob};
-%		  
+%
 %			%http://www.texample.net/tikz/examples/tkz-berge/
 %			%http://www.texample.net/tikz/examples/graph/
-%			
+%
 %			\tikzstyle{EdgeStyle}=[bend right, -, green]
 %			\Edge[](3)(1)
 %			\tikzstyle{EdgeStyle}=[bend left=15, -, green]
 %			\Edge[](1)(6)
 %			\Edge[](5)(6)
-%			
+%
 %			\draw[thick, <-, blue, postaction={decorate, decoration={text along path, text align=center, text={response}, raise=3pt}}] (5) to [bend right=15] (10){};
-%			
+%
 %			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={sync}, raise=3pt}}] (10) to [bend right=15] (7){};
-%			
+%
 %			\tikzstyle{EdgeStyle}=[bend right=15, -, green]
 %			\Edge[](16)(15)
 %			\Edge[](15)(14)
 %			\tikzstyle{EdgeStyle}=[bend left=10, -, green]
 %			\Edge[](14)(12)
 %			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (12) to [bend left=15] (8){};
-%			
+%
 %			\tikzstyle{EdgeStyle}=[-, gray]
 %			\Edge[](7)(8)
-%			
+%
 %		\end{tikzpicture}
 %	\caption{The hidden service operator Bob anonymously sends a record to the \emph{quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph{quorum}, which Alice anonymously queries for Bob's domain name.}
 %	\label{fig:bigPicture}
@@ -633,16 +633,16 @@ to do...
 %\subsection{General Example}
 
 
-%EsgalDNS records are public knowledge and any machine may download a complete copy of all data structures that encapsulate records. Once the synchronization is complete, that machine becomes a \emph{mirror} and can be a server to other machines, like BitTorrent or other peer-to-peer networks.
+%OnionNS records are public knowledge and any machine may download a complete copy of all data structures that encapsulate records. Once the synchronization is complete, that machine becomes a \emph{mirror} and can be a server to other machines, like BitTorrent or other peer-to-peer networks.
 %
-%Let $ i $ be the current day, $ \Delta i $ be the lifetime of the \emph{quorum}, Alice be the machine becoming a \emph{mirror}, and Bob an existing \emph{mirror}. 
+%Let $ i $ be the current day, $ \Delta i $ be the lifetime of the \emph{quorum}, Alice be the machine becoming a \emph{mirror}, and Bob an existing \emph{mirror}.
 %
 %\begin{enumerate}
 %	\item Alice obtains from Bob his $ \min(i,L) $ most recent \emph{pages} in his cached \emph{page}-chain, where $ L $ is the lifetime of records.
 %	\item Alice also obtains the SHA-384 hash, $ h_{p} $, of the concatenation of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} for the \emph{page} used by each \emph{quorum} node for all \emph{quorums} between $ i - \min(i,L) $ and $ i $. Note that each $ h_{p} $ is digitally signed by its respective \emph{quorum} node. See section \ref{sec:Broadcast} for details on how this information is available to Bob.
 %	\item Alice downloads the $ \frac{\min(i,L)}{\Delta i} $ consensus documents published every $ \Delta i $ days at 00:00 GMT between days $ i - \min(i,L) $ and $ i $. Alice may download these documents from Bob, but to lighten the burden on Bob she may also obtain them from any other source. Bob may have compressed these beforehand to save space: very high compression ratios can be achieved under 7zip.
 %	\item The last item that Alice fetches from Bob is the hashtable bitset and the root of the Merkle collision table, which has been signed by all current \emph{quorum} members.
-%	\item Starting with the oldest available consensus document and working forward to day $ \floor[\big]{\frac{i}{\Delta i}} $, 
+%	\item Starting with the oldest available consensus document and working forward to day $ \floor[\big]{\frac{i}{\Delta i}} $,
 %		\begin{enumerate}
 %			\item Alice follows the procedures described in section \ref{sec:Quorum} to calculate the old \emph{quorum}.
 %			\item She confirms that the oldest \emph{page} she received from Bob is held by the largest cluster of agreeing \emph{quorum} nodes.
@@ -671,7 +671,7 @@ to do...
 %
 %sets \emph{originTime} to the current time, creates \emph{snapshotSig}, and sets $ snap_{x+1} $ to be the currently active snapshot for collecting new records.
 %	\item Define an empty array list $ arr $.
-%	\item With each node $ q_{k \ne j} $ in the \emph{quorum} using its existing one-hop Tor circuits, 
+%	\item With each node $ q_{k \ne j} $ in the \emph{quorum} using its existing one-hop Tor circuits,
 %		\begin{enumerate}
 %			\item Sends its $ snap_{x} $ and $ <pageSig_{q_{j}}, nodeFingerprint_{q_{j}}> $, every $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ it has received so far, and its signatures on the sections of the hashtable bitset and on the Merkle tree root to $ q_{k} $.
 %			\item Receives $ s_{x, k} $ and $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ from $ q_{k} $.
