@@ -38,74 +38,62 @@ As of March 2015, Tor has 2.3 million daily users that together generate 65 Gbit
 
 Tor's design focuses on being easily deployable, flexible, and well-understood. Tor also places emphasis on usability in order to attract more users; more user activity translates to an increased difficulty of isolating and breaking the privacy of any single individual. Tor however does not manipulate any application-level protocols nor does it make any attempt to defend against global attackers. Instead, its threat model assumes that the capabilities of adversaries are limited to observing fractions of Tor traffic, that they can actively delay, delete, or manipulate traffic, that they may attempt to digitally fingerprint packets, that they may run onion routers themselves, and that they may compromise a fraction of other existing routers. Together, most of the assumptions may be broadly classified as traffic analysis attacks. Tor's final focus is defending against these types of attacks.\cite{dingledine2004tor}
 
-
-
-
-
-
 \subsection{Circuit Construction}
 
-TAPm \cite{goldberg2006security}
-NTap, \cite{goldberg2013anonymity}
-NTor, on the other hand, uses the more efficient elliptic curve group Curve25519: \cite{bernstein2006curve25519}
+\emph{This section is incomplete. Here I will describe the Tor Authentication Protocol\cite{goldberg2006security}\cite{goldberg2013anonymity} which has since been extended to use ECDHE with ed25519 ECDSA: \cite{bernstein2006curve25519} and called NTor. I will walk through this protocol.}
 
 
 
 
 
 
-
-
-
-\begin{figure}[htdp]
-	\begin{minipage}[b]{0.45\linewidth}
-		\centering
-		\includegraphics[width=\textwidth]{images/Tor/circuit-construction.png}
-		\caption{Anatomy of the construction of a Tor circuit.}
-		\label{fig:figure1}
-	\end{minipage}
-	\hspace{0.5cm}
-	\begin{minipage}[b]{0.45\linewidth}
-		\centering
-		\includegraphics[width=\textwidth]{images/Tor/circuit-building-2-5.png}
-		\caption{A circuit through the Tor network.}
-		\label{fig:figure2}
-	\end{minipage}
-\end{figure}
-
-\textit{Todo: the following paragraph is not a complete description of Tor's crypto. I don't describe the NTor routing protocol.}
-
-The client first establishes a TLS connection with the first relay, $R_{1}$, using the relay's public key. The client then performs an ECDHE key exchange to negotiate $K_{1}$ which is then used to generate two symmetric session keys: a forward key $K_{1,F}$ and a backwards key $K_{1,B}$. $K_{1,F}$ is used to encrypt all communication from the client to $R_{1}$ and $K_{1,B}$ is used for all replies from $R_{1}$ to the client. These keys are used conjunction with the symmetric cipher suite negotiated during the TLS handshake, thus forming an encrypted tunnel with perfect forward secrecy. Once this one-hop circuit has been created, the client then sends $R_{1}$ the RELAY\_EXTEND command, the address of $R_{2}$, and the client's half of the Diffie-Hellman-Merkle protocol using $K_{1,F}$. $R_{1}$ performs a TLS handshake with $R_{2}$ and uses $R_{2}$'s public key to send this half of the handshake to $R_{2}$, who replies with his second half of the handshake and a hash of $K_{2}$. $R_{1}$ then forwards this to the client under $R_{1,B}$ with the RELAY\_EXTENDED command to notify the client. The client generates $K_{1,F}$ and $K_{1,B}$ from $K_{2}$, and repeats the process for $R_{3}$,\cite{ling2013protocol} as shown in Figure 3. The TCP/IP connections remain open, so the returned information travels back up the circuit to the end user.
+%\begin{figure}[htdp]
+%	\begin{minipage}[b]{0.45\linewidth}
+%		\centering
+%		\includegraphics[width=\textwidth]{images/Tor/circuit-construction.png}
+%		\caption{Anatomy of the construction of a Tor circuit.}
+%		\label{fig:figure1}
+%	\end{minipage}
+%	\hspace{0.5cm}
+%	\begin{minipage}[b]{0.45\linewidth}
+%		\centering
+%		\includegraphics[width=\textwidth]{images/Tor/circuit-building-2-5.png}
+%		\caption{A circuit through the Tor network.}
+%		\label{fig:figure2}
+%	\end{minipage}
+%\end{figure}
+%
+%\textit{Todo: the following paragraph is not a complete description of Tor's crypto. I don't describe the NTor routing protocol.}
+%
+%The client first establishes a TLS connection with the first relay, $R_{1}$, using the relay's public key. The client then performs an ECDHE key exchange to negotiate $K_{1}$ which is then used to generate two symmetric session keys: a forward key $K_{1,F}$ and a backwards key $K_{1,B}$. $K_{1,F}$ is used to encrypt all communication from the client to $R_{1}$ and $K_{1,B}$ is used for all replies from $R_{1}$ to the client. These keys are used conjunction with the symmetric cipher suite negotiated during the TLS handshake, thus forming an encrypted tunnel with perfect forward secrecy. Once this one-hop circuit has been created, the client then sends $R_{1}$ the RELAY\_EXTEND command, the address of $R_{2}$, and the client's half of the Diffie-Hellman-Merkle protocol using $K_{1,F}$. $R_{1}$ performs a TLS handshake with $R_{2}$ and uses $R_{2}$'s public key to send this half of the handshake to $R_{2}$, who replies with his second half of the handshake and a hash of $K_{2}$. $R_{1}$ then forwards this to the client under $R_{1,B}$ with the RELAY\_EXTENDED command to notify the client. The client generates $K_{1,F}$ and $K_{1,B}$ from $K_{2}$, and repeats the process for $R_{3}$,\cite{ling2013protocol} as shown in Figure 3. The TCP/IP connections remain open, so the returned information travels back up the circuit to the end user.
 
 At the application layer, this data is packed and padded into equally-sized Tor \textit{cells}, transmission units of 512 bytes. Tor further obfuscates user traffic by changing the circuit path every ten minutes,\cite{mccoy2008shining} as shown in Figure 4. A new circuit can also be requested manually by the user.
 
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.6\textwidth]{images/Tor/circuit-change-1-4.png}
-	\caption{A Tor circuit is changed periodically, creating a new user identity.}
-\end{figure}
-
-% Although a different guard node is used here, in practice the choice of entry point is preserved for extended periods of time.
-
- If this happens, end-to-end encryption is complete and an outsider near the user would be faced with up to four layers of TLS encryption: $K_{1,F}(K_{2,F}(K_{3,F}(K_{server}(\textrm{client\ request}))))$ and likewise $K_{1,B}(K_{2,B}(K_{3,B}(K_{server}(\textrm{server\ reply}))))$ for the returning traffic, making traffic analysis very difficult.
+%\begin{figure}[htbp]
+%	\centering
+%	\includegraphics[width=0.6\textwidth]{images/Tor/circuit-change-1-4.png}
+%	\caption{A Tor circuit is changed periodically, creating a new user identity.}
+%\end{figure}
+%
+%% Although a different guard node is used here, in practice the choice of entry point is preserved for extended periods of time.
+%
+% If this happens, end-to-end encryption is complete and an outsider near the user would be faced with up to four layers of TLS encryption: $K_{1,F}(K_{2,F}(K_{3,F}(K_{server}(\textrm{client\ request}))))$ and likewise $K_{1,B}(K_{2,B}(K_{3,B}(K_{server}(\textrm{server\ reply}))))$ for the returning traffic, making traffic analysis very difficult.
 
 \subsection{Consensus Documents}
 \label{sec:ConsensusDocs}
 
-These nodes in the circuit are commonly referred to as \textit{guard node}, \textit{middle relay}, and the \textit{exit node}, respectively. Only the first node is exposed to the origin of TCP traffic into Tor, and only the exit node can see the destination of traffic out of Tor. The middle router, which passes encrypted traffic between the two, is unaware of either.
-
 The Tor network is maintained by nine authority nodes, who each vote on the status of nodes and together hourly publish a digitally signed consensus document containing IPs, ports, public keys, latest status, and capabilities of all nodes in the network. The document is then redistributed by other Tor nodes to clients, enabling access to the network. The document also allows clients to authenticate Tor nodes when constructing circuits, as well as allowing Tor nodes to authenticate one another. Since all parties have prior knowledge of the public keys of the authority nodes, the consensus document cannot be forged or modified without disrupting the digital signature.\cite{xin2009design}
+
+\emph{Here I plan to detail the consensus documents that I will be using, since I use them in my Solution section.}
 
 \subsection{Hidden Services}
 \label{sec:HiddenServices}
-
-Must use the same guard node.\cite{bauer2007low}\cite{overlier2006locating}
 
 Although Tor's primary and most popular use is for secure access to the traditional Internet, since 2004 Tor also supports anonymous services, such as websites, marketplaces, or chatrooms. These are a part of the Dark Web and cannot be normally accessed outside the context of Tor. In contrast to Tor-anonymized web requests where the client is anonymous but the server is known, Tor hidden services provide bidirectional anonymity where both parties remain anonymous and never directly communicate with one another. This allows for a greater range of communication capabilities.\cite{nicolussi2011human}
 
 Tor hidden services are known only by their public RSA key. Tor does not contain a DNS system for its websites; instead the domain names of hidden services are an 80-bit truncated SHA-1 hash of its public key, postpended by the .onion top-level domain (TLD). Once the hidden service is contacted and its public key obtained, this key can be checked against the requested domain to verify the authenticity of the service server. This process is analogous to SSL certificates in the clearnet, however Tor's authenticity check leaks no identifiable information about the anonymous server. If a client obtains the hash domain name of the hidden service through a backchannel and enters it into the Tor Browser, the hidden service lookup begins.
 
-Preceding any client communication, the hidden server, Bob, first builds Tor circuits to several random relays and enables them to act as \textit{introduction points} by giving them its public key, $ B_{K} $. The server then uploads its public key and the fingerprint identity of these nodes to a distributed hashtable inside the Tor network, signing the result. When a client, Alice, requests contact with Bob, Alice's Tor software queries this hashtable, obtains $ B_{K} $ and Bob's introduction points, and builds a Tor circuit to one of them, $ ip_{1} $. Simultaneously, the client also builds a circuit to another relay, $ rp $, which she enables as a rendezvous point by telling it a one-time secret, $ sec $.
+Preceding any client communication, the hidden server, Bob, first builds Tor circuits to several random relays and enables them to act as \textit{introduction points} by giving them its public key, $ B_{K} $. The server then uploads its public key and the fingerprint identity of these nodes to a distributed hashtable inside the Tor network, signing the result. When a client, Alice, requests contact with Bob, Alice's Tor software queries this hashtable, obtains $ B_{K} $ and Bob's introduction points, and builds a Tor circuit to one of them, $ ip_{1} $. Simultaneously, the client also builds a circuit to another relay, $ rp $, which she enables as a rendezvous point by telling it a one-time secret, $ sec $. During this procedure, hidden services must continue to use their same entry node in order to avoid leaking its IP address to possibly malicious onion routers.\cite{bauer2007low}\cite{overlier2006locating}
 
 \begin{figure}[htdp]
 	\begin{minipage}[b]{0.45\linewidth}
