@@ -1,0 +1,53 @@
+reserved domain name pairs:
+
+{
+	"unavailable": [
+		"protonmail.tor",
+		"startpage.tor",
+		
+		then make top 500 websites not available, http://www.alexa.com/topsites
+			1. Tell devs to make that correlation here
+			2. Generate record
+			3. Upload record to quorum
+			
+	],	
+	{
+		"duckduckgo.tor": "3g2upl4pq6kufc4m.onion",
+		"blockchain.tor": "blockchainbdgpzk.onion",
+		"facebook.tor": "facebookcorewwwi.onion",
+		"wikileaks.tor": "suw74isz7wqzpmgu.onion"
+		"torproject.tor": "hbpvnydyyjbmhx6b.onion",
+		"tor.tor": "torproject.tor",
+		"thetorproject.tor": "torproject.tor",
+		"example.tor": 
+		"example2.tor": "example.tor",
+		"onions.tor": "example2.tor",
+		"torbrowser.tor": "torproject.tor"
+		"jessevictors.tor": 
+	},
+	{
+		"securedrop.tor": "freepress3xxs3hk.onion",
+		"BalkanLeaks.securedrop.tor": "dtsxnd3ykn32ywv6.onion",
+		"ExposeFacts.securedrop.tor": "znig4bc5rlwyj4mz.onion",
+		"Forbes.securedrop.tor": "bczjr6ciiblco5ti.onion",
+		"GawkerMedia.securedrop.tor": "gawker5oxtsc6fa7.onion",
+		"TheGlobeandMail.securedrop.tor": "n572ltkg4nld3bsz.onion",
+		"GreenpeaceNewZealand.securedrop.tor": "vtjkwwcq5osuo6uq.onion",
+		"TheGuardian.securedrop.tor": "33y6fjyhs3phzfjj.onion",
+		"TheIntercept.securedrop.tor": "y6xjgkgwj47us5ca.onion",
+		"NewYorker.securedrop.tor": "strngbxhwyuu37a3.onion",
+		"NRKbeta.securedrop.tor": "swdi5ymnwmrqhycl.onion",
+		"POGO.securedrop.tor": "dqeasamlf3jld2kz.onion",
+		"ProPublica.securedrop.tor": "pubdrop4dw6rk3aq.onion",
+		"Radio24syv.securedrop.tor": "hkjpnjbvhrxjvikd.onion",
+		"BayLeaks.securedrop.tor": "l7rt5kabupal7eo7.onion",
+		"WashingtonPost.securedrop.tor": "vbmwh445kf3fs2v4.onion",
+		"KevinPoulsen.securedrop.tor": "poulsensqiv6ocq4.onion"
+	},
+	{
+		"securedrop.theguardian.tor", "33y6fjyhs3phzfjj.onion",
+		"securedrop.pogo.tor", "dqeasamlf3jld2kz.onion",
+		"securedrop.propublica.tor", "pubdrop4dw6rk3aq.onion",
+		"securedrop.radio24syv.tor", "hkjpnjbvhrxjvikd.onion"
+	}
+}
