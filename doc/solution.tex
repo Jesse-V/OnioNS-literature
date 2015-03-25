@@ -3,7 +3,7 @@
 
 % breadth-first explanation, examples inside protocol, explain only in context of Tor
 
-% expiration of domain names by quorums, two quorums must agree, grace period
+% relative vs against
 
 \section{Overview}
 
@@ -62,6 +62,10 @@ Third, a Tor client, Alice, uses a Tor client to anonymously connect to one of t
 \end{description}
 
 \section{Basic Design}
+
+%OnionNS is a distributed system and may have many participants; any machine with sufficient storage and bandwidth capacity --- including those outside the Tor network --- can obtain a full copy of all DNS information from OnionNS nodes. Inside the Tor network, these participants can be classified into three sets: \emph{mirrors}, quorum node \emph{candidates}, and \emph{quorum} nodes. The last set is of particular importance because \emph{quorum} nodes are the only participants to actively power OnionNS.
+
+%OnionNS records are public knowledge and any machine may download a complete copy of all data structures that encapsulate records. Once the synchronization is complete, that machine becomes a \emph{mirror} and can be a server to other machines, like BitTorrent or other peer-to-peer networks.
 
 \begin{figure}[htbp]
 	\centering
@@ -184,6 +188,58 @@ Third, a Tor client, Alice, uses a Tor client to anonymously connect to one of t
 
 \subsection{Client Request}
 
+\begin{figure}[htbp]
+	\centering
+	\begin{tikzpicture}[->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
+
+			\node[main node, font=\small] (1) {$ A_{entry} $};
+			\node[main node] (2) [right of=1] {};
+			\node[main node] (3) [right of=2] {Alice};
+			\node[main node] (4) [right of=3] {};
+
+			\node[main node, font=\small] (5) [below of=1] {$ A_{exit} $};
+			\node[main node, font=\small] (6) [right of=5] {$ A_{middle} $};
+			\node[main node] (7) [right of=6] {$ c_{1} $};
+			\node[main node] (8) [right of=7] {$ c_{2} $};
+
+			\node[main node] (9) [below of=5] {};
+			\node[main node] (10) [right of=9] {$ m_{1} $};
+			\node[main node] (11) [right of=10] {};
+			\node[main node, font=\small] (12) [right of=11] {$ B_{ip} $};
+
+			\node[main node] (13) [below of=9] {};
+			\node[main node, font=\small] (14) [right of=13] {$ B_{middle} $};
+			\node[main node, font=\small] (15) [right of=14] {$ B_{entry} $};
+			\node[main node] (16) [right of=15] {Bob};
+
+			%http://www.texample.net/tikz/examples/tkz-berge/
+			%http://www.texample.net/tikz/examples/graph/
+
+			\tikzstyle{EdgeStyle}=[bend right, -, green]
+			\Edge[](3)(1)
+			\tikzstyle{EdgeStyle}=[bend left=15, -, green]
+			\Edge[](1)(6)
+			\Edge[](5)(6)
+
+			\draw[thick, <-, blue, postaction={decorate, decoration={text along path, text align=center, text={response}, raise=3pt}}] (5) to [bend right=15] (10){};
+
+			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={sync}, raise=3pt}}] (10) to [bend right=15] (7){};
+
+			\tikzstyle{EdgeStyle}=[bend right=15, -, green]
+			\Edge[](16)(15)
+			\Edge[](15)(14)
+			\tikzstyle{EdgeStyle}=[bend left=10, -, green]
+			\Edge[](14)(12)
+			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (12) to [bend left=15] (8){};
+
+			\tikzstyle{EdgeStyle}=[-, gray]
+			\Edge[](7)(8)
+
+		\end{tikzpicture}
+	\caption{The hidden service operator Bob anonymously sends a record to the \emph{quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph{quorum}, which Alice anonymously queries for Bob's domain name.}
+	\label{fig:bigPicture}
+\end{figure}
+
 % Secondly, we describe how this page-chain can be used by the Tor network to power a publicly-verifiable distributed DNS system on top of existing Tor hidden service infrastructure.
 
 
@@ -212,7 +268,9 @@ We use the JSON format to encode records and databases of records. JSON is signi
 \subsection{Record}
 \label{sec:Record}
 
+% international encodings?
 
+There are five different types of Records: Create, Modify, Move, Renew, and Delete. The latter four Records mimic the format of the Create Record with minor exceptions.
 
 \subsubsection{Create}
 
@@ -240,7 +298,7 @@ A Create record consists of nine components: \emph{type}, \emph{nameList}, \emph
 \end{center}
 % todo: table label and table reference do not match
 
-Issuers must complete the proof-of-work before transmitting the record to the recipient. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. The issuer must then find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done and \emph{count} is the number of second-level domain names claimed. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated. When the proof-of-work is complete, the valid and complete record is represented in JSON format and is ready for transmission.
+
 
 %\emph{TODO: specify how difficulty increases to counteract Moore's Law. Also, is the pow even necessary, or can that be regenerated by anyone?}
 
@@ -279,6 +337,8 @@ If a owner's private key is compromised or if they wish to relinquish ownership 
 		The digital signature of the preceding fields, signed using the machine's private key.
 \end{description}
 
+%This fingerprint is widely used in Tor infrastructure and in third-party tools as a unique identifier for individual Tor nodes.
+
 \subsection{Page}
 
 Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, \emph{fingerprint}, and \emph{pageSig}.
@@ -296,12 +356,39 @@ Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consen
 		The digital signature of the preceding fields, signed using the machine's private key.
 \end{description}
 
+the page-chain is publicly confirmable by anyone participating in or using the Tor network.
+
 \section{Protocols}
 \label{sec:Protocols}
 
 \subsection{Hidden Services}
 
 \subsubsection{Record Generation}
+
+Issuers must complete the proof-of-work before transmitting the record to the recipient. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. The issuer must then find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done and \emph{count} is the number of second-level domain names claimed. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated. When the proof-of-work is complete, the valid and complete record is represented in JSON format and is ready for transmission.
+
+\begin{figure}
+	\begin{lstlisting}
+	{
+		"names": {
+			"example.tor": "exampleruyw6wgve.onion"
+		}
+		"contact": "AD97364FC20BEC80",
+		"timestamp": 1424045024,
+		"consensusHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
+		"nonce": "AAAABw==",
+		"pow": "4I4dzaBwi4AIZW8s2m0hQQ==",
+		"recordSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ=",
+		"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
+	}
+	\end{lstlisting}
+	\caption{Sample registration record from a hidden service, encoded in JSON and base64.}
+	\label{fig:sampleRecord}
+\end{figure}
+
+%% Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. The issuer must then find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done and \emph{count} is the number of second-level domain names claimed. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated. When the proof-of-work is complete, the valid and complete record is represented in JSON format and is ready for transmission.
+
+%Bob creates a Create record in which she claims "example.tor" as pointing to her hidden service address, exampleruyw6wgve.onion. Bob then spends computational time and RAM finding a \emph{nonce} such that SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{central} consist of all fields in the Create record except \emph{recordSig} and \emph{pow}, and \emph{count} is the number of second-level domains claimed, in this case one. When the proof-of-work is complete, Bob builds a Tor circuit to Carol and sends her the Create record shown in Figure \ref{fig:sampleRecord}. This process is illustrated in Figure \ref{fig:baseCaseFig}.
 
 \subsubsection{Broadcast}
 
@@ -314,7 +401,7 @@ This process is illustrated in figure \ref{fig:recordBroadcast}.
 
 \subsection{OnioNS Servers}
 
-\subsubsection{Database Initialization}
+\subsubsection{Initialization}
 
 This following description assumes that Alice is maintaining a local page-chain in synchronization with a Faythe, a trusted second party. The functionality described here is extended to distributed environments in \ref{sec:TorApplication} -- Application Within Tor.
 
@@ -331,7 +418,38 @@ Alice creates an initial OnionNS database by the following procedure. Let $ i $ 
 	\item Digitally sign {\emph{prevHash} + \emph{recordList} + \emph{consensusDocHash} + \emph{fingerprint}} and save the signature in \emph{pageSig}.
 \end{enumerate}
 
+\begin{figure}
+	\begin{lstlisting}
+	{
+		"prevHash": 0,
+		"recordList": [],
+		"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
+		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
+		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
+	}
+	\end{lstlisting}
+	\caption{A sample empty \emph{page}, encoded in JSON and base64.}
+	\label{fig:emptyPage}
+\end{figure}
+
+\begin{figure}
+	\begin{lstlisting}
+	{
+		"originTime": 1426507551,
+		"recentRecords": [],
+		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
+		"snapshotSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
+	}
+	\end{lstlisting}
+	\caption{A sample empty \emph{snapshot}, encoded in JSON and base64.}
+	\label{fig:emptySnapshot}
+\end{figure}
+
+%When a quorum node \emph{candidate} $ c_{j} $ becomes a member of the \emph{quorum}, it constructs an empty \emph{page}. If $ i = 0 $ then $ c_{j} $ sets \emph{prevHash} to zeros and generates \emph{nodeFingerprint} and \emph{pageSig}. Otherwise then $ i > 0 $ so \emph{prevHash} is set as the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of $ p_{i - 1} $. \emph{recordList} is set as an empty array, and \emph{consensusDocHash} and \emph{nodeFingerprint} are both defined. $ c_{j} $ then signs the preceding fields with its private key, saving the result in \emph{pageSig}. Finally, it constructs a one-hop bidirectional Tor circuit to all other \emph{quorum} nodes. These circuits are used for synchronization and must remain alive for the duration of that \emph{quorum}. Overall this creates $ \frac{M * (M - 1)}{2} $ new TCP/IP links among \emph{quorum} members.
+
 \subsubsection{Page Selection}
+
+To do...
 
 \subsubsection{Synchronization}
 \label{sec:Synchronization}
@@ -346,6 +464,25 @@ Rather than continue to query Alice, Bob may wish to become his own resolver. Bo
 \end{enumerate}
 
 Once the synchronization is complete, Bob can confirm the integrity, authenticity, and uniqueness of domain names.
+
+%Let $ i $ be the current day, $ \Delta i $ be the lifetime of the \emph{quorum}, Alice be the machine becoming a \emph{mirror}, and Bob an existing \emph{mirror}.
+%
+%\begin{enumerate}
+%	\item Alice obtains from Bob his $ \min(i,L) $ most recent \emph{pages} in his cached \emph{page}-chain, where $ L $ is the lifetime of records.
+%	\item Alice also obtains the SHA-384 hash, $ h_{p} $, of the concatenation of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} for the \emph{page} used by each \emph{quorum} node for all \emph{quorums} between $ i - \min(i,L) $ and $ i $. Note that each $ h_{p} $ is digitally signed by its respective \emph{quorum} node. See section \ref{sec:Broadcast} for details on how this information is available to Bob.
+%	\item Alice downloads the $ \frac{\min(i,L)}{\Delta i} $ consensus documents published every $ \Delta i $ days at 00:00 GMT between days $ i - \min(i,L) $ and $ i $. Alice may download these documents from Bob, but to lighten the burden on Bob she may also obtain them from any other source. Bob may have compressed these beforehand to save space: very high compression ratios can be achieved under 7zip.
+%	\item The last item that Alice fetches from Bob is the hashtable bitset and the root of the Merkle collision table, which has been signed by all current \emph{quorum} members.
+%	\item Starting with the oldest available consensus document and working forward to day $ \floor[\big]{\frac{i}{\Delta i}} $,
+%		\begin{enumerate}
+%			\item Alice follows the procedures described in section \ref{sec:Quorum} to calculate the old \emph{quorum}.
+%			\item She confirms that the oldest \emph{page} she received from Bob is held by the largest cluster of agreeing \emph{quorum} nodes.
+%			\item Alice verifies the validity of the \emph{page} and the records contained within it.
+%			\item Finally, Alice progresses to the next most recent \emph{page}, repeating the procedure but also verifying that the \emph{prevHash} refers the $ p_{i - 1} $ she was just examining. This process repeats until all $ \min(i,L) $ \emph{pages} have been verified.
+%		\end{enumerate}
+%	\item Alice extracts all records from the now-validated \emph{page}-chain and constructs the AVL tree and the hashtable bitset with its Merkle tree containing the collisions. As second-level domains expire every $ L $ rotations of the \emph{quorum}, recent Create, Modify, Move, and Renew operations all act as renewals of the domain name and thus are used by Alice to generated these structures. She should process the records in reverse chronological order because a Delete operation causes immediate expiration of an existing domain.
+%	\item She confirms that the signatures on the sections of the bitset and the signatures on the Merkle root hash check out against her generated copy. If they do not, Bob may have manipulated the data and she may need to ask someone else.
+%	\item Finally, Alice may make the \emph{page}-chain and consensus documents that she downloaded from Bob and the binary hashtable that she constructed available to others. She may also respond to Domain and Onion Queries using the AVL tree. She must perform these actions once Alice becomes a quorum member \emph{candidate}.
+%\end{enumerate}
 
 \subsubsection{Quorum Qualification}
 
@@ -368,6 +505,11 @@ The second criteria requires Tor nodes to prove that has sufficient capabilities
 Both of these requirements can be determined in $ \mathcal{O}(n) $ time by anyone holding a recent or archived copy of the consensus document.
 
 \subsubsection{Record Processing}
+
+% domain expiration if server unavailable, expiration of domain names by quorums, two quorums must agree, grace period
+
+%Once received, Carol validates the record by checking the fields, the signature, and the proof-of-work. Carol accept the record if it passes. Carol has no previous knowledge of ``example.tor'' so there are no conflicts. Carol then adds the Create record into her current snapshot as shown in Figure \ref{fig:recordInSS}.
+
 
 Alice then listens for new records from herself or from third-parties. Let $ p_{i} $ be Alice's current page and $ s_{x} $ the current snapshot.
 
@@ -404,6 +546,72 @@ Every $ \Delta i $ days, Alice
 	\item Increments $ i $.
 \end{enumerate}
 
+\begin{figure}
+	\begin{lstlisting}
+	{
+		"originTime": 1426507551,
+		"recentRecords": [{
+			"names": {
+				"example.tor": "exampleruyw6wgve.onion"
+			}
+			"contact": "AD97364FC20BEC80",
+			"timestamp": 1424045024,
+			"consensusHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
+			"nonce": "AAAABw==",
+			"pow": "4I4dzaBwi4AIZW8s2m0hQQ==",
+			"recordSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ=",
+			"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
+		}],
+		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
+		"snapshotSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
+	}
+	\end{lstlisting}
+	\caption{A sample Create record has been merged into an initially-blank snapshot.}
+	\label{fig:recordInSS}
+\end{figure}
+
+\begin{figure}
+	\begin{lstlisting}
+	{
+		"prevHash": 0,
+		"recordList": [{
+			"names": {
+				"example.tor": "exampleruyw6wgve.onion"
+			}
+			"contact": "AD97364FC20BEC80",
+			"timestamp": 1424045024,
+			"consensusHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
+			"nonce": "AAAABw==",
+			"pow": "4I4dzaBwi4AIZW8s2m0hQQ==",
+			"recordSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ=",
+			"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
+		}],
+		"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
+		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
+		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
+	}
+	\end{lstlisting}
+	\caption{A snapshot containing a single Create record has merged into Carol's page.}
+	\label{fig:recordInSS}
+\end{figure}
+
+%sets \emph{originTime} to the current time, creates \emph{snapshotSig}, and sets $ snap_{x+1} $ to be the currently active snapshot for collecting new records.
+%	\item Define an empty array list $ arr $.
+%	\item With each node $ q_{k \ne j} $ in the \emph{quorum} using its existing one-hop Tor circuits,
+%		\begin{enumerate}
+%			\item Sends its $ snap_{x} $ and $ <pageSig_{q_{j}}, nodeFingerprint_{q_{j}}> $, every $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ it has received so far, and its signatures on the sections of the hashtable bitset and on the Merkle tree root to $ q_{k} $.
+%			\item Receives $ s_{x, k} $ and $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ from $ q_{k} $.
+%			\item Archives $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ and add any records that did not exist in $ snap_{x} $ to $ arr $.
+%		\end{enumerate}
+%	\item For any missing $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $, it asks a random \emph{quorum} member $ q_{i \ne k} $ for $ q_{k} $'s $ pageSig_{q_{k}} $. In this way, it has a list of \emph{page} signatures from all \emph{quorum} nodes.
+%	\item Merges $ snap_{x} $ and the records in $ arr $ into its \emph{page} and regenerates \emph{pageSig}.
+%	\item Updates its AVL tree, hashtable bitset, and Merkle collision tree, and regenerates the signatures on the bitset and on the Merkle root tree.
+%	\item Increments $ x $.
+%\end{enumerate}
+
+%Trusted authorities (e.g. the \emph{quorum} of size $ M $) can divide the bitset into $ Q $ sections, digitally sign each section, and digitally sign the root hash of the Merkle tree. This allows a DNS resolver to send a $ \frac{C * n}{Q} $-sized section of the bitset and its digital signatures to the client, rather than sending the entire bitmap, which may be larger than $ \frac{C * n}{Q} $ for some choices of $ C $, $ Q $, and the size of the signatures. The assembly of these signatures is detailed in \ref{sec:Broadcast}.
+
+%When Carol switches to a fresh page she will update her AVL tree, hashtable bitset, and trie. At that point, Alice can query Carol for ``example.com'' and Carol will return Bob's record.
 
 \subsection{Tor Clients}
 
@@ -423,10 +631,10 @@ Every $ \Delta i $ days, Alice
 
 In this manner, all parties --- in particular Tor nodes and clients --- agree on the members of the \emph{quorum} and can derive them in $ \mathcal{O}(n) $ time. As the pages and the \emph{quorum} both change every $ \Delta i $ days, \emph{quorum} nodes have an effective lifetime of $ \Delta i $ days before they are replaced by a new \emph{quorum}.
 
-
-
 \subsubsection{Domain Query}
 \label{sec:DomainQuery}
+
+% www.example.tor should be resolved to example.tor automatically, yes?
 
 Alice can optionally act as a resolver for other parties. Let Bob be a client and Faythe a third-party trusted by both Alice and Bob. Assume that Bob does not trust Alice, Bob has Faythe's public key, and that Bob has obtained a copy of the Tor consensus document published on day $ \floor[\big]{\frac{i}{\Delta i}} $ at 00:00 GMT. Faythe has divided her bitset into $ Q $ sections, digitally signed each section, digitally signed the root hash of the Merkle tree, and send the signatures to Alice.
 
@@ -440,9 +648,7 @@ Bob receives from Alice the data structures containing the domain name resolutio
 
 At verification level 1, in addition to returning all record and supplementary data structures in level 0, Alice also returns the page that contained each record and the \emph{pageSig} field from Faythe's page. Since Alice and Faythe are maintaining a common page-chain, both Alice and Faythe will be signing the same data. Bob verifies the authenticity of the page against both Alice and Faythe's public keys and proceeds with his steps in level 0.
 
-% level 2 if there's more than one trusted Faythe
-
-%
+%Verification level 2 is almost identical to level 1, but Alice also receives the digitally signed hashes of the \emph{page} held by each \emph{quorum} node. This demonstrates width verification, as Alice can confirm that the \emph{page} is in the largest cluster of \emph{quorum} nodes that are all on the same \emph{page}. It is impractical for Alice to download all \emph{pages} to verify the uniqueness and trustworthiness of a returned record, so Alice can fetch minimal additional information and rely on her trust in the Tor network (in particular the \emph{quorum}) to confirm this for her.
 
 
 \subsubsection{Onion Query}
@@ -458,7 +664,7 @@ Bob may also issue a reverse-hostname lookup to Alice to find second-level domai
 
 \section{Optimizations}
 
-%\item[Snapshot] \hfill \\
+\subsection{Snapshot}
 		A \emph{Rnapshot} is textual database designed to hold collections of Records in a short-term volatile cache. Snapshots are used to 
 		
 		
@@ -501,283 +707,3 @@ Note that a Bloom filter with $ k $ hash functions could be used instead of a co
 
 A trie, also known as a digital tree, is used for efficiently resolving Onion Queries (section \ref{sec:OnionQuery}). Each node in the trie corresponds to a base58 digit of the .onion hidden service address. These addresses are currently defined at 16 characters, so the trie has a maximum depth of 16 and up to 58 branches per node.
 
-
-
-
-% domain expiration if server unavailable
-
-
-
-
-
-
-
-
-
-
-
-
-
-% international encodings?
-
-
-
-% relative vs against
-
-
-
-
-
-
-
-
-
-%\section{Application to Tor}
-%\label{sec:TorApplication}
-%
-%When used inside a fully connected network such as Tor, individual nodes continue to hold their own page-chains and if they share snapshots with each other the network will, under ideal conditions, maintain a common page-chain and general database. This is possible if the Faythe character is represented by the whole or part of the rest of the network. Specifically, rather than flush $ s_{x} $ every $ \Delta s $ minutes to a single trusted source and check their \emph{pageSig}s, the communication happens with many authorities. In this situation, distributed DNS can be achieved.
-%
-%OnionNS is a distributed system and may have many participants; any machine with sufficient storage and bandwidth capacity --- including those outside the Tor network --- can obtain a full copy of all DNS information from OnionNS nodes. Inside the Tor network, these participants can be classified into three sets: \emph{mirrors}, quorum node \emph{candidates}, and \emph{quorum} nodes. The last set is of particular importance because \emph{quorum} nodes are the only participants to actively power OnionNS.
-%
-%\section{Examples and Structural Induction}
-%
-%In this section we provide examples of how a page-chain can be maintained with minimal participants, and then expand our example to include a larger network.
-%
-%\subsection{Base Case}
-%
-%In the most trivial case of a client Alice, a server Carol, and a hidden service Bob. Alice and Bob both trust Carol, who maintains her own local page-chain. Bob wishes to obtain ``example.tor'' which Alice will then use to anonymously communicate over the hidden service protocol with Bob. All parties are Tor clients and are capable of fetching current and past consensus documents.
-%
-%At the beginning of $ \textrm{day}_{0} $, Carol creates an initial and empty page, snapshot, AVL tree, hashtree bitset, and trie. Her blank page and snapshots are shown in Figure \ref{fig:emptyPage} and \ref{fig:emptySnapshot}, respectively.
-%
-%\begin{figure}
-%	\begin{lstlisting}
-%	{
-%		"prevHash": 0,
-%		"recordList": [],
-%		"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-%		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-%		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-%	}
-%	\end{lstlisting}
-%	\caption{A sample empty \emph{page}, encoded in JSON and base64.}
-%	\label{fig:emptyPage}
-%\end{figure}
-%
-%\begin{figure}
-%	\begin{lstlisting}
-%	{
-%		"originTime": 1426507551,
-%		"recentRecords": [],
-%		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-%		"snapshotSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-%	}
-%	\end{lstlisting}
-%	\caption{A sample empty \emph{snapshot}, encoded in JSON and base64.}
-%	\label{fig:emptySnapshot}
-%\end{figure}
-%
-%% Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. The issuer must then find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done and \emph{count} is the number of second-level domain names claimed. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated. When the proof-of-work is complete, the valid and complete record is represented in JSON format and is ready for transmission.
-%
-%Bob creates a Create record in which she claims "example.tor" as pointing to her hidden service address, exampleruyw6wgve.onion. Bob then spends computational time and RAM finding a \emph{nonce} such that SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{central} consist of all fields in the Create record except \emph{recordSig} and \emph{pow}, and \emph{count} is the number of second-level domains claimed, in this case one. When the proof-of-work is complete, Bob builds a Tor circuit to Carol and sends her the Create record shown in Figure \ref{fig:sampleRecord}. This process is illustrated in Figure \ref{fig:baseCaseFig}.
-%
-%\begin{figure}
-%	\begin{lstlisting}
-%	{
-%		"names": {
-%			"example.tor": "exampleruyw6wgve.onion"
-%		}
-%		"contact": "AD97364FC20BEC80",
-%		"timestamp": 1424045024,
-%		"consensusHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-%		"nonce": "AAAABw==",
-%		"pow": "4I4dzaBwi4AIZW8s2m0hQQ==",
-%		"recordSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ=",
-%		"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
-%	}
-%	\end{lstlisting}
-%	\caption{Sample registration record from a hidden service, encoded in JSON and base64.}
-%	\label{fig:sampleRecord}
-%\end{figure}
-%
-%
-%
-%Once received, Carol validates the record by checking the fields, the signature, and the proof-of-work. Carol accept the record if it passes. Carol has no previous knowledge of ``example.tor'' so there are no conflicts. Carol then adds the Create record into her current snapshot as shown in Figure \ref{fig:recordInSS}.
-%
-%\begin{figure}
-%	\begin{lstlisting}
-%	{
-%		"originTime": 1426507551,
-%		"recentRecords": [{
-%			"names": {
-%				"example.tor": "exampleruyw6wgve.onion"
-%			}
-%			"contact": "AD97364FC20BEC80",
-%			"timestamp": 1424045024,
-%			"consensusHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-%			"nonce": "AAAABw==",
-%			"pow": "4I4dzaBwi4AIZW8s2m0hQQ==",
-%			"recordSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ=",
-%			"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
-%		}],
-%		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-%		"snapshotSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-%	}
-%	\end{lstlisting}
-%	\caption{A sample Create record has been merged into an initially-blank snapshot.}
-%	\label{fig:recordInSS}
-%\end{figure}
-%
-%Then at the next $ \Delta s $ snapshot change, generates a fresh snapshot and merges the snapshot's contents into the page.
-%
-%\begin{figure}
-%	\begin{lstlisting}
-%	{
-%		"prevHash": 0,
-%		"recordList": [{
-%			"names": {
-%				"example.tor": "exampleruyw6wgve.onion"
-%			}
-%			"contact": "AD97364FC20BEC80",
-%			"timestamp": 1424045024,
-%			"consensusHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-%			"nonce": "AAAABw==",
-%			"pow": "4I4dzaBwi4AIZW8s2m0hQQ==",
-%			"recordSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ=",
-%			"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
-%		}],
-%		"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-%		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-%		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-%	}
-%	\end{lstlisting}
-%	\caption{A snapshot containing a single Create record has merged into Carol's page.}
-%	\label{fig:recordInSS}
-%\end{figure}
-%
-%When Carol switches to a fresh page she will update her AVL tree, hashtable bitset, and trie. At that point, Alice can query Carol for ``example.com'' and Carol will return Bob's record.
-%
-%\subsection{Trusted Party Faythe}
-%
-%Now let there be an additional party Faythe, a machine known to and trusted by Alice, Bob, and Carol. Assume that Alice does not trust Carol and that Faythe maintain a common page-chain by sharing snapshots and signatures with one another.
-%
-%Now when Alice asks Carol for ``example.tor'' at verification level 1, Carol also provides to Alice Faythe's digital signature on the page, as explained in section \ref{sec:DomainQuery}.
-%
-%\subsection{Two Trusted Parties}
-%
-%to do...
-%
-%\subsection{N Trusted Parties}
-%
-%to do...
-
-
-
-
-
-%
-%\begin{figure}[htbp]
-%	\centering
-%	\begin{tikzpicture}[->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
-%
-%			\node[main node, font=\small] (1) {$ A_{entry} $};
-%			\node[main node] (2) [right of=1] {};
-%			\node[main node] (3) [right of=2] {Alice};
-%			\node[main node] (4) [right of=3] {};
-%
-%			\node[main node, font=\small] (5) [below of=1] {$ A_{exit} $};
-%			\node[main node, font=\small] (6) [right of=5] {$ A_{middle} $};
-%			\node[main node] (7) [right of=6] {$ c_{1} $};
-%			\node[main node] (8) [right of=7] {$ c_{2} $};
-%
-%			\node[main node] (9) [below of=5] {};
-%			\node[main node] (10) [right of=9] {$ m_{1} $};
-%			\node[main node] (11) [right of=10] {};
-%			\node[main node, font=\small] (12) [right of=11] {$ B_{ip} $};
-%
-%			\node[main node] (13) [below of=9] {};
-%			\node[main node, font=\small] (14) [right of=13] {$ B_{middle} $};
-%			\node[main node, font=\small] (15) [right of=14] {$ B_{entry} $};
-%			\node[main node] (16) [right of=15] {Bob};
-%
-%			%http://www.texample.net/tikz/examples/tkz-berge/
-%			%http://www.texample.net/tikz/examples/graph/
-%
-%			\tikzstyle{EdgeStyle}=[bend right, -, green]
-%			\Edge[](3)(1)
-%			\tikzstyle{EdgeStyle}=[bend left=15, -, green]
-%			\Edge[](1)(6)
-%			\Edge[](5)(6)
-%
-%			\draw[thick, <-, blue, postaction={decorate, decoration={text along path, text align=center, text={response}, raise=3pt}}] (5) to [bend right=15] (10){};
-%
-%			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={sync}, raise=3pt}}] (10) to [bend right=15] (7){};
-%
-%			\tikzstyle{EdgeStyle}=[bend right=15, -, green]
-%			\Edge[](16)(15)
-%			\Edge[](15)(14)
-%			\tikzstyle{EdgeStyle}=[bend left=10, -, green]
-%			\Edge[](14)(12)
-%			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (12) to [bend left=15] (8){};
-%
-%			\tikzstyle{EdgeStyle}=[-, gray]
-%			\Edge[](7)(8)
-%
-%		\end{tikzpicture}
-%	\caption{The hidden service operator Bob anonymously sends a record to the \emph{quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph{quorum}, which Alice anonymously queries for Bob's domain name.}
-%	\label{fig:bigPicture}
-%\end{figure}
-%
-%\subsection{General Example}
-
-
-%OnionNS records are public knowledge and any machine may download a complete copy of all data structures that encapsulate records. Once the synchronization is complete, that machine becomes a \emph{mirror} and can be a server to other machines, like BitTorrent or other peer-to-peer networks.
-%
-%Let $ i $ be the current day, $ \Delta i $ be the lifetime of the \emph{quorum}, Alice be the machine becoming a \emph{mirror}, and Bob an existing \emph{mirror}.
-%
-%\begin{enumerate}
-%	\item Alice obtains from Bob his $ \min(i,L) $ most recent \emph{pages} in his cached \emph{page}-chain, where $ L $ is the lifetime of records.
-%	\item Alice also obtains the SHA-384 hash, $ h_{p} $, of the concatenation of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} for the \emph{page} used by each \emph{quorum} node for all \emph{quorums} between $ i - \min(i,L) $ and $ i $. Note that each $ h_{p} $ is digitally signed by its respective \emph{quorum} node. See section \ref{sec:Broadcast} for details on how this information is available to Bob.
-%	\item Alice downloads the $ \frac{\min(i,L)}{\Delta i} $ consensus documents published every $ \Delta i $ days at 00:00 GMT between days $ i - \min(i,L) $ and $ i $. Alice may download these documents from Bob, but to lighten the burden on Bob she may also obtain them from any other source. Bob may have compressed these beforehand to save space: very high compression ratios can be achieved under 7zip.
-%	\item The last item that Alice fetches from Bob is the hashtable bitset and the root of the Merkle collision table, which has been signed by all current \emph{quorum} members.
-%	\item Starting with the oldest available consensus document and working forward to day $ \floor[\big]{\frac{i}{\Delta i}} $,
-%		\begin{enumerate}
-%			\item Alice follows the procedures described in section \ref{sec:Quorum} to calculate the old \emph{quorum}.
-%			\item She confirms that the oldest \emph{page} she received from Bob is held by the largest cluster of agreeing \emph{quorum} nodes.
-%			\item Alice verifies the validity of the \emph{page} and the records contained within it.
-%			\item Finally, Alice progresses to the next most recent \emph{page}, repeating the procedure but also verifying that the \emph{prevHash} refers the $ p_{i - 1} $ she was just examining. This process repeats until all $ \min(i,L) $ \emph{pages} have been verified.
-%		\end{enumerate}
-%	\item Alice extracts all records from the now-validated \emph{page}-chain and constructs the AVL tree and the hashtable bitset with its Merkle tree containing the collisions. As second-level domains expire every $ L $ rotations of the \emph{quorum}, recent Create, Modify, Move, and Renew operations all act as renewals of the domain name and thus are used by Alice to generated these structures. She should process the records in reverse chronological order because a Delete operation causes immediate expiration of an existing domain.
-%	\item She confirms that the signatures on the sections of the bitset and the signatures on the Merkle root hash check out against her generated copy. If they do not, Bob may have manipulated the data and she may need to ask someone else.
-%	\item Finally, Alice may make the \emph{page}-chain and consensus documents that she downloaded from Bob and the binary hashtable that she constructed available to others. She may also respond to Domain and Onion Queries using the AVL tree. She must perform these actions once Alice becomes a quorum member \emph{candidate}.
-%\end{enumerate}
-%
-%
-%Verification level 2 is almost identical to level 1, but Alice also receives the digitally signed hashes of the \emph{page} held by each \emph{quorum} node. This demonstrates width verification, as Alice can confirm that the \emph{page} is in the largest cluster of \emph{quorum} nodes that are all on the same \emph{page}. It is impractical for Alice to download all \emph{pages} to verify the uniqueness and trustworthiness of a returned record, so Alice can fetch minimal additional information and rely on her trust in the Tor network (in particular the \emph{quorum}) to confirm this for her.
-%
-%Trusted authorities (e.g. the \emph{quorum} of size $ M $) can divide the bitset into $ Q $ sections, digitally sign each section, and digitally sign the root hash of the Merkle tree. This allows a DNS resolver to send a $ \frac{C * n}{Q} $-sized section of the bitset and its digital signatures to the client, rather than sending the entire bitmap, which may be larger than $ \frac{C * n}{Q} $ for some choices of $ C $, $ Q $, and the size of the signatures. The assembly of these signatures is detailed in \ref{sec:Broadcast}.
-%
-%
-%This fingerprint is widely used in Tor infrastructure and in third-party tools as a unique identifier for individual Tor nodes.
-%
-%
-%When embedded within Tor, the page-chain is publicly confirmable by anyone participating in or using the Tor network.
-%
-%
-%
-%When a quorum node \emph{candidate} $ c_{j} $ becomes a member of the \emph{quorum}, it constructs an empty \emph{page}. If $ i = 0 $ then $ c_{j} $ sets \emph{prevHash} to zeros and generates \emph{nodeFingerprint} and \emph{pageSig}. Otherwise then $ i > 0 $ so \emph{prevHash} is set as the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of $ p_{i - 1} $. \emph{recordList} is set as an empty array, and \emph{consensusDocHash} and \emph{nodeFingerprint} are both defined. $ c_{j} $ then signs the preceding fields with its private key, saving the result in \emph{pageSig}. Finally, it constructs a one-hop bidirectional Tor circuit to all other \emph{quorum} nodes. These circuits are used for synchronization and must remain alive for the duration of that \emph{quorum}. Overall this creates $ \frac{M * (M - 1)}{2} $ new TCP/IP links among \emph{quorum} members.
-%
-%sets \emph{originTime} to the current time, creates \emph{snapshotSig}, and sets $ snap_{x+1} $ to be the currently active snapshot for collecting new records.
-%	\item Define an empty array list $ arr $.
-%	\item With each node $ q_{k \ne j} $ in the \emph{quorum} using its existing one-hop Tor circuits,
-%		\begin{enumerate}
-%			\item Sends its $ snap_{x} $ and $ <pageSig_{q_{j}}, nodeFingerprint_{q_{j}}> $, every $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ it has received so far, and its signatures on the sections of the hashtable bitset and on the Merkle tree root to $ q_{k} $.
-%			\item Receives $ s_{x, k} $ and $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ from $ q_{k} $.
-%			\item Archives $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $ and add any records that did not exist in $ snap_{x} $ to $ arr $.
-%		\end{enumerate}
-%	\item For any missing $ <pageSig_{q_{k}}, nodeFingerprint_{q_{k}}> $, it asks a random \emph{quorum} member $ q_{i \ne k} $ for $ q_{k} $'s $ pageSig_{q_{k}} $. In this way, it has a list of \emph{page} signatures from all \emph{quorum} nodes.
-%	\item Merges $ snap_{x} $ and the records in $ arr $ into its \emph{page} and regenerates \emph{pageSig}.
-%	\item Updates its AVL tree, hashtable bitset, and Merkle collision tree, and regenerates the signatures on the bitset and on the Merkle root tree.
-%	\item Increments $ x $.
-%\end{enumerate}
-
-% www.example.tor should be resolved to example.tor automatically, yes?
