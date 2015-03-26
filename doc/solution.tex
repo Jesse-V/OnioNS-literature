@@ -254,6 +254,8 @@ Third, a Tor client, Alice, uses a Tor client to anonymously connect to one of t
 
 OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of-work, and a pseudorandom number generator.
 
+TODO: symbols and letters for these to held distinguish them and make the paper fancier
+
 \begin{itemize}
 	\item Hash function - We choose SHA-384 for applications in hash functions and message digests before digital signatures. SHA-384 is a derivative of SHA-512 and has greater resistance to preimage, collision, and pseudo-collision attacks compared to SHA-256. Currently the best preimage attack of SHA-512 breaks 57 out of 80 rounds in $ 2^{511} $ time.\cite{li2012converting} SHA-384 is included in the National Security Agency's Suite B Cryptography for protecting information classified up to Top Secret.
 	\item Digital signatures - Our default method is EMSA-PSS, (EMSA4) a probabilistic signature scheme defined by PKCS1 v2.1 and republished in 2003's RFC 3447. We note that this choice is flexible and with can be substituted for another signature algorithm  minimal effort.

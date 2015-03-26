@@ -56,11 +56,11 @@ Following the successful circuit construction, she can then send messages out of
 
 As a defense against traffic analysis using packet size, Alice packs and pads circuit traffic into equally-sized Tor \emph{cells} of 512 bytes and changes $ R_{2} $ and $ R_{3} $ every 10 minutes.\cite{mccoy2008shining}
 
-TODO: Tor chooses the guard carefully
+\emph{TODO: Tor chooses the guard carefully}
 
 \subsubsection{TAP}
 
-The Tor Authentication Protocol \cite{goldberg2006security} (TAP) is a critical piece of Tor networking infrastructure as it allows Alice to verify the authenticity of the onion routers that she selects for her circuit while still remaining anonymous herself. Namely it prevents active spoofing attacks, which if successful would deanonymize Alice and compromise her privacy.
+The Tor Authentication Protocol (TAP) is a critical piece of Tor networking infrastructure as it allows Alice to verify the authenticity of the onion routers that she selects for her circuit while still remaining anonymous herself. Namely it prevents active spoofing attacks, which if successful would deanonymize Alice and compromise her privacy.
 
 First, TAP assumes that the following is established:
 
@@ -69,13 +69,13 @@ First, TAP assumes that the following is established:
 	\item Let $ \mathcal{E}_{B} $ mean encryption and $ \mathcal{D}_{B} $ mean decryption under $ B $'s public-private keypair for some party $ B $.
 	\item $ p $ is a prime such that $ q = \frac{q - 1}{2} $ is also prime and let $ g $ be a generator of the subgroup of $ \mathbb{Z}^{*}_{p} $ of order $ q $.
 	\item Let $ R_{L} $ be a generator that returns uniformly random $ L $-bit values in the interval $ [1, \textrm{min}(q, 2 ^ L) - 1] $.
-	\item Define $ f $ as a cryptographic hash function which takes input from $ \mathbb{Z}_{p} $ and returns a $ L_{f} $-bit value.
+	\item Define $ f $ as SHA-1 which takes input from $ \mathbb{Z}_{p} $ and returns a $ L_{f} $-bit value.
 \end{itemize}
 
 Then TAP proceeds as:
 
 \begin{enumerate}
-	\item \label{item:First}
+	\item \label{item:First1}
 		Alice selects a Tor router, $ R_{i} $.
 	\item
 		Alice generates $ x = R_{L} $ and computes $ s = g ^ x \bmod{p} $.
@@ -89,17 +89,39 @@ Then TAP proceeds as:
 		$ R_{i} $ sends $ (a, b) $ to Alice.
 	\item
 		Alice confirms that $ 1 < a < p - 1 $ and that $ b = f(a ^ x \bmod{p}) $.
-	\item \label{item:Last}
+	\item \label{item:Last1}
 		If the assertions pass, then Alice has confirmed $ R_{i} $'s identity and now Alice and $ R_{i} $ can use $ a ^ x = m ^ y $ as a shared symmetric encryption key and encrypt messages under AES.
 	\item 
-		Alice repeats steps \ref{item:First} -- \ref{item:Last} until the circuit is of the desired length.
+		Alice repeats steps \ref{item:First1} -- \ref{item:Last1} until the circuit is of the desired length.
 \end{enumerate}
+
+Thus for each router in the circuit, Alice perform one public-key encryption and her half of a Diffie-Hellman-Merkle handshake, and each router in turn performs one private-key decryption and their half of a Diffie-Hellman-Merkle handshake. Under the assumptions that RSA is one way, AES remains unbroken, and $ f $ is strong and acts as a random oracle, an attacker has only a negligible chance of being able to impersonate $ R_{i} $ and read messages that she tunnels through the circuit.\cite{goldberg2006security}
 
 \subsubsection{NTor}
 
-In 2011, the TAP protocol was modified to use 
+In mid 2013, TAP was superseded by ``NTor'', a new protocol invented by Goldberg, Stebila, and Ustaoglu.\cite{goldberg2013anonymity} Compared to TAP, NTor requires less computational demand and uses stronger cryptographic primitives.
 
-to use Ed25519 EdDSA, a elliptic curve birationally equivalent to Curve25519.\cite{bernstein2006curve25519}
+First,
+
+\begin{itemize}
+	\item Let $ H(x,t) $ be HMAC-SHA256, which accepts a message $ x $ and key $ t $ and returns a 32-byte output.
+	\item Let $ K_{\mathit{gen}} $ yield $ a $ and $ A $, the private and public halves, respectively, of the Curve25519\cite{bernstein2006curve25519} keypair.
+	\item Let each Tor router $ R_{j} $ generate $ a_{j},A_{j} = K_{\mathit{gen}} $ and publish $ A_{j} $ through the consensus document.
+\end{itemize}
+
+Then NTor proceeds as:
+
+\begin{enumerate} % 216-ntor-handshake.txt
+	\item \label{item:First2}
+		Alice selects a Tor router, $ R_{i} $.
+	\item
+		Alice generates $ x_{i}, X_{i} = K_{\mathit{gen}} $.
+	\item
+		Alice sends $ X_{i} $ to $ R_{i} $.
+	\item
+		$ R_{i} $ receives $ X_{i} $ and computes $ y_{i}, Y_{i} = K_{\mathit{gen}} $.
+	
+\end{enumerate}
 
 % --begin rewrite required
 
@@ -175,6 +197,8 @@ A hidden server, Bob, first builds Tor circuits to several random relays and ena
 \end{figure}
 
 She then sends to $ ip_{1} $ a cookie encrypted with $ B_{K} $, containing $ rp $ and $ sec $. Bob decrypts this message, builds a circuit to $ rp $, and tells it $ sec $, enabling Alice and Bob to communicate. Their communication travels through six Tor nodes: three established by Alice and three by Bob, so both parties remain anonymous. From there traditional HTTP, FTP, SSH, or other protocols can be multiplexed over this new channel.
+
+As of March 2015, Tor hosts approximately 25,000 unique hidden services that together generate around 450 Mbit/s of traffic.\cite{TorMetrics}
 
 % --end rewrite required
 
