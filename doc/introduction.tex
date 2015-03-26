@@ -3,13 +3,13 @@
 
 \section{Onion Routing}
 
-As the prevalence of the Internet and other communication has grown, so too has the development and usage of privacy-enhancing systems. These are tools and protocols that provide privacy by obfuscating the link between a user's identification or location and their communications. Privacy is not achieved in traditional Internet connections because SSL/TLS encryption cannot hide IP and TCP headers, which must be exposed to allow routing between two parties; eavesdroppers can easily break user privacy by monitoring these headers. A closely related property is anonymity -- a part of privacy where user activities cannot be tracked and their communications are indistinguishable from others. Tools that provide these systems hold a user's identity in confidence, and privacy and anonymity are often provided together. Following a general distrust of unsecured Internet communications and in light of the 2013-current revelations by Edward Snowden of Internet mass-surveillance by the NSA, GCHQ, and other members of the Five Eyes, users have increasingly turned to these tools for their own protection. Privacy-enhancing and anonymity tools may also be used by the military, researchers working in sensitive topics, journalists, law enforcement running tip lines, activists and whistleblowers, or individuals in countries with Internet censorship. These users may turn to proxies or VPNs, but these tools often track their users for liability reasons and thus rarely provide anonymity. Furthermore, they can easily break confidence to destroy user privacy. More complex tools are needed for a stronger guarantee of privacy and anonymity.
+As the prevalence of the Internet and other communication has grown, so too has the development and usage of privacy-enhancing systems. These are tools and protocols that provide privacy by obfuscating the link between a user's identification or location and their communications. Privacy is not achieved in traditional Internet connections because SSL/TLS encryption cannot hide IP and TCP headers, which must be exposed to allow routing between two parties; eavesdroppers can easily break user privacy by monitoring these headers. A closely related property is anonymity -- a part of privacy where user activities cannot be tracked and their communications are indistinguishable from others. Tools that provide these systems hold a user's identity in confidence, and privacy and anonymity are often provided together. Following a general distrust of unsecured Internet communications and in light of the 2013-current revelations by Edward Snowden of Internet mass-surveillance by the NSA, GCHQ, and other members of the Five Eyes, users have increasingly turned to these tools for their own protection. Privacy-enhancing and anonymity tools may also be used by the military, researchers working in sensitive topics, journalists, law enforcement running tip lines, activists and whistleblowers, or individuals in countries with Internet censorship. These users may turn to proxies or VPNs, but these tools often track their users for liability reasons and thus rarely provide anonymity. Furthermore, they can easily voluntarily or be forced to break confidence to destroy user privacy. More complex tools are needed for a stronger guarantee of privacy and anonymity.
 
-Today, most anonymity tools descend from mixnets, a concept invented by David Chaum in 1981.\cite{chaum2003untraceable} In a mixnet, user messages are transmitted to one or more mixes, who each partially decrypt, scramble, delay, and retransmit the messages to other mixes or to the final destination. This enhances privacy by heavily obscuring the correlation between the origin, destination, and contents of the messages. Mixnets have inspired the development of many varied mixnet-like protocols and have generated significant literature within the field of network security.\cite{edman2009anonymity}\cite{syverson2011peel}
+Today, most anonymity tools descend from mixnets, an early anonymity system invented by David Chaum in 1981.\cite{chaum2003untraceable} In a mixnet, user messages are transmitted to one or more mixes, who each partially decrypt, scramble, delay, and retransmit the messages to other mixes or to the final destination. This enhances privacy by heavily obscuring the correlation between the origin, destination, and contents of the messages. Mixnets have inspired the development of many varied mixnet-like protocols and have generated significant literature within the field of network security.\cite{edman2009anonymity}\cite{syverson2011peel}
 
 Mixnet descendants can generally be classified into two distinct categories: high-latency and low-latency systems. High-latency networks typically delay traffic packets and are notable for their greater resistance to global adversaries who monitor communication entering and exiting the network. However, high-latency networks, due to their slow speed, are typically not suitable for common Internet activities such as web browsing, instant messaging, or the prompt transmission of email. Low-latency networks, by contrast, do not delay packets and are thus more suited for these activities, but they are more vulnerable to timing attacks from global adversaries.\cite{dingledine2004tor} In this work, we detail and introduce new functionality within low-latency protocols.
 
-Onion routing is a technique for enhancing privacy of TCP-based communication across a network and is the most popular low-latency descendant of mixnets in use today. It was first designed by the U.S. Naval Research Laboratory in 1997 for military usage \cite{syverson1997anonymous}\cite{reed1998anonymous} but has since seen widespread usage. In onion routing with public key infrastructure (PKI), a user selects a set network nodes, typically called \emph{onion routers} and together a \emph{circuit}, and encrypts the message with the public key of each router. Each encryption layer contains the next destination for the message -- the last layer contains the message's final destination. As the \emph{cell} containing the message travels through the network, each of these onion routers in turn decrypt their encryption layer like an onion, exposing their share of the routing information. The final recipient receives the message from the last router, but is never exposed to the message's source.\cite{syverson2011peel} The sender therefore has privacy because the recipient does not know the sender's location, and the sender has anonymity if no identifiable or distinguishing information is included in their message.
+Onion routing is a technique for enhancing privacy of TCP-based communication across a network and is the most popular low-latency descendant of mixnets in use today. It was first designed by the U.S. Naval Research Laboratory in 1997 for military applications\cite{syverson1997anonymous}\cite{reed1998anonymous} but has since seen widespread usage. In onion routing with public key infrastructure (PKI), a user selects a set network nodes, typically called \emph{onion routers} and together a \emph{circuit}, and encrypts the message with the public key of each router. Each encryption layer contains the next destination for the message -- the last layer contains the message's final destination. As the \emph{cell} containing the message travels through the network, each of these onion routers in turn decrypt their encryption layer like an onion, exposing their share of the routing information. The final recipient receives the message from the last router, but is never exposed to the message's source.\cite{syverson2011peel} The sender therefore has privacy because the recipient does not know the sender's location, and the sender has anonymity if no identifiable or distinguishing information is included in their message.
 
 \begin{figure}[htbp]
 	\centering
@@ -32,7 +32,7 @@ Tor is a third-generation onion routing system. It was invented in 2002 by Roger
 	\item \textbf{Dynamic rendezvous with hidden services:} In previous onion routers, circuits mated at a fixed common node and did not use perfect forward secrecy. Tor uses a distributed hashtable to record the location of the introduction node for a given hidden service. Following the initial handshake, the hidden service and the client then meet at a different onion router chosen by the client. This approach significantly increased the reliability of hidden services and distributed the communication load across multiple rendezvous points.\cite{dingledine2004tor} We provide additional details on the hidden service protocol in section \ref{sec:HiddenServices} and our motivation for addition hidden service infrastructure in section \ref{sec:Motivation}.
 \end{itemize}
 
-As of March 2015, Tor has 2.3 million daily users that together generate 65 Gbit/s of traffic. Tor's network consists of nine authority nodes and 6,600 onion routers in 83 countries.\cite{TorMetrics} In a 2012 Top Secret presentation leaked by Edward Snowden, Tor was recognized by the U.S. National Security Agency as the "the king of high secure, low latency Internet anonymity".\cite{landau2014highlights} \cite{plak2014anonymous} In 2014, BusinessWeek claimed that Tor was ``perhaps the most effective means of defeating the online surveillance efforts of intelligence agencies around the world.''\cite{TorBusinessWeek}
+As of March 2015, Tor has 2.3 million daily users that together generate 65 Gbit/s of traffic. Tor's network consists of nine authority nodes and 6,600 onion routers in 83 countries.\cite{TorMetrics} In a 2012 Top Secret U.S. National Security Agency presentation leaked by Edward Snowden, Tor was recognized as the "the king of high secure, low latency Internet anonymity".\cite{landau2014highlights}\cite{plak2014anonymous} In 2014, BusinessWeek claimed that Tor was ``perhaps the most effective means of defeating the online surveillance efforts of intelligence agencies around the world.''\cite{TorBusinessWeek}
 
 \subsection{Design}
 
@@ -40,12 +40,70 @@ Tor's design focuses on being easily deployable, flexible, and well-understood. 
 
 \subsection{Circuit Construction}
 
-\emph{This section is incomplete. Here I will describe the Tor Authentication Protocol\cite{goldberg2006security}\cite{goldberg2013anonymity} which has since been extended to use ECDHE with ed25519 ECDSA: \cite{bernstein2006curve25519} and called NTor. I will walk through this protocol.}
+\subsubsection{Overview}
 
+Let Alice be a client who wishes to enhance her privacy by using Tor but does not run a Tor router herself. Her basic procedure for initializing her own circuit is as follows:
 
+\begin{enumerate}
+	\item Alice selects a Tor router $ R_{1} $ and establishes an encrypted connection to it.
+	\item Alice selects a second router $ R_{2} $ and tells $ R_{1} $ to ensure that a TCP link is available to it. 
+	\item Alice uses her link with $ R_{1} $ to establish an encrypted connection with $ R_{2} $.
+	\item Alice selects an $ R_{3} $ and uses the $ Alice \leftrightarrow R_{1} \leftrightarrow R_{2} $ tunnel to tell $ R_{2} $ to connect to $ R_{3} $.
+	\item Alice establish an encrypted connection with $ R_{3} $ over the $ Alice \leftrightarrow R_{1} \leftrightarrow R_{2} $ tunnel.
+\end{enumerate}
 
+Following the successful circuit construction, she can then send messages out of $ R_{3} $ through the $ Alice \leftrightarrow R_{1} \leftrightarrow R_{2} \leftrightarrow R_{3} $ tunnel.
 
+As a defense against traffic analysis using packet size, Alice packs and pads circuit traffic into equally-sized Tor \emph{cells} of 512 bytes and changes $ R_{2} $ and $ R_{3} $ every 10 minutes.\cite{mccoy2008shining}
 
+TODO: Tor chooses the guard carefully
+
+\subsubsection{TAP}
+
+The Tor Authentication Protocol \cite{goldberg2006security} (TAP) is a critical piece of Tor networking infrastructure as it allows Alice to verify the authenticity of the onion routers that she selects for her circuit while still remaining anonymous herself. Namely it prevents active spoofing attacks, which if successful would deanonymize Alice and compromise her privacy.
+
+First, TAP assumes that the following is established:
+
+\begin{itemize}
+	\item Alice has a reliable PKI that can securely distribute the identity, IP addresses, and public keys of all Tor routers. Tor accomplishes this through consensus documents from authority nodes, described in section \ref{sec:ConsensusDocs}.
+	\item Let $ \mathcal{E}_{B} $ mean encryption and $ \mathcal{D}_{B} $ mean decryption under $ B $'s public-private keypair for some party $ B $.
+	\item $ p $ is a prime such that $ q = \frac{q - 1}{2} $ is also prime and let $ g $ be a generator of the subgroup of $ \mathbb{Z}^{*}_{p} $ of order $ q $.
+	\item Let $ R_{L} $ be a generator that returns uniformly random $ L $-bit values in the interval $ [1, \textrm{min}(q, 2 ^ L) - 1] $.
+	\item Define $ f $ as a cryptographic hash function which takes input from $ \mathbb{Z}_{p} $ and returns a $ L_{f} $-bit value.
+\end{itemize}
+
+Then TAP proceeds as:
+
+\begin{enumerate}
+	\item \label{item:First}
+		Alice selects a Tor router, $ R_{i} $.
+	\item
+		Alice generates $ x = R_{L} $ and computes $ s = g ^ x \bmod{p} $.
+	\item
+		Alice sends $ c = \mathcal{E}_{R_{i}}(s) $ to $ R_{i} $.
+	\item
+		$ R_{i} $ computes $ m = \mathcal{D}_{R_{i}}(c) $ and confirms that $ 1 < m < p - 1 $.
+	\item
+		$ R_{i} $ generates $ y = R_{L} $ and computes $ a = g ^ y \bmod{p} $ and $ b = f(m ^ y \bmod{p}) $.
+	\item
+		$ R_{i} $ sends $ (a, b) $ to Alice.
+	\item
+		Alice confirms that $ 1 < a < p - 1 $ and that $ b = f(a ^ x \bmod{p}) $.
+	\item \label{item:Last}
+		If the assertions pass, then Alice has confirmed $ R_{i} $'s identity and now Alice and $ R_{i} $ can use $ a ^ x = m ^ y $ as a shared symmetric encryption key and encrypt messages under AES.
+	\item 
+		Alice repeats steps \ref{item:First} -- \ref{item:Last} until the circuit is of the desired length.
+\end{enumerate}
+
+\subsubsection{NTor}
+
+In 2011, the TAP protocol was modified to use 
+
+to use Ed25519 EdDSA, a elliptic curve birationally equivalent to Curve25519.\cite{bernstein2006curve25519}
+
+% --begin rewrite required
+
+%\emph{This section is incomplete. Here I will describe the Tor Authentication Protocol which has since been extended to use ECDHE with ed25519 ECDSA:  and called NTor.\cite{goldberg2013anonymity} I will walk through this protocol.}
 
 %\begin{figure}[htdp]
 %	\begin{minipage}[b]{0.45\linewidth}
@@ -63,11 +121,10 @@ Tor's design focuses on being easily deployable, flexible, and well-understood. 
 %	\end{minipage}
 %\end{figure}
 %
-%\textit{Todo: the following paragraph is not a complete description of Tor's crypto. I don't describe the NTor routing protocol.}
-%
+
 %The client first establishes a TLS connection with the first relay, $R_{1}$, using the relay's public key. The client then performs an ECDHE key exchange to negotiate $K_{1}$ which is then used to generate two symmetric session keys: a forward key $K_{1,F}$ and a backwards key $K_{1,B}$. $K_{1,F}$ is used to encrypt all communication from the client to $R_{1}$ and $K_{1,B}$ is used for all replies from $R_{1}$ to the client. These keys are used conjunction with the symmetric cipher suite negotiated during the TLS handshake, thus forming an encrypted tunnel with perfect forward secrecy. Once this one-hop circuit has been created, the client then sends $R_{1}$ the RELAY\_EXTEND command, the address of $R_{2}$, and the client's half of the Diffie-Hellman-Merkle protocol using $K_{1,F}$. $R_{1}$ performs a TLS handshake with $R_{2}$ and uses $R_{2}$'s public key to send this half of the handshake to $R_{2}$, who replies with his second half of the handshake and a hash of $K_{2}$. $R_{1}$ then forwards this to the client under $R_{1,B}$ with the RELAY\_EXTENDED command to notify the client. The client generates $K_{1,F}$ and $K_{1,B}$ from $K_{2}$, and repeats the process for $R_{3}$,\cite{ling2013protocol} as shown in Figure 3. The TCP/IP connections remain open, so the returned information travels back up the circuit to the end user.
 
-At the application layer, this data is packed and padded into equally-sized Tor \textit{cells}, transmission units of 512 bytes. Tor further obfuscates user traffic by changing the circuit path every ten minutes,\cite{mccoy2008shining} as shown in Figure 4. A new circuit can also be requested manually by the user.
+
 
 %\begin{figure}[htbp]
 %	\centering
@@ -79,6 +136,14 @@ At the application layer, this data is packed and padded into equally-sized Tor 
 %
 % If this happens, end-to-end encryption is complete and an outsider near the user would be faced with up to four layers of TLS encryption: $K_{1,F}(K_{2,F}(K_{3,F}(K_{server}(\textrm{client\ request}))))$ and likewise $K_{1,B}(K_{2,B}(K_{3,B}(K_{server}(\textrm{server\ reply}))))$ for the returning traffic, making traffic analysis very difficult.
 
+
+
+
+
+
+
+
+
 \subsection{Consensus Documents}
 \label{sec:ConsensusDocs}
 
@@ -89,11 +154,11 @@ The Tor network is maintained by nine authority nodes, who each vote on the stat
 \subsection{Hidden Services}
 \label{sec:HiddenServices}
 
-Although Tor's primary and most popular use is for secure access to the traditional Internet, since 2004 Tor also supports anonymous services, such as websites, marketplaces, or chatrooms. These are a part of the Dark Web and cannot be normally accessed outside the context of Tor. In contrast to Tor-anonymized web requests where the client is anonymous but the server is known, Tor hidden services provide bidirectional anonymity where both parties remain anonymous and never directly communicate with one another. This allows for a greater range of communication capabilities.\cite{nicolussi2011human}
+Although Tor's primary and most popular use is for secure access to the traditional Internet, Tor also supports anonymous services, such as websites, marketplaces, or chatrooms. These are a part of the Dark Web and cannot be normally accessed outside the context of Tor. In contrast to Tor-anonymized web requests where the client is anonymous but the server is known, Tor hidden services provide bidirectional anonymity where both parties remain anonymous and never directly communicate with one another. This allows for a greater range of communication capabilities.\cite{nicolussi2011human}
 
-Tor hidden services are known only by their public RSA key. Tor does not contain a DNS system for its websites; instead the domain names of hidden services are an 80-bit truncated SHA-1 hash of its public key, postpended by the .onion top-level domain (TLD). Once the hidden service is contacted and its public key obtained, this key can be checked against the requested domain to verify the authenticity of the service server. This process is analogous to SSL certificates in the clearnet, however Tor's authenticity check leaks no identifiable information about the anonymous server. If a client obtains the hash domain name of the hidden service through a backchannel and enters it into the Tor Browser, the hidden service lookup begins.
+Tor does not contain a DNS system for its websites; instead hidden service addresses are algorithmically generated by generating the SHA-1 hash of their public RSA key, truncating to 80 bits, and converting the remainder to base58. Ignoring the possibility of SHA-1 collisions, this builds a one-to-one relationship between a hidden service's public key and its address which can be confirmed without requiring any identifiable information or central authorities. The address is the appended with the .onion Top-Level Domain (TLD).
 
-Preceding any client communication, the hidden server, Bob, first builds Tor circuits to several random relays and enables them to act as \textit{introduction points} by giving them its public key, $ B_{K} $. The server then uploads its public key and the fingerprint identity of these nodes to a distributed hashtable inside the Tor network, signing the result. When a client, Alice, requests contact with Bob, Alice's Tor software queries this hashtable, obtains $ B_{K} $ and Bob's introduction points, and builds a Tor circuit to one of them, $ ip_{1} $. Simultaneously, the client also builds a circuit to another relay, $ rp $, which she enables as a rendezvous point by telling it a one-time secret, $ sec $. During this procedure, hidden services must continue to use their same entry node in order to avoid leaking its IP address to possibly malicious onion routers.\cite{bauer2007low}\cite{overlier2006locating}
+A hidden server, Bob, first builds Tor circuits to several random relays and enables them to act as \textit{introduction points} by giving them its public key, $ B_{K} $. He then then uploads his public key and the fingerprint identity of these nodes to a distributed hashtable inside the Tor network, signing the result. He then publishes his hidden service address in a backchannel. When Alice obtains this address and enters it into a Tor-enabled browser, her software queries this hashtable, obtains $ B_{K} $ and Bob's introduction points, and builds a Tor circuit to one of them, $ ip_{1} $. Simultaneously, the client also builds a circuit to another relay, $ rp $, which she enables as a rendezvous point by telling it a one-time secret, $ sec $. During this procedure, hidden services must continue to use their same entry node in order to avoid leaking its IP address to possibly malicious onion routers.\cite{bauer2007low}\cite{overlier2006locating}
 
 \begin{figure}[htdp]
 	\begin{minipage}[b]{0.45\linewidth}
@@ -111,11 +176,21 @@ Preceding any client communication, the hidden server, Bob, first builds Tor cir
 
 She then sends to $ ip_{1} $ a cookie encrypted with $ B_{K} $, containing $ rp $ and $ sec $. Bob decrypts this message, builds a circuit to $ rp $, and tells it $ sec $, enabling Alice and Bob to communicate. Their communication travels through six Tor nodes: three established by Alice and three by Bob, so both parties remain anonymous. From there traditional HTTP, FTP, SSH, or other protocols can be multiplexed over this new channel.
 
+% --end rewrite required
+
 \section{Motivation}
 \label{sec:Motivation}
 
-The usability of hidden services is severely challenged by their non-intuitive 16-character base58-encoded domain names. To choose several prominent examples, 3g2upl4pq6kufc4m.onion is the address for the DuckDuckGo hidden service, 33y6fjyhs3phzfjj.onion is the Guardian's SecureDrop service for anonymous document submission, and blockchainbdgpzk.onion is the anonymized edition of blockchain.info. It is rarely clear what service a hidden server is providing by its domain name alone without relying on third-party directories for the correlation, directories which must be updated and reliably maintained constantly. These must be then distributed through backchannels such as /r/onions, the-hidden-wiki.com, or through a hidden service that is known in advance. It is a frequent topic of conversation inside Tor communities. It is clear that this problem limits the usability and popularity of Tor hidden services. Although there have been some workarounds that are partially successful, the issue remains unresolved. It is for these reasons that I propose OnionNS as a full solution.
+As Tor's hidden service addresses are algorithmically derived from the service's public RSA key, there is at best limited capacity to select a human-meaningful name. Some hidden service operators have attempted to work around this issue by finding an RSA key by brute-force that generates a partially-desirable hidden service address (e.g. ``example0uyw6wgve.onion'') and although some alternative encoding schemes have been proposed, (section \label{sec:EncodingSchemes}) the problem generally remains. The usability of hidden services is severely challenged by the non-intuitive and unmemorable base58-encoded domain name. For example, 3g2upl4pq6kufc4m.onion is the address for the DuckDuckGo search engine, \\ suw74isz7wqzpmgu.onion is a WikiLeaks mirror, and 33y6fjyhs3phzfjj.onion and \\ vbmwh445kf3fs2v4.onion are both SecureDrop instances for anonymous document submission. These addresses maintain strong privacy as the strong association between its public key and its address significantly breaks the association between the service's purpose and its address. However, this privacy comes at a cost: it is impossible to classify or label a hidden service's purpose in advance, a fact well known within Tor hidden service communities. Over time, third-party directories -- both on the Clear and Dark Internets -- appeared in attempt to counteract this issue, but these directories must be constantly maintained and furthermore this approach is not convenient nor does it scale well. This suggests the strong need for a more complete and reliable solution.
 
 \section{Contributions}
 
+Our contribution to this problem is five-fold:
 
+\begin{itemize}
+	\item We introduce a novel distributed naming system that enables Tor hidden service operators to choose a human-meaningful domain name and construct a strong association between that domain name and their hidden service address.
+	\item We rely on the existing Tor network and other infrastructure, rather than introduce a new network. This simplifies our assumptions and reduces our threat model to attack vectors already known and well-understood on the Tor network.
+	\item We introduce a novel protocol for proving the non-existence of any domain names.
+	\item We enable Tor clients to verify the authenticity of a domain name against its corresponding hidden service address with minimal data transfers and without requiring any additional queries.
+	\item We preserve the privacy of both the hidden service and the anonymity of Tor clients connecting to it.
+\end{itemize}
