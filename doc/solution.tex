@@ -35,7 +35,7 @@ To discuss OnioNS precisely we must first define some central terms that we will
 
 \begin{description}
 	\item[domain name] \hfill \\
-		A \emph{domain name} is a case-insensitive identification string claimed by a hidden service operator. The syntax of OnioNS domain names mirrors the Clearnet DNS; we use a sequence of name-delimiter pairs with the .tor Top Level Domain (TLD). The TLD is a name at depth one and is preceded by names at sequentially increasing depth. The term ``domain name'' refers to the identiciation string as a whole, while ``second-level domain'' refers to the central name that is immediately followed by the TLD, as illustrated in Figure \label{fig:sampleDomain}. Domain names point to \emph{destinations} -- other domain names with either the .tor or .onion TLD.
+		A \emph{domain name} is a case-insensitive identification string claimed by a hidden service operator. The syntax of OnioNS domain names mirrors the Clearnet DNS; we use a sequence of name-delimiter pairs with the .tor Top Level Domain (TLD). The TLD is a name at depth one and is preceded by names at sequentially increasing depth. The term ``domain name'' refers to the identiciation string as a whole, while ``second-level domain'' refers to the central name that is immediately followed by the TLD, as illustrated in Figure \ref{fig:sampleDomain}. Domain names point to \emph{destinations} -- other domain names with either the .tor or .onion TLD.
 		
 		\begin{figure}[htbp]
 			\centering
@@ -235,7 +235,7 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 	\item Let $ S_{d}(m, r) $ be a deterministic RSA digital signature function that accepts a message $ m $ and a private RSA key $ r $ and returns an RSA digital signature. Let $ S_{d}(m, r) $ use $ H(x) $ as a digest function on $ m $ in all use cases. In our reference implementation we define $ S_{d}(m, r) $ as EMSA-PSS, (EMSA4) a probabilistic signature scheme defined by PKCS1 v2.1 and republished in 2003's RFC 3447.
 	\item Let $ S_{p}(m, r) $ be $ S_{d}(m, r) $ but with probabilistic output. We suggest EMSA-PKCS1-v1.5, (EMSA3) defined by 1998's RFC 2315.
 	\item Let $ S_{\mathit{ed}}(m, c) $ be an Ed25519 digital signature function that accepts a message $ m $ and a private Curve25519 key $ c $ and returns a 64-byte Ed25519 digital signature. Ed25519 is digital signature scheme designed with high performance, strong implementation security, and minimal keypair and signature sizes objectives in mind. The Ed25519 elliptic curve is birationally equivalent to Curve25519, and Curve25519 keys can be converted to Ed25519 keys in $ \mathcal{O}(1) $ time.\cite{bernstein2011high} Let $ S_{\mathit{ed}}(m, c) $ use $ H(x) $ as a digest function on $ m $ in all use cases.
-	\item Let $ \mathit{PoW}(i) $ be a proof-of-work scheme such as a strong key derivation function that accepts an input key $ k $ and returns a derived key. Our reference implementation uses scrypt, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users.\cite{percival2009stronger}\cite{percival2012scrypt} We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
+	\item Let $ \mathrm{PoW}(i) $ be a proof-of-work scheme such as a strong key derivation function that accepts an input key $ k $ and returns a derived key. Our reference implementation uses a fixed salt and scrypt, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users.\cite{percival2009stronger}\cite{percival2012scrypt} We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
 	\item Let $ \mathit{R}(s) $ be a pseudorandom number generator that accepts an initial seed $ s $ and returns a list of numerical pseudorandom numbers. We suggest MT19937, commonly known as the Mersenne Twister. This generator is widely used throughout most programming languages and is well known for its speed, long period, and the high quality of its pseudorandom output, although it is not cryptographically secure.\cite{matsumoto1998mersenne}
 \end{itemize}
 
@@ -262,44 +262,42 @@ There are five different types of Records: Create, Modify, Move, Renew, and Dele
 
 \subsubsection{Create}
 
-A Create record consists of nine components: \emph{type}, \emph{nameList}, \emph{contact}, \emph{timestamp}, \emph{consensusHash}, \emph{nonce}, \emph{pow}, \emph{recordSig}, and \emph{pubHSKey}. Fields that are optional are blank unless specified, and all fields are encoded in base64, except for \emph{nameList} and \emph{timestamp}, which are encoded in standard UTF-8. These are defined in Table \ref{table:createTable}.
+A Create record consists of nine components: \emph{type}, \emph{nameList}, \emph{contact}, \emph{timestamp}, \emph{consensusHash}, \emph{nonce}, \emph{pow}, \emph{recordSig}, and \emph{pubHSKey}. Fields that are optional are blank unless specified, and all fields are encoded in base64, except for \emph{nameList} and \emph{timestamp}, which are encoded in standard UTF-8.
 
 \renewcommand{\arraystretch}{1.75} % increase spacing between columns
 \begin{center}
     \begin{longtabu}{ | l | c | p{9.5cm} |}
     \hline
     \textbf{Field} & \textbf{Required?} & \textbf{Description} \\
-    type & Yes & A textual label containing the type of record. In this case, \emph{type} is set to ``Create''. \\
-    nameList & Yes & An array list of up to 24 domain names and their destinations.  Domain names can be up to 16 levels deep and each name can be up to 32 characters long, though the full domain name cannot exceed 128 characters in length. This field must also contain second-level domain names, which must match any subdomains (names at level $ < 2 $) claimed by the issuer. In this way, records can be referenced by their unique master second-level domain names and issuers cannot claim ownership of domain names that they do not own. \\
-    contact & No & The final 16, 24, or 32 characters in the issuer's PGP key fingerprint, if he has a key chooses to disclose it. If the fingerprint is listed, clients may query a public keyserver for this fingerprint, obtain the PGP public key, and contact the owner over encrypted email. \\
-	timestamp & Yes & The UNIX timestamp of when the issuer created the registration and began the proof-of-work to validate it. This timestamp cannot be more than 48 hours old nor in the future relative to the recipient's clock. \\
-	consensusHash & Yes & The SHA-384 hash of a consensus document published at 00:00 GMT no more than 48 hours before the record was received by the recipient. \\
-	nonce & Yes & Four bytes that serve as a source of randomness for the proof-of-work. \\
-    pow & Yes & 16 bytes that store the result of the proof-of-work. \\
-    recordSig & Yes & The digital signature of all preceding fields, signed using the issuer's private key. \\
-    pubHSKey & Yes & The issuer's public key in PKCS.1 DER encoding. When the SHA-1 hash of the decoded key is converted to base58 and truncated to 16 characters the resulting hidden service address must match at least one \emph{nameList} destination.
-    \\
+    type & Yes & A textual label containing the type of Record. In this case, \emph{type} is set to ``Create''. \\
+    nameList & Yes & An array list of domain names and their destinations. The list of domain names includes one or more second-level domain name, while the remainder of the list contains zero or more subdomains (names at level $ < 2 $) under that second-level domains. In this way, records can be referenced by their unique second-level domain names. Destinations use either .tor or .onion TLDs. \\
+    contact & No & Bob's PGP key fingerprint, if he has a key and chooses to disclose it. If the fingerprint is listed, clients may query a public keyserver for this fingerprint, obtain the PGP public key, and contact Bob over encrypted email. \\
+    timestamp & Yes & The UNIX timestamp of when the issuer created the registration and began $ \mathrm{PoW}(i) $. \\
+    consensusHash & Yes & The hash of the consensus document that generated $ \mathit{Quorum}_{q} $ \\
+    nonce & Yes & Four bytes that serve as a source of randomness for $ \mathrm{PoW}(i) $. \\
+   	pow & Yes & 16 bytes that store the output of $ \mathrm{PoW}(i) $. \\
+   	recordSig & Yes & The output of $ S_{p}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key. \\
+   	pubHSKey & Yes & Bob's public RSA key. \\
     \hline
     \caption{A Create record, which contains fields common to all records. Every record is self-signed and must have verifiable proof-of-work before it is considered valid.}
     \end{longtabu}
-	\label{table:createTable}
 \end{center}
 
 \subsubsection{Modify}
 
-A Modify record allows an owner to update his registration with updated information. The Modify record has identical fields to Create, but \emph{type} is set to ``Modify''. The owner corrects the fields, updates \emph{timestamp} and \emph{consensusHash}, revalidates the proof-of-work, and transmits the record. Modify records have a difficulty of $ \frac{\textrm{difficulty}_{Create}}{4} $. Modify records can be used to add and remove domain names but cannot be used to claim additional second-level domains.
+A Modify record allows an owner to update his registration with updated information. The Modify record has identical fields to Create, but \emph{type} is set to ``Modify''. The owner corrects the fields, updates \emph{timestamp} and \emph{consensusHash}, revalidates the proof-of-work, and transmits the record. Modify records have a difficulty of $ \frac{\textrm{difficulty}_{\textrm{Create}}}{4} $. Modify records can be used to add and remove domain names but cannot be used to claim additional second-level domains.
 
 \subsubsection{Move}
 
 % prevents the seller from selling modified records and forcing the buyer to issue a Modify record
 
-A Move record is used to transfer one or more second-level domain names and all associated subdomains from one owner to another. Move records have all the fields of a Create record, have their \emph{type} is set to ``Move'', and contain two additional fields: \emph{target}, a list of domain-destination pairs, and \emph{destPubKey}, the public key of the new owner. Domain names and their destinations contained in \emph{target} cannot be modified; they must match the latest Create, Renew, or Modify record that defined them. Move records also have a difficulty of $ \frac{\textrm{difficulty}_{Create}}{4} $.
+A Move record is used to transfer one or more second-level domain names and all associated subdomains from one owner to another. Move records have all the fields of a Create record, have their \emph{type} is set to ``Move'', and contain two additional fields: \emph{target}, a list of domain-destination pairs, and \emph{destPubKey}, the public key of the new owner. Domain names and their destinations contained in \emph{target} cannot be modified; they must match the latest Create, Renew, or Modify record that defined them. Move records also have a difficulty of $ \frac{\textrm{difficulty}_{\textrm{Create}}}{4} $.
 
 \subsubsection{Renew}
 
 % put "page" in italics everywhere?
 
-Second-level domain names (and their associated domain names) expire every $ L $ days because (as explained below) the page-chain has a maximum length of $ L $ pages. Renew records must be reissued periodically at least every $ L $ days to ensure continued ownership of domain names. Renew records are identical to Create records, except that \emph{type} is set to ``Renew''. No modifications to existing domain names can be made in Renew records, and the domain names contained within must already exist in the page-chain. Similar to the Modify and Move records, Renew records have a difficulty of $ \frac{\textrm{difficulty}_{Create}}{4} $.
+Second-level domain names (and their associated domain names) expire every $ L $ days because (as explained below) the page-chain has a maximum length of $ L $ pages. Renew records must be reissued periodically at least every $ L $ days to ensure continued ownership of domain names. Renew records are identical to Create records, except that \emph{type} is set to ``Renew''. No modifications to existing domain names can be made in Renew records, and the domain names contained within must already exist in the page-chain. Similar to the Modify and Move records, Renew records have a difficulty of $ \frac{\textrm{difficulty}_{\textrm{Create}}}{4} $.
 
 \subsubsection{Delete}
 
@@ -313,16 +311,16 @@ Snapshots contain four fields: \emph{originTime}, \emph{recentRecords}, \emph{fi
 
 \begin{description}
 	\item[originTime] \hfill \\
-		Unix time when the snapshot was first created. This must be less than $ \Delta s $ minutes ago and not in the future relative to a recipient's clock.
+		Unix time when the snapshot was first created.
 	\item[recentRecords] \hfill \\
 		A array list of records in reverse chronological order by receive time.
 	\item[fingerprint] \hfill \\
-		The hash of the public key of the machine maintaining this snapshot.
+		The hash of the public key of the machine maintaining this snapshot. This is the Tor fingerprint, a unique identification string widely used throughout Tor infrastructure and third-party tools to refer to specific Tor nodes.
 	\item[snapshotSig] \hfill \\
-		The digital signature of the preceding fields, signed using the machine's private key.
+		The output of $ S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}], c) $ where $ c $ is the machine's private Curve25519 NTor key.
 \end{description}
 
-\emph{snapshotSig} is the Tor fingerprint, a unique identification string widely used throughout Tor infrastructure and third-party tools to refer to specific Tor nodes.
+\emph{snapshotSig} is 
 		
 \subsection{Page}
 
@@ -338,18 +336,35 @@ Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consen
 	\item[fingerprint] \hfill \\
 		The hash of the public key of the machine maintaining this page, the Tor fingerprint.
 	\item[pageSig] \hfill \\
-		The digital signature of the preceding fields, signed using the machine's private key.
+		The output of $ S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash})], c) $ where $ c $ is the machine's private Curve25519 NTor key.
 \end{description}	
 		
 \section{Protocols}
 \label{sec:Protocols}
+
+% todo: the examples here aren't valid
 
 \subsection{Hidden Services}
 \label{sec:ProtoHiddenServices}
 
 \subsubsection{Record Generation}
 
-Issuers must complete the proof-of-work before transmitting the record to the recipient. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. The issuer must then find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done and \emph{count} is the number of second-level domain names claimed. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated. When the proof-of-work is complete, the valid and complete record is represented in JSON format and is ready for broadcast.
+Mirrors and Tor clients check the validity of Records that they receive through synchronization or query responses, respectively. Invalid Records will be rejected by all parties, so Bob must generate a valid Record before broadcast.
+
+\begin{enumerate}
+	\item Bob selects the value for \emph{type} based on the desired operation.
+	\item Bob constructs the \emph{nameList} domain-destination associations.
+	\item Bob provides his PGP key fingerprint in \emph{contact} or leaves it blank if he doesn't have a PGP key or if he chooses not to disclose it. Bob can derive his PGP fingerprint with the ``gpg --fingerprint'' Unix command.
+	\item Bob records the number of seconds since the Unix epoch in \emph{timestamp}.
+	\item Bob sets \emph{consensusHash} to the output of $ H(x) $, where $ x $ is the consensus document published at 00:00 GMT on day $ \floor[\big]{\frac{q}{\Delta q}} $.
+	\item Bob initially defines \emph{nonce} as four zeros.
+	\item Let $ \mathit{central} $ be $\mathit{type} \concat \mathit{nameList} \concat \mathit{contact} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} $.
+	\item Bob sets \emph{pow} as $ \mathrm{PoW}(\mathit{central}) $.
+	\item Bob sets \emph{recordSig} as the output of $ S_{d}(m, r) $ where $ m = \mathit{central} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
+	\item Bob saves the PKCS.1 DER encoding of his RSA public key in \emph{pubHSKey}.
+\end{enumerate}
+
+Bob then must increment \emph{nonce} and reset \emph{pow} and \emph{recordSig} until $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{difficulty} * \mathit{count}} $ where \emph{difficulty} is a fixed constant that specifies the work difficulty and \emph{count} is the number of second-level domain names claimed in the Record. An example of a completed and valid record is shown in Figure \ref{fig:sampleRecord}.
 
 \begin{figure}
 	\begin{lstlisting}
@@ -369,9 +384,99 @@ Issuers must complete the proof-of-work before transmitting the record to the re
 	\caption{A sample registration record. The textual fields are in UTF-8, while the binary fields are in base64. The structure is encoded in JSON.}
 	\label{fig:sampleRecord}
 \end{figure}
+
+\subsubsection{Record Validation}
+
+Let Carol be a Tor client or a Mirror that receives a Record from another Mirror. Bob must also perform these procedures to ensure that he sends a valid Record.
+
+\begin{enumerate}
+	\item Carol checks that the Record contains valid JSON.
+	\item Carol checks that \emph{type} is either ``Create'', ``Modify'', ``Move'', ``Renew'', or ``Delete''.
+	\item Carol checks that \emph{nameList} is has a length $ \in [1,24] $, contains at least one second-level domain name, and that all subdomains have a second-level domain name within \emph{nameList}. Additionally, Carol checks that there is no domain name nor destination that uses more than 16 names, that is longer than 32 characters, or whose total length is more than 128 characters.
+	\item Carol checks that \emph{contact} is either 0, 16, 24, or 32 characters in length, and that \emph{contact} is valid hexadecimal.
+	\item Carol checks that \emph{timestamp} is not in the future nor more than 48 hours old relative to her system clock.
+	\item Carol checks that \emph{pubHSKey} is a valid PKCS.1 DER-encoded public 1024-bit RSA key, and that when converted to a .onion address that address appears at least once in \emph{nameList}.
+	\item Carol checks the validity of \emph{recordSig} deterministic signature against \emph{pubHSKey} and $ \mathit{central} \concat \mathit{pow} $.
+	\item Carol obtains the $ \floor[\big]{\frac{q}{\Delta q}} $ 00:00 GMT consensus document and checks $ H(x) $ on it against \emph{consensusHash}. She also confirms that the consensus document is no older than $ \mathrm{min}(48, 12 * \Delta q) $.
+	\item Carol checks that $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{difficulty} * \mathit{count}} $
+	\item Carol calculates $ \mathrm{PoW}(\mathit{central}) $ and confirms that the output matches \emph{nonce}.
+\end{enumerate}
+	
+If at any step an assertion fails, the Record is not valid and Carol does not accept it.
 		
-\subsubsection{Broadcast}
-		
+\subsubsection{Record Broadcast}
+
+\begin{enumerate}
+	\item Bob derives the current Quorum by the Quorum Derivation protocol described in section \ref{sec:ProtoTorClients}.
+	\item Bob constructs a circuit, $ c_{1} $, to a Mirror node $ m_{1} $.
+	\item Bob asks for and receives from $ c_{1} $ the $ H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}) $ hash and \emph{pageSig} (the ed25519 signature on that hash) from each Quorum node.
+	\item Bob confirms each \emph{pageSig} and defines $ U $ as the largest set of Quorum nodes that have the same hash. % todo: this cluster could be malicious, this isn't guarenteed safe.
+	\item Bob randomly chooses a node $ n_{1} $ from $ U $ and builds a circuit to it, $ c_{2} $.
+	\item Bob uploads his Record through $ c_{2} $ to $ n_{1} $.
+	\item Bob waits up to $ \Delta s $ minutes for the next $ s $ flood iteration.
+	\item Bob uses $ c_{1} $ to ask $ m_{1} $ for any second-level domain name contained in his Record.
+	\item Bob has confirmation that his Record was accepted and processed by the Quorum if $ m_{1} $ returns the Record he uploaded, assuming $ m_{1} $ is not malicious and is synchronizing against a node other than $ n_{1} $.
+	\item If $ m_{1} $ does not return Bob's Record, he can either query another Mirror or repeat this procedure and broadcast to a different Quorum node. This choice is left up to the operator.
+\end{enumerate}
+
+%For security purposes, the operator should use the same entry node for this transmission that their hidden service uses for its communication. todo: need cite
+
+\subsection{OnioNS Servers}
+\label{sec:ProtoOnioNServers}
+
+\subsubsection{Database Initialization}
+
+
+
+
+
+
+
+
+
+
+
+
+
+Alice creates an initial OnionNS database by the following procedure. Let $ i $ be the current day, and let $ \Delta i $ be the lifetime in days of a individual page.
+
+\begin{enumerate}
+	\item Download a copy of the consensus document $ cd $ published at at 00:00 GMT on day $ \floor[\big]{\frac{i}{\Delta i}} $.
+	\item Create an empty AVL tree, an initial hashtable bitset, an empty trie, a blank snapshot, and an empty page.
+	\item Sets the snapshot's \emph{originTime} field to the current Unix time, \emph{recentRecords} to an empty array, and \emph{fingerprint} to the hash of her public key.
+	\item Digitally sign {\emph{originTime} + \emph{recentRecords} + \emph{fingerprint}} and save the signature in \emph{snapshotSig}.
+	\item Set the page's \emph{prevHash} field to zeros, \emph{recordList} to an empty array, \emph{fingerprint} to the hash of her public key, and \emph{consensusDocHash} to the SHA-384 of $ cd $.
+	\item Digitally sign {\emph{prevHash} + \emph{recordList} + \emph{consensusDocHash} + \emph{fingerprint}} and save the signature in \emph{pageSig}.
+\end{enumerate}
+
+
+\begin{figure}
+	\begin{lstlisting}
+	{
+		"prevHash": 0,
+		"recordList": [],
+		"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
+		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
+		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
+	}
+	\end{lstlisting}
+	\caption{A sample empty Page.}
+	\label{fig:emptyPage}
+\end{figure}
+
+\begin{figure}
+	\begin{lstlisting}
+	{
+		"originTime": 1426507551,
+		"recentRecords": [],
+		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
+		"snapshotSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
+	}
+	\end{lstlisting}
+	\caption{A sample empty Snapshot.}
+	\label{fig:emptySnapshot}
+\end{figure}
+
 
 
 
@@ -403,62 +508,27 @@ Issuers must complete the proof-of-work before transmitting the record to the re
 % cite paper that shows why recycling the entry node is a good idea
 % possible that a malicious node could see his transmission, ignore it, then claim it themselves
 
-Operation records, such as Create, Modify, Move, Renew, and Delete must anonymously transmitted through a Tor circuit to the \emph{quorum} by a hidden service operator. First, the operator uses a Tor circuit to fetch from a \emph{mirror} the consensus document on day $ \floor[\big]{\frac{i}{\Delta i}} $ at 00:00 GMT, which he then uses to derive the current \emph{quorum}. Secondly, he asks the \emph{mirror} for the digitally signed hash of the \emph{page} used by each \emph{quorum} node. Third, he randomly selects two \emph{quorum} nodes from the largest cluster of matching \emph{pages} and sends his record to one of them. For security purposes, the operator should use the same entry node for this transmission that their hidden service uses for its communication. Fourth, he constructs a circuit to the second node and polls the node 15 minutes later to determine if it has knowledge of the record. If it does, he can be reasonable sure that the record has been properly transmitted and recorded. If the record is not known the next day, the operator should repeat this procedure to ensure that the record is recorded in the \emph{page}-chain.
 
-This process is illustrated in figure \ref{fig:recordBroadcast}.
 
-\subsection{OnioNS Servers}
-\label{sec:ProtoOnioNServers}
 
-\subsubsection{Initialization}
+
+
 
 This following description assumes that Alice is maintaining a local page-chain in synchronization with a Faythe, a trusted second party. The functionality described here is extended to distributed environments in \ref{sec:TorApplication} -- Application Within Tor.
 
 %The Modify operation renews the ownership of second-level domain names, so a record of the domain name must already exist in the page-chain and be less than $ L $ days old. Once received, \emph{quorum} nodes update the leaf in their AVL trees with the modified record.
 
-Alice creates an initial OnionNS database by the following procedure. Let $ i $ be the current day, and let $ \Delta i $ be the lifetime in days of a individual page.
 
-\begin{enumerate}
-	\item Download a copy of the consensus document $ cd $ published at at 00:00 GMT on day $ \floor[\big]{\frac{i}{\Delta i}} $.
-	\item Create an empty AVL tree, an initial hashtable bitset, an empty trie, a blank snapshot, and an empty page.
-	\item Sets the snapshot's \emph{originTime} field to the current Unix time, \emph{recentRecords} to an empty array, and \emph{fingerprint} to the hash of her public key.
-	\item Digitally sign {\emph{originTime} + \emph{recentRecords} + \emph{fingerprint}} and save the signature in \emph{snapshotSig}.
-	\item Set the page's \emph{prevHash} field to zeros, \emph{recordList} to an empty array, \emph{fingerprint} to the hash of her public key, and \emph{consensusDocHash} to the SHA-384 of $ cd $.
-	\item Digitally sign {\emph{prevHash} + \emph{recordList} + \emph{consensusDocHash} + \emph{fingerprint}} and save the signature in \emph{pageSig}.
-\end{enumerate}
 
-\begin{figure}
-	\begin{lstlisting}
-	{
-		"prevHash": 0,
-		"recordList": [],
-		"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-	}
-	\end{lstlisting}
-	\caption{A sample empty \emph{page}, encoded in JSON and base64.}
-	\label{fig:emptyPage}
-\end{figure}
 
-\begin{figure}
-	\begin{lstlisting}
-	{
-		"originTime": 1426507551,
-		"recentRecords": [],
-		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-		"snapshotSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-	}
-	\end{lstlisting}
-	\caption{A sample empty \emph{snapshot}, encoded in JSON and base64.}
-	\label{fig:emptySnapshot}
-\end{figure}
 
 %When a quorum node \emph{candidate} $ c_{j} $ becomes a member of the \emph{quorum}, it constructs an empty \emph{page}. If $ i = 0 $ then $ c_{j} $ sets \emph{prevHash} to zeros and generates \emph{nodeFingerprint} and \emph{pageSig}. Otherwise then $ i > 0 $ so \emph{prevHash} is set as the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of $ p_{i - 1} $. \emph{recordList} is set as an empty array, and \emph{consensusDocHash} and \emph{nodeFingerprint} are both defined. $ c_{j} $ then signs the preceding fields with its private key, saving the result in \emph{pageSig}. Finally, it constructs a one-hop bidirectional Tor circuit to all other \emph{quorum} nodes. These circuits are used for synchronization and must remain alive for the duration of that \emph{quorum}. Overall this creates $ \frac{M * (M - 1)}{2} $ new TCP/IP links among \emph{quorum} members.
 
 \subsubsection{Page Selection}
 
 To do...
+
+% validate pages first, then records in them since that's expensive.
 
 \subsubsection{Synchronization}
 
@@ -515,6 +585,8 @@ The second criteria requires Tor nodes to prove that has sufficient capabilities
 Both of these requirements can be determined in $ \mathcal{O}(n) $ time by anyone holding a recent or archived copy of the consensus document.
 
 \subsubsection{Record Processing}
+
+This must be less than $ \Delta s $ minutes ago and not in the future relative to a recipient's clock.
 
 % pass H(page, fingerprint) to each other before exchanging page signatures? This slows collusion. Ask for this hash.
 
@@ -604,7 +676,6 @@ Every $ \Delta i $ days, Alice
 	}
 	\end{lstlisting}
 	\caption{A snapshot containing a single Create record has merged into Carol's page.}
-	\label{fig:recordInSS}
 \end{figure}
 
 %sets \emph{originTime} to the current time, creates \emph{snapshotSig}, and sets $ snap_{x+1} $ to be the currently active snapshot for collecting new records.
@@ -674,7 +745,9 @@ Bob may also issue a reverse-hostname lookup to Alice to find second-level domai
 
 \section{Optimizations}
 
+\subsection{Pagechain Validation}
 
+Mirrors can reduce the PoWs they have to check by first checking for page agreements, then checking those records, in order of decreasing cluster size. No further checks reached once a valid Page is found
 
 \subsection{AVL Tree}
 \label{sec:AVLTree}
