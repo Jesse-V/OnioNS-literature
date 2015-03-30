@@ -233,8 +233,8 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 \begin{itemize}
 	\item Let $ H(x) $ be a cryptographic hash function. In our reference implementation we define $ H(x) $ as SHA-384, a truncated and slight modificated derivative of SHA-512. Currently the best preimage attack of SHA-512 breaks 57 out of 80 rounds in $ 2^{511} $ time.\cite{li2012converting} SHA-384 is included in the National Security Agency's Suite B Cryptography for protecting information classified up to Top Secret.
 	\item Let $ S_{d}(m, r) $ be a deterministic RSA digital signature function that accepts a message $ m $ and a private RSA key $ r $ and returns an RSA digital signature. Let $ S_{d}(m, r) $ use $ H(x) $ as a digest function on $ m $ in all use cases. In our reference implementation we define $ S_{d}(m, r) $ as EMSA-PSS, (EMSA4) a probabilistic signature scheme defined by PKCS1 v2.1 and republished in 2003's RFC 3447.
-	\item Let $ S_{p}(m, r) $ be $ S_{d}(m, r) $ but with probabilistic output. We suggest EMSA-PKCS1-v1.5, (EMSA3) defined by 1998's RFC 2315.
 	\item Let $ S_{\mathit{ed}}(m, c) $ be an Ed25519 digital signature function that accepts a message $ m $ and a private Curve25519 key $ c $ and returns a 64-byte Ed25519 digital signature. Ed25519 is digital signature scheme designed with high performance, strong implementation security, and minimal keypair and signature sizes objectives in mind. The Ed25519 elliptic curve is birationally equivalent to Curve25519, and Curve25519 keys can be converted to Ed25519 keys in $ \mathcal{O}(1) $ time.\cite{bernstein2011high} Let $ S_{\mathit{ed}}(m, c) $ use $ H(x) $ as a digest function on $ m $ in all use cases.
+	\item Let $ V_{\mathit{ed}}(m, C) $ validate an Ed25519 digital signature by accepting a message $ m $ and a public Curve25519 key $ C $, and return true if the signature is valid. Let $ V_{\mathit{ed}}(m, C) $ use $ H(x) $ as a digest function on $ m $ in all use cases.
 	\item Let $ \mathrm{PoW}(i) $ be a proof-of-work scheme such as a strong key derivation function that accepts an input key $ k $ and returns a derived key. Our reference implementation uses a fixed salt and scrypt, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users.\cite{percival2009stronger}\cite{percival2012scrypt} We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
 	\item Let $ \mathit{R}(s) $ be a pseudorandom number generator that accepts an initial seed $ s $ and returns a list of numerical pseudorandom numbers. We suggest MT19937, commonly known as the Mersenne Twister. This generator is widely used throughout most programming languages and is well known for its speed, long period, and the high quality of its pseudorandom output, although it is not cryptographically secure.\cite{matsumoto1998mersenne}
 \end{itemize}
@@ -276,7 +276,7 @@ A Create record consists of nine components: \emph{type}, \emph{nameList}, \emph
     consensusHash & Yes & The hash of the consensus document that generated $ \mathit{Quorum}_{q} $ \\
     nonce & Yes & Four bytes that serve as a source of randomness for $ \mathrm{PoW}(i) $. \\
    	pow & Yes & 16 bytes that store the output of $ \mathrm{PoW}(i) $. \\
-   	recordSig & Yes & The output of $ S_{p}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key. \\
+   	recordSig & Yes & The output of $ S_{d}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key. \\
    	pubHSKey & Yes & Bob's public RSA key. \\
     \hline
     \caption{A Create record, which contains fields common to all records. Every record is self-signed and must have verifiable proof-of-work before it is considered valid.}
@@ -342,6 +342,8 @@ Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consen
 \section{Protocols}
 \label{sec:Protocols}
 
+%Throughout this section, let Alice be a Tor client, Bob be a hidden service, and Carol be 
+
 % todo: the examples here aren't valid
 
 \subsection{Hidden Services}
@@ -406,11 +408,13 @@ If at any step an assertion fails, the Record is not valid and Carol does not ac
 		
 \subsubsection{Record Broadcast}
 
+% Page Selection protocol may be useful here
+
 \begin{enumerate}
 	\item Bob derives the current Quorum by the Quorum Derivation protocol described in section \ref{sec:ProtoTorClients}.
 	\item Bob constructs a circuit, $ c_{1} $, to a Mirror node $ m_{1} $.
 	\item Bob asks for and receives from $ c_{1} $ the $ H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}) $ hash and \emph{pageSig} (the ed25519 signature on that hash) from each Quorum node.
-	\item Bob confirms each \emph{pageSig} and defines $ U $ as the largest set of Quorum nodes that have the same hash. % todo: this cluster could be malicious, this isn't guarenteed safe.
+	\item Bob confirms via $ V_{\mathit{ed}}(m, C) $ each \emph{pageSig} and defines $ U $ as the largest set of Quorum nodes that have the same hash. % todo: this cluster could be malicious, this isn't guarenteed safe.
 	\item Bob randomly chooses a node $ n_{1} $ from $ U $ and builds a circuit to it, $ c_{2} $.
 	\item Bob uploads his Record through $ c_{2} $ to $ n_{1} $.
 	\item Bob waits up to $ \Delta s $ minutes for the next $ s $ flood iteration.
@@ -424,31 +428,26 @@ If at any step an assertion fails, the Record is not valid and Carol does not ac
 \subsection{OnioNS Servers}
 \label{sec:ProtoOnioNServers}
 
+Let Charlie be the name of an OnioNS Mirror.
+
 \subsubsection{Database Initialization}
 
-
-
-
-
-
-
-
-
-
-
-
-
-Alice creates an initial OnionNS database by the following procedure. Let $ i $ be the current day, and let $ \Delta i $ be the lifetime in days of a individual page.
-
 \begin{enumerate}
-	\item Download a copy of the consensus document $ cd $ published at at 00:00 GMT on day $ \floor[\big]{\frac{i}{\Delta i}} $.
-	\item Create an empty AVL tree, an initial hashtable bitset, an empty trie, a blank snapshot, and an empty page.
-	\item Sets the snapshot's \emph{originTime} field to the current Unix time, \emph{recentRecords} to an empty array, and \emph{fingerprint} to the hash of her public key.
-	\item Digitally sign {\emph{originTime} + \emph{recentRecords} + \emph{fingerprint}} and save the signature in \emph{snapshotSig}.
-	\item Set the page's \emph{prevHash} field to zeros, \emph{recordList} to an empty array, \emph{fingerprint} to the hash of her public key, and \emph{consensusDocHash} to the SHA-384 of $ cd $.
-	\item Digitally sign {\emph{prevHash} + \emph{recordList} + \emph{consensusDocHash} + \emph{fingerprint}} and save the signature in \emph{pageSig}.
+	\item Charlie creates a empty Snapshot.
+	\item Charlie sets \emph{originTime} to the number of seconds since the Unix epoch.
+	\item Charlie sets \emph{recentRecords} to an empty array.
+	\item Charlie sets \emph{fingerprint} to his Tor fingerprint.
+	\item Charlie sets $ \mathit{snapshotSig} = S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}, c) $ where $ c $ is Charlie's private Curve25519 NTor key.
+	\item Charlie begins listening for incoming Records.
+	\item Charlie creates an initial Page $ P_{\mathit{curr}} $.
+	\item Charlie selects a previous Page $ P_{\mathit{prev}} $ to back-reference via the Page Selection protocol.
+	\item Charlie sets $ \mathit{prevHash} = H(P_{\mathit{prev}}(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}) $.
+	\item Charlie sets \emph{recordList} to an empty array.
+	\item Charlie downloads from some remote source the consensus document $ \mathit{cd} $ issued on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 GMT and authenticates it against the Tor authority public keys.
+	\item Charlie sets $ \mathit{consensusDocHash} = H(\mathit{cd}) $.
+	\item Charlie sets \emph{fingerprint} to his Tor fingerprint.
+	\item Charlie sets $ \mathit{pageSig} = S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}), c) $ where $ c $ is Charlie's private Curve25519 NTor key.
 \end{enumerate}
-
 
 \begin{figure}
 	\begin{lstlisting}
@@ -477,6 +476,41 @@ Alice creates an initial OnionNS database by the following procedure. Let $ i $ 
 	\label{fig:emptySnapshot}
 \end{figure}
 
+\subsubsection{Page Selection}
+
+The Page Selection protocol is used to select a Page in the midst of Page disagreements between current or past Quorum members. It relies on our original design assumption that the largest set of Quorum nodes with agreeing and valid Pages are acting honestly, so by extension the Page they maintain is honest as well and we can safely choose it. Let $ P_{c} $ be the Page that Charlie has selected.
+
+% what happens if pageSig doesn't validate?
+
+\begin{enumerate}
+	\item Charlie obtains the set of Pages maintained by $ \mathit{Quorum}_{i} $.
+	\item Charlie obtains the consensus document $ \mathit{cd} $ issued on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 GMT and authenticates it against the Tor authority public keys.
+	\item Charlie uses $ \mathit{cd} $ to calculate the Quorum via the Quorum Derivation protocol.
+	\item For each Page, 
+		\begin{enumerate}
+			\item Charlie calculates $ h = H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}) $.
+			\item Charlie checks that $ \mathit{fingerprint} $ is a member of $ \mathit{Quorum}_{i} $.
+			\item Charlie checks that $ V_{\mathit{ed}}(h, C) $ returns true where $ C $ is $ \mathit{fingerprint} $'s public Curve25519 key.
+		\end{enumerate}
+	\item Charlie sorts the set of Pages by $ h $, and constructs a 2D array of Pages that have the same $ h $.
+	\item For each set of Pages with equal $ h $, 
+		\begin{enumerate}
+			\item Charlie checks that $ \mathit{consensusDocHash} = H(\mathit{cd}) $.
+			\item Charlie checks each Record in \emph{recordList} via the Record Validation protocol.
+		\end{enumerate}
+	\item If the validation of a Page fails, Charlie removes it from the equal-$ h $ list.
+	\item Let $ P_{c} $ be chosen arbitrarily from the largest set of valid Pages with equal $ h $.
+\end{enumerate}
+
+In this way, Charlie need not preform a deep verification of all Pages from $ \mathit{Quorum}_{i} $ in order to choose a Page.
+
+\subsubsection{Pagechain Validation}
+
+Assume that Charlie has obtained a complete Pagechain. Let him start at the oldest Page and work in chronological order to the most recent Page.
+
+\begin{enumerate}
+	\item Charlie
+\end{enumerate}
 
 
 
@@ -484,6 +518,11 @@ Alice creates an initial OnionNS database by the following procedure. Let $ i $ 
 
 
 
+
+
+
+
+% Chutney simulator
 
 % the flood allows each Quorum node to check agreements, but this shouldn't be used for Page selection, only to know if it missed something
 
@@ -508,25 +547,10 @@ Alice creates an initial OnionNS database by the following procedure. Let $ i $ 
 % cite paper that shows why recycling the entry node is a good idea
 % possible that a malicious node could see his transmission, ignore it, then claim it themselves
 
-
-
-
-
-
-
-This following description assumes that Alice is maintaining a local page-chain in synchronization with a Faythe, a trusted second party. The functionality described here is extended to distributed environments in \ref{sec:TorApplication} -- Application Within Tor.
-
 %The Modify operation renews the ownership of second-level domain names, so a record of the domain name must already exist in the page-chain and be less than $ L $ days old. Once received, \emph{quorum} nodes update the leaf in their AVL trees with the modified record.
-
-
-
-
 
 %When a quorum node \emph{candidate} $ c_{j} $ becomes a member of the \emph{quorum}, it constructs an empty \emph{page}. If $ i = 0 $ then $ c_{j} $ sets \emph{prevHash} to zeros and generates \emph{nodeFingerprint} and \emph{pageSig}. Otherwise then $ i > 0 $ so \emph{prevHash} is set as the SHA-384 of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of $ p_{i - 1} $. \emph{recordList} is set as an empty array, and \emph{consensusDocHash} and \emph{nodeFingerprint} are both defined. $ c_{j} $ then signs the preceding fields with its private key, saving the result in \emph{pageSig}. Finally, it constructs a one-hop bidirectional Tor circuit to all other \emph{quorum} nodes. These circuits are used for synchronization and must remain alive for the duration of that \emph{quorum}. Overall this creates $ \frac{M * (M - 1)}{2} $ new TCP/IP links among \emph{quorum} members.
 
-\subsubsection{Page Selection}
-
-To do...
 
 % validate pages first, then records in them since that's expensive.
 
@@ -696,6 +720,10 @@ Every $ \Delta i $ days, Alice
 
 %When Carol switches to a fresh page she will update her AVL tree, hashtable bitset, and trie. At that point, Alice can query Carol for ``example.com'' and Carol will return Bob's record.
 
+\subsubsection{Flooding}
+
+% an adversary could cause a denial of service by creating a Page with many false PoWs, causing Quorum nodes to perform a lot of PoW checks
+
 \subsection{Tor Clients}
 \label{sec:ProtoTorClients}
 
@@ -744,10 +772,6 @@ Bob may also issue a reverse-hostname lookup to Alice to find second-level domai
 
 
 \section{Optimizations}
-
-\subsection{Pagechain Validation}
-
-Mirrors can reduce the PoWs they have to check by first checking for page agreements, then checking those records, in order of decreasing cluster size. No further checks reached once a valid Page is found
 
 \subsection{AVL Tree}
 \label{sec:AVLTree}
