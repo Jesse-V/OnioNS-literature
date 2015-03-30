@@ -149,7 +149,7 @@ Bob first generates a valid Record which he transmits over a Tor circuit to a ra
 
 \begin{figure}[htbp]
 	\centering
-	\begin{tikzpicture}[->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
+	\begin{tikzpicture}[->, node distance=2.4cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries}]
 
 			\node[main node] (1) {$ Q_{1} $};
 			\node[main node] (2) [right of=1] {$ Q_{2} $};
@@ -161,14 +161,14 @@ Bob first generates a valid Record which he transmits over a Tor circuit to a ra
 			\node[main node] (7) [right of=6] {};
 			\node[main node] (8) [right of=7] {};
 
-			\node[main node, font=\small] (9) [below of=5] {$ N_{middle} $};
+			\node[main node] (9) [below of=5] {$ R_{M} $};
 			\node[main node] (10) [right of=9] {};
-			\node[main node, font=\small] (11) [right of=10] {$ N_{ip} $};
+			\node[main node] (11) [right of=10] {$ R_{E} $};
 			\node[main node] (12) [right of=11] {$ Q_{5} $};
 
 			\node[main node] (13) [below of=9] {};
 			\node[main node] (14) [right of=13] {};
-			\node[main node, font=\small] (15) [right of=14] {$ N_{entry} $};
+			\node[main node] (15) [right of=14] {$ R_{E} $};
 			\node[main node] (16) [right of=15] {HS};
 
 			% draw 1st and 2nd part of circuit
@@ -214,86 +214,19 @@ Any Mirror may continue its own Pagechain by generating a new Page, adding that 
 	\label{fig:sidechains}
 \end{figure}
 
-
-% the flood allows each Quorum node to check agreements, but this shouldn't be used for Page selection, only to know if it missed something
-
-
-% malicious node could change his own Pagechain locally, but that wouldn't matter because that isn't shared. Only influence would be queries, but that's also partially negated anyway
-
-
-
-
-
-
-
-
-
-
 \subsection{Client Request}
 
-\begin{figure}[htbp]
-	\centering
-	\begin{tikzpicture}[->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\Large\bfseries}]
+% todo: make diagram of this
 
-			\node[main node, font=\small] (1) {$ A_{entry} $};
-			\node[main node] (2) [right of=1] {};
-			\node[main node] (3) [right of=2] {Alice};
-			\node[main node] (4) [right of=3] {};
+Let Bob and Charlie be two hidden services, and assume that OnioNS knows a Record from Bob containing an ``example.tor $ \rightarrow $ example0uyw6wgve.onion'' association, and a Record from Charlie containing ``example2.tor $ \rightarrow $ example5chqt7to6.onion, sub.example2.tor $ \rightarrow $ example.tor''. Now let Alice request ``sub.example2.tor''.
 
-			\node[main node, font=\small] (5) [below of=1] {$ A_{exit} $};
-			\node[main node, font=\small] (6) [right of=5] {$ A_{middle} $};
-			\node[main node] (7) [right of=6] {$ c_{1} $};
-			\node[main node] (8) [right of=7] {$ c_{2} $};
+Since the .tor TLD is not used by the Clearnet DNS, Alice's client software must direct the request through a Tor circuit to some OnioNS resolver, $ O_{r} $. By default, $ O_{r} $ belongs to the set of Quorum Candidate nodes although Alice may override this and choose some Mirror if she wishes. For security and load reasons, Quorum nodes refuse to respond to queries, so Alice cannot ask them. Following Alice's request, $ O_{r} $ searches its local Pagechain for ``example2.tor'' and finds Charlie's Record, which it then sends to Alice. Alice sees the ``sub.example2.tor $ \rightarrow $ example.tor'' association and now queries $ O_{r} $ for ``example.tor''. $ O_{r} $ then locates and sends Bob's Record to Alice. Alice sees that ``example.tor'' has a destination of ``example0uyw6wgve.onion'', and because it has a .onion address she does not need to issue any more queries. Instead, Alice connects to Bob's example0uyw6wgve.onion service via the Tor  hidden service protocol and sends her original request (``sub.example2.tor'') to Bob. As is the case with the Clearnet, Bob's web server may or may not provide specific content to Alice based on this request, but his configuration is outside our scope.
 
-			\node[main node] (9) [below of=5] {};
-			\node[main node] (10) [right of=9] {$ m_{1} $};
-			\node[main node] (11) [right of=10] {};
-			\node[main node, font=\small] (12) [right of=11] {$ B_{ip} $};
+In this way, Alice can query an OnioNS resolver for some Charlie-selected domain name and recursively resolve it to a .onion address transparently. The number of resolutions Alice makes is fixed to a maximal length (section \ref{sec:Record}) so this algorithm always completes. We discuss minor optimizations and security enhancements to this procedure in section \ref{sec:ProtoTorClients}.
 
-			\node[main node] (13) [below of=9] {};
-			\node[main node, font=\small] (14) [right of=13] {$ B_{middle} $};
-			\node[main node, font=\small] (15) [right of=14] {$ B_{entry} $};
-			\node[main node] (16) [right of=15] {Bob};
+\section{Primitives}
 
-			%http://www.texample.net/tikz/examples/tkz-berge/
-			%http://www.texample.net/tikz/examples/graph/
-
-			\tikzstyle{EdgeStyle}=[bend right, -, green]
-			\Edge[](3)(1)
-			\tikzstyle{EdgeStyle}=[bend left=15, -, green]
-			\Edge[](1)(6)
-			\Edge[](5)(6)
-
-			\draw[thick, <-, blue, postaction={decorate, decoration={text along path, text align=center, text={response}, raise=3pt}}] (5) to [bend right=15] (10){};
-
-			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={sync}, raise=3pt}}] (10) to [bend right=15] (7){};
-
-			\tikzstyle{EdgeStyle}=[bend right=15, -, green]
-			\Edge[](16)(15)
-			\Edge[](15)(14)
-			\tikzstyle{EdgeStyle}=[bend left=10, -, green]
-			\Edge[](14)(12)
-			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (12) to [bend left=15] (8){};
-
-			\tikzstyle{EdgeStyle}=[-, gray]
-			\Edge[](7)(8)
-
-		\end{tikzpicture}
-	\caption{The hidden service operator Bob anonymously sends a record to the \emph{quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph{quorum}, which Alice anonymously queries for Bob's domain name.}
-	\label{fig:bigPicture}
-\end{figure}
-
-% Secondly, we describe how this page-chain can be used by the Tor network to power a publicly-verifiable distributed DNS system on top of existing Tor hidden service infrastructure.
-
-
-
-% In any fully-connected network where all participants know everyone's public keys, the page-chain becomes publicly confirmable and can be used for distributed DNS.
-
-%Each \emph{quorum} node has its own \emph{page}. If the nodes in $ quorum_{i - 1} $ remain online and our assumption the majority are acting honestly, there will exist sets (``clusters'') of \emph{pages} that have matching \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} fields. Let the choice of $ p_{i - 1} $ in $ p_{i} $ be the most recent \emph{page} in the chain chosen by the nodes in the largest such cluster. In the event that $ p_{i - 1} $ or its records to not follow specifications described herein, $ p_{i - 1} $ should be chosen from the second largest cluster, and so on until $ p_{i - 1} $ is chosen from the largest cluster that provides a valid \emph{page}.
-
-
-
-\section{Cryptographic Primitives}
+\subsection{Cryptographic}
 
 OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of-work, and a pseudorandom number generator.
 
@@ -302,21 +235,28 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 	\item Let $ S_{d}(m, r) $ be a deterministic RSA digital signature function that accepts a message $ m $ and a private RSA key $ r $ and returns an RSA digital signature. Let $ S_{d}(m, r) $ use $ H(x) $ as a digest function on $ m $ in all use cases. In our reference implementation we define $ S_{d}(m, r) $ as EMSA-PSS, (EMSA4) a probabilistic signature scheme defined by PKCS1 v2.1 and republished in 2003's RFC 3447.
 	\item Let $ S_{p}(m, r) $ be $ S_{d}(m, r) $ but with probabilistic output. We suggest EMSA-PKCS1-v1.5, (EMSA3) defined by 1998's RFC 2315.
 	\item Let $ S_{\mathit{ed}}(m, c) $ be an Ed25519 digital signature function that accepts a message $ m $ and a private Curve25519 key $ c $ and returns a 64-byte Ed25519 digital signature. Ed25519 is digital signature scheme designed with high performance, strong implementation security, and minimal keypair and signature sizes objectives in mind. The Ed25519 elliptic curve is birationally equivalent to Curve25519, and Curve25519 keys can be converted to Ed25519 keys in $ \mathcal{O}(1) $ time.\cite{bernstein2011high} Let $ S_{\mathit{ed}}(m, c) $ use $ H(x) $ as a digest function on $ m $ in all use cases.
-	\item Let $ \mathit{PoW}(i) $ be a proof-of-work scheme such as a strong key derivation function that accepts an input key $ k $ and returns a derived key. Our reference implementation uses scrypt, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users.\cite{percival2009stronger}\cite{percival2012scrypt} We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common in some cryptocurrencies such as Litecoin.
+	\item Let $ \mathit{PoW}(i) $ be a proof-of-work scheme such as a strong key derivation function that accepts an input key $ k $ and returns a derived key. Our reference implementation uses scrypt, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users.\cite{percival2009stronger}\cite{percival2012scrypt} We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
 	\item Let $ \mathit{R}(s) $ be a pseudorandom number generator that accepts an initial seed $ s $ and returns a list of numerical pseudorandom numbers. We suggest MT19937, commonly known as the Mersenne Twister. This generator is widely used throughout most programming languages and is well known for its speed, long period, and the high quality of its pseudorandom output, although it is not cryptographically secure.\cite{matsumoto1998mersenne}
-	\item Let $ L_{Q} $ represent the number of routers in the Quorum.
-	\item Let $ L_{T} $ represent the number of routers in the Tor network.
 \end{itemize}
 
-We use the JSON format to encode records and databases of records. JSON is significantly more compact than XML, but retains readability. Its support of basic primitive types is highly applicable to our needs. Additionally, we consider the JSON format safer than byte-level encoding.
+\subsection{Symbols}
+
+\begin{itemize}
+	\item Let $ L_{Q} $ represent size of the Quorum.
+	\item Let $ L_{T} $ represent the number of routers in the Tor network.
+	\item Let $ q $ be an Quorum iteration counter.
+	\item Let $ \Delta q $ be the lifetime of a Quorum in days: every $ \Delta q $ days $ q $ is incremented by one and a new Quorum is chosen.
+	\item Let $ s $ be a Snapshot iteration counter.
+	\item Let $ \Delta s $ be the lifetime of a Snapshot in days: every $ \Delta s $ minutes $ s $ is incremented by one, a flood happens, and a fresh Snapshot is used.
+\end{itemize}
+
+All textual databases are encoded in JSON. JSON is significantly more compact than XML, but retains readability. Its support of basic primitive types is highly applicable to our needs. Additionally, we consider the JSON format safer than byte-level encoding.
 
 \section{Data Structures}
 \label{sec:DataStructures}
 
 \subsection{Record}
 \label{sec:Record}
-
-% international encodings?
 
 There are five different types of Records: Create, Modify, Move, Renew, and Delete. The latter four Records mimic the format of the Create Record with minor exceptions.
 
@@ -344,11 +284,6 @@ A Create record consists of nine components: \emph{type}, \emph{nameList}, \emph
     \end{longtabu}
 	\label{table:createTable}
 \end{center}
-% todo: table label and table reference do not match
-
-
-
-%\emph{TODO: specify how difficulty increases to counteract Moore's Law. Also, is the pow even necessary, or can that be regenerated by anyone?}
 
 \subsubsection{Modify}
 
@@ -372,9 +307,9 @@ Second-level domain names (and their associated domain names) expire every $ L $
 
 If a owner's private key is compromised or if they wish to relinquish ownership rights over all of their domain names, they can issue a Delete record. Aside from their \emph{type} field set to ``Delete'', Delete records are identical in form to Create records but have the opposite effect: all second-level domains contained within the record are purged from local caches and made available for others to claim. There is no difficulty associated with Delete records, so they can be issued instantly.
 
-%This fingerprint is widely used in Tor infrastructure and in third-party tools as a unique identifier for individual Tor nodes.
-
 \subsection{Snapshot}
+
+Snapshots contain four fields: \emph{originTime}, \emph{recentRecords}, \emph{fingerprint}, and \emph{snapshotSig}.
 
 \begin{description}
 	\item[originTime] \hfill \\
@@ -386,10 +321,9 @@ If a owner's private key is compromised or if they wish to relinquish ownership 
 	\item[snapshotSig] \hfill \\
 		The digital signature of the preceding fields, signed using the machine's private key.
 \end{description}
-		
-		
-		as a short-term and volatile cache. When two or more machines are maintaining a common page-chain, snapshots are used as a buffer that is flushed to the other parties every $ \Delta s $ minutes. Individually, they are flushed to a local page every $ \Delta s $ minutes. Snapshots contain four fields: \emph{originTime}, \emph{recentRecords}, \emph{fingerprint}, and \emph{snapshotSig}.
 
+\emph{snapshotSig} is the Tor fingerprint, a unique identification string widely used throughout Tor infrastructure and third-party tools to refer to specific Tor nodes.
+		
 \subsection{Page}
 
 Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, \emph{fingerprint}, and \emph{pageSig}.
@@ -402,13 +336,11 @@ Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consen
 	\item[consensusDocHash] \hfill \\
 		The SHA-384 of $ cd $.
 	\item[fingerprint] \hfill \\
-		The hash of the public key of the machine maintaining this page.
+		The hash of the public key of the machine maintaining this page, the Tor fingerprint.
 	\item[pageSig] \hfill \\
 		The digital signature of the preceding fields, signed using the machine's private key.
-\end{description}
-
-the page-chain is publicly confirmable by anyone participating in or using the Tor network.
-
+\end{description}	
+		
 \section{Protocols}
 \label{sec:Protocols}
 
@@ -417,7 +349,7 @@ the page-chain is publicly confirmable by anyone participating in or using the T
 
 \subsubsection{Record Generation}
 
-Issuers must complete the proof-of-work before transmitting the record to the recipient. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. The issuer must then find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done and \emph{count} is the number of second-level domain names claimed. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated. When the proof-of-work is complete, the valid and complete record is represented in JSON format and is ready for transmission.
+Issuers must complete the proof-of-work before transmitting the record to the recipient. Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. The issuer must then find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done and \emph{count} is the number of second-level domain names claimed. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated. When the proof-of-work is complete, the valid and complete record is represented in JSON format and is ready for broadcast.
 
 \begin{figure}
 	\begin{lstlisting}
@@ -434,15 +366,39 @@ Issuers must complete the proof-of-work before transmitting the record to the re
 		"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
 	}
 	\end{lstlisting}
-	\caption{Sample registration record from a hidden service, encoded in JSON and base64.}
+	\caption{A sample registration record. The textual fields are in UTF-8, while the binary fields are in base64. The structure is encoded in JSON.}
 	\label{fig:sampleRecord}
 \end{figure}
+		
+\subsubsection{Broadcast}
+		
+
+
+
+
+
+
+
+
+% the flood allows each Quorum node to check agreements, but this shouldn't be used for Page selection, only to know if it missed something
+
+% malicious node could change his own Pagechain locally, but that wouldn't matter because that isn't shared. Only influence would be queries, but that's also partially negated anyway
+
+% Secondly, we describe how this page-chain can be used by the Tor network to power a publicly-verifiable distributed DNS system on top of existing Tor hidden service infrastructure.
+
+% In any fully-connected network where all participants know everyone's public keys, the page-chain becomes publicly confirmable and can be used for distributed DNS.
+
+%Each \emph{quorum} node has its own \emph{page}. If the nodes in $ quorum_{i - 1} $ remain online and our assumption the majority are acting honestly, there will exist sets (``clusters'') of \emph{pages} that have matching \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} fields. Let the choice of $ p_{i - 1} $ in $ p_{i} $ be the most recent \emph{page} in the chain chosen by the nodes in the largest such cluster. In the event that $ p_{i - 1} $ or its records to not follow specifications described herein, $ p_{i - 1} $ should be chosen from the second largest cluster, and so on until $ p_{i - 1} $ is chosen from the largest cluster that provides a valid \emph{page}.
+
+% international encodings?
+
+% todo: table label and table reference do not match
+
+%\emph{TODO: specify how difficulty increases to counteract Moore's Law. Also, is the pow even necessary, or can that be regenerated by anyone?}
 
 %% Let the variable \emph{central} consist of all fields except \emph{recordSig} and \emph{pow}. The issuer must then find a \emph{nonce} such that the SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{difficulty} specifies the order of magnitude of the work that must be done and \emph{count} is the number of second-level domain names claimed. For each \emph{nonce}, \emph{pow} and \emph{recordSig} must be regenerated. When the proof-of-work is complete, the valid and complete record is represented in JSON format and is ready for transmission.
 
 %Bob creates a Create record in which she claims "example.tor" as pointing to her hidden service address, exampleruyw6wgve.onion. Bob then spends computational time and RAM finding a \emph{nonce} such that SHA-384 of \emph{central}, \emph{pow}, and \emph{recordSig} is $ \leq 2^\textrm{difficulty * count} $, where \emph{central} consist of all fields in the Create record except \emph{recordSig} and \emph{pow}, and \emph{count} is the number of second-level domains claimed, in this case one. When the proof-of-work is complete, Bob builds a Tor circuit to Carol and sends her the Create record shown in Figure \ref{fig:sampleRecord}. This process is illustrated in Figure \ref{fig:baseCaseFig}.
-
-\subsubsection{Broadcast}
 
 % cite paper that shows why recycling the entry node is a good idea
 % possible that a malicious node could see his transmission, ignore it, then claim it themselves
@@ -757,3 +713,60 @@ Note that a Bloom filter with $ k $ hash functions could be used instead of a co
 
 A trie, also known as a digital tree, is used for efficiently resolving Onion Queries (section \ref{sec:OnionQuery}). Each node in the trie corresponds to a base58 digit of the .onion hidden service address. These addresses are currently defined at 16 characters, so the trie has a maximum depth of 16 and up to 58 branches per node.
 
+
+
+% introduce protocol changes like BTC does: set a logic fork at some point in the future
+
+
+
+%\begin{figure}[htbp]
+%	\centering
+%	\begin{tikzpicture}[->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries}]
+%
+%			\node[main node] (1) {$ R_{G} $};
+%			\node[main node] (2) [right of=1] {};
+%			\node[main node] (3) [right of=2] {Alice};
+%			\node[main node] (4) [right of=3] {};
+%
+%			\node[main node] (5) [below of=1] {$ R_{E} $};
+%			\node[main node] (6) [right of=5] {$ R_{M} $};
+%			\node[main node] (7) [right of=6] {$ Q_{1} $};
+%			\node[main node] (8) [right of=7] {$ Q_{2} $};
+%
+%			\node[main node] (9) [below of=5] {};
+%			\node[main node] (10) [right of=9] {$ m_{1} $};
+%			\node[main node] (11) [right of=10] {};
+%			\node[main node] (12) [right of=11] {$ R_{E} $};
+%
+%			\node[main node] (13) [below of=9] {};
+%			\node[main node] (14) [right of=13] {$ R_{M} $};
+%			\node[main node] (15) [right of=14] {$ R_{E} $};
+%			\node[main node] (16) [right of=15] {Bob};
+%
+%			%http://www.texample.net/tikz/examples/tkz-berge/
+%			%http://www.texample.net/tikz/examples/graph/
+%
+%			\tikzstyle{EdgeStyle}=[bend right, -, green]
+%			\Edge[](3)(1)
+%			\tikzstyle{EdgeStyle}=[bend left=15, -, green]
+%			\Edge[](1)(6)
+%			\Edge[](5)(6)
+%
+%			\draw[thick, <-, blue, postaction={decorate, decoration={text along path, text align=center, text={response}, raise=3pt}}] (5) to [bend right=15] (10){};
+%
+%			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={sync}, raise=3pt}}] (10) to [bend right=15] (7){};
+%
+%			\tikzstyle{EdgeStyle}=[bend right=15, -, green]
+%			\Edge[](16)(15)
+%			\Edge[](15)(14)
+%			\tikzstyle{EdgeStyle}=[bend left=10, -, green]
+%			\Edge[](14)(12)
+%			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={record}, raise=3pt}}] (12) to [bend left=15] (8){};
+%
+%			\tikzstyle{EdgeStyle}=[-, gray]
+%			\Edge[](7)(8)
+%
+%		\end{tikzpicture}
+%	\caption{The hidden service operator Bob anonymously sends a record to the \emph{quorum} ($ c_{1} $ and $ c_{2} $), informing them about his domain name. A node $ m_{1} $ mirrors the \emph{quorum}, which Alice anonymously queries for Bob's domain name.}
+%	\label{fig:bigPicture}
+%\end{figure}
