@@ -215,14 +215,15 @@ Any Mirror may continue its own Pagechain by generating a new Page, adding that 
 \end{figure}
 
 \subsection{Client Request}
+\label{sec:ClientRequest}
 
 % todo: make diagram of this
 
-Let Bob and Charlie be two hidden services, and assume that OnioNS knows a Record from Bob containing an ``example.tor $ \rightarrow $ example0uyw6wgve.onion'' association, and a Record from Charlie containing ``example2.tor $ \rightarrow $ example5chqt7to6.onion, sub.example2.tor $ \rightarrow $ example.tor''. Now let Alice request ``sub.example2.tor''.
+Let Bob and Dave be two hidden services, and assume that OnioNS knows a Record from Bob containing an ``example.tor $ \rightarrow $ example0uyw6wgve.onion'' association, and a Record from Dave containing ``example2.tor $ \rightarrow $ example5chqt7to6.onion, sub.example2.tor $ \rightarrow $ example.tor''. Now let Alice request ``sub.example2.tor''.
 
-Since the .tor TLD is not used by the Clearnet DNS, Alice's client software must direct the request through a Tor circuit to some OnioNS resolver, $ O_{r} $. By default, $ O_{r} $ belongs to the set of Quorum Candidate nodes although Alice may override this and choose some Mirror if she wishes. For security and load reasons, Quorum nodes refuse to respond to queries, so Alice cannot ask them. Following Alice's request, $ O_{r} $ searches its local Pagechain for ``example2.tor'' and finds Charlie's Record, which it then sends to Alice. Alice sees the ``sub.example2.tor $ \rightarrow $ example.tor'' association and now queries $ O_{r} $ for ``example.tor''. $ O_{r} $ then locates and sends Bob's Record to Alice. Alice sees that ``example.tor'' has a destination of ``example0uyw6wgve.onion'', and because it has a .onion address she does not need to issue any more queries. Instead, Alice connects to Bob's example0uyw6wgve.onion service via the Tor  hidden service protocol and sends her original request (``sub.example2.tor'') to Bob. As is the case with the Clearnet, Bob's web server may or may not provide specific content to Alice based on this request, but his configuration is outside our scope.
+Since the .tor TLD is not used by the Clearnet DNS, Alice's client software must direct the request through a Tor circuit to some OnioNS resolver, $ O_{r} $. By default, $ O_{r} $ belongs to the set of Quorum Candidate nodes although Alice may override this and choose some Mirror if she wishes. For security and load reasons, Quorum nodes refuse to respond to queries, so Alice cannot ask them. Following Alice's request, $ O_{r} $ searches its local Pagechain for ``example2.tor'' and finds Dave's Record, which it then sends to Alice. Alice sees the ``sub.example2.tor $ \rightarrow $ example.tor'' association and now queries $ O_{r} $ for ``example.tor''. $ O_{r} $ then locates and sends Bob's Record to Alice. Alice sees that ``example.tor'' has a destination of ``example0uyw6wgve.onion'', and because it has a .onion address she does not need to issue any more queries. Instead, Alice connects to Bob's example0uyw6wgve.onion service via the Tor hidden service protocol and sends her original request (``sub.example2.tor'') to Bob. As is the case with the Clearnet, Bob's web server may or may not provide specific content to Alice based on this request, but his configuration is outside our scope.
 
-In this way, Alice can query an OnioNS resolver for some Charlie-selected domain name and recursively resolve it to a .onion address transparently. The number of resolutions Alice makes is fixed to a maximal length (section \ref{sec:Record}) so this algorithm always completes. We discuss minor optimizations and security enhancements to this procedure in section \ref{sec:ProtoTorClients}.
+In this way, Alice can query an OnioNS resolver for some Dave-selected domain name and recursively resolve it to a .onion address transparently. The number of resolutions Alice makes is fixed to a maximal length (section \ref{sec:Record}) so this algorithm always completes. We discuss minor optimizations and security enhancements to this procedure in section \ref{sec:ProtoTorClients}.
 
 \section{Primitives}
 
@@ -592,7 +593,7 @@ A Quorum node $ Q_{j} $ listens for new Records from hidden service operators. W
 
 % todo: search for "Delta i"
 
-% pass H(page, fingerprint) to each other before exchanging page signatures? This slows collusion. Ask for this hash.
+% pass H(page, fingerprint) to each other before exchanging page signatures? This slows collusion. Ask for this hash. analysis on this
 
 % domain expiration if server unavailable, expiration of domain names by quorums, two quorums must agree, grace period
 
@@ -644,7 +645,7 @@ Every $ \Delta s $ minutes, a burst of communication happens between Quorum node
 \subsection{Tor Clients}
 \label{sec:ProtoTorClients}
 
-Let Alice be a Tor client.
+Let Alice be a Tor client. We assume now that Alice has chosen Charlie as her domain resolver and that Charlie is not a member of the current Quorum. 
 
 \subsubsection{Quorum Derivation}
 
@@ -658,37 +659,35 @@ Let Alice be a Tor client.
 
 \subsubsection{Domain Query}
 
+There are three verification levels in a Domain Query, each providing progressively more verification to Alice that the Record she receives is authentic, unique, and trustworthy. At verification 0, the default:
 
+% use case diagram of this?
 
+\begin{enumerate}
+	\item Alice constructs a Tor circuit to Charlie, so from Charlie's perspective she is anonymous.
+	\item Alice provides a .tor domain name $ d $ into the Tor Browser. The Clearnet has no .tor TLD, so $ d $ is not processed as a traditional domain name would be.
+	\item \label{step:trim} If $ d $'s highest-level name is ``www'', Alice removes that name.
+	\item \label{step:level} Alice asks Charlie for the most recent Record $ r $ associated with $ d $ at verification level 0.
+	\item Charlie reviews his Pagechain reverse-chronological order until he finds a Record containing $ d $, which he returns to Alice.
+	\item Alice validates $ r $ via the Record Validation protocol. If it does not validate, she changes to another resolver and repeats this protocol.
+	\item If the destination for $ d $ in $ r $ uses a .tor TLD, $ d $ becomes that destination and Alice jumps back to step \ref{step:trim}.
+	\item Otherwise, the destination must have a .onion TLD, which Alice looks up by the Tor hidden service protocol.
+	\item Alice checks that $ r $'s \emph{pubHSKey} matches the one in Tor's distributed hash table.
+	\item Alice sends the original $ d $ to the hidden service.	
+\end{enumerate}
 
+Verification level 1 proceeds nearly identical to level 0. Alice sends ``level 1'' to Charlie in step \ref{step:level} and Charlie returns the Page $ p $ containing $ r $. Then Alice can check the integrity of $ p $ via the Page Selection protocol and can verify its authenticity via checking that $ V_{\mathit{ed}}(m, C) $ returns true when $ m $ is the Page hash $ h $ and $ C $ is \emph{fingerprint}'s public Curve25519 NTor key.
 
+At Verification level 2, Alice sends ``level 2'' to Charlie in step \ref{step:level} and Charlie returns $ p $ from level 1 and all digital signatures on $ h $ from all Quorum nodes that agreed on $ p $. Then Alice can perform width verification: she can see that a large percentage of Quorum nodes maintained $ p $, thus increasing the trustworthiness of both $ p $ and $ r $.
 
-
-
-
-
-
-
-% www.example.tor should be resolved to example.tor automatically, yes?
-
-Alice can optionally act as a resolver for other parties. Let Bob be a client and Faythe a third-party trusted by both Alice and Bob. Assume that Bob does not trust Alice, Bob has Faythe's public key, and that Bob has obtained a copy of the Tor consensus document published on day $ \floor[\big]{\frac{i}{\Delta i}} $ at 00:00 GMT. Faythe has divided her bitset into $ Q $ sections, digitally signed each section, digitally signed the root hash of the Merkle tree, and send the signatures to Alice.
-
-Bob enters ``sub.example.tor'' into his Tor Browser. As this TLD is not used by the Clearnet DNS, his client software directs the request to Alice. Bob must recursively resolve the .tor domain name into a .onion address and it is more efficient if Alice returns back to Bob all the necessary information that he needs to perform this resolution. Along with the domain name, Bob also sends to Alice one of the two verification levels, each providing progressively more verification that the record Bob receives is authentic, unique, and trustworthy. The default verification level is 0 for performance reasons.
-
-At verification level 0, Alice first checks the hashtable bitset to confirm that the record exists. If it does, Alice then queries the AVL tree to find the latest record that contains the requested domain name. Alice resolves the requested domain and repeats this lookup up to eight times if the resulting destination uses the .tor TLD. Once a .onion TLD destination is encountered, Alice returns to Bob all records containing the intermediate and final destinations. If a lookup fails, Alice returns to Bob records containing any intermediary destinations, and the Faythe-signed section of the bitset. If the hash maps to a ``1'' bucket, Alice also returns the Faythe-signed root of the Merkle collision tree, the leaves of the branch containing neighbouring second-level domain names that alphabetically span the failed domain, and all other hashes at the top level of the branch in the Merkle tree.
-
-Bob receives from Alice the data structures containing the domain name resolutions. Bob confirms the resolution path and confirms the validity, signature, and proof-of-work of each record in turn. Finally, Bob looks up the .onion hidden service in the traditional manner. If the resolution was unsuccessful, Bob also verifies the signed section of the bitset. If the domain maps to a ``0'', Bob's client software returns that the DNS lookup failed, otherwise Bob confirms that no such second-level domain name exists in the Merkle tree branch returned by Alice. Since the leaves of the branch alphabetically span the requested domain and would otherwise contain it if it existed, Bob knows that it does not exist. Finally, Bob hashes the leaves to reconstructs the branch, and constructs the rest of the tree by combining the root of that branch with the other hashes returned by Alice at that level, and verifies the root hash against Faythe's signature. If this validates, Bob's software also informs the Tor Browser that DNS lookup failed. The resolution can also fail if the service has not published a recent hidden service descriptor to Tor's distributed hash table. End-to-end verification (relative to the authenticity of the hidden service itself) is complete when \emph{pubHSKey} can be successfully used to encrypt the hidden service cookie and the service proves that it can decrypt $ sec $ as part of the hidden service protocol.
-
-% Faythe is signing data including her fingerprint field...
-
-At verification level 1, in addition to returning all record and supplementary data structures in level 0, Alice also returns the page that contained each record and the \emph{pageSig} field from Faythe's page. Since Alice and Faythe are maintaining a common page-chain, both Alice and Faythe will be signing the same data. Bob verifies the authenticity of the page against both Alice and Faythe's public keys and proceeds with his steps in level 0.
-
-%Verification level 2 is almost identical to level 1, but Alice also receives the digitally signed hashes of the \emph{page} held by each \emph{quorum} node. This demonstrates width verification, as Alice can confirm that the \emph{page} is in the largest cluster of \emph{quorum} nodes that are all on the same \emph{page}. It is impractical for Alice to download all \emph{pages} to verify the uniqueness and trustworthiness of a returned record, so Alice can fetch minimal additional information and rely on her trust in the Tor network (in particular the \emph{quorum}) to confirm this for her.
-
+Alice can be certain that the Record $ r $ she receives is authentic and that it contains a domain name $ d $ that is unique by performing a full Synchronization and obtaining Charlie's Pagechain for herself, but this is impractical in most environments. It cannot be safely assumed that Alice has storage capacity to hold all the Pages in the Pagechain. Additionally, Tor's median circuit speed is often less than 1 MiB/s,\cite{TorMetrics} so for convenience data transfer must be minimized. Therefore Alice can simply fetch minimal information and rely on her trust of Charlie and the Quorum.
 
 \subsubsection{Onion Query}
 
-Bob may also issue a reverse-hostname lookup to Alice to find second-level domains that directly resolve to a given .onion hidden service address. This request is an Onion Query. Unlike on the Clearnet (under RFCs 1033 and 1912) not every .onion name has a corresponding domain name, so these queries may also fail. When Bob sends a Onion Query to Alice, Alice finds in her trie the record that contains a second-level .tor domain name that immediately maps to that .onion, and returns the domain name. Bob can optionally perform additional verification by issuing a Level 1 Domain Query on that domain name which should resolve to the original requested .onion hidden service address, a forward-confirmed reverse DNS lookup.
+Alice may also issue a reverse-hostname lookup to Charlie to find second-level domains that resolve to a given .onion address. This request is known as an Onion Query. Charlie performs a reverse-chronological search in the Pagechain for Records that .onion as a destination and returns the results corresponding to the verification level. Onion Queries have a high likelihood of failure as not every .onion name has a corresponding .tor domain name, but all OnioNS domain names will have Forward-Confirmed Reverse DNS match.
+
+
+
 
 
 
@@ -712,12 +711,15 @@ A self-balancing binary AVL tree is used as a local cache of existing records. I
 % records that are less than a day old will have a hard time with the hashtable, but once in a page they are good
 
 \subsection{Hashtable Bitset}
+\label{sec:HashtableBitset}
 
 A hashtable bitset is a special and highly compact adaptation of a traditional hashtable. Unlike its AVL tree counterpart, its purpose to prove the non-existence of a record. As an extension of an ordinary hashtable, the hashtable bitset maps keys to buckets, but here we are interested in only tracking the existence of keys and have no need to store the keys themselves. Therefore each bucket in the structure is represented as a bit, creating a compact bitset of $ \mathcal{O}(n) $ size. The hashtable bitset records a ``1'' if a second-level domain name exists, and a ``0'' if not. In the event of a hash collision, all second-level domains that map to that bucket should be added to an array list. Once the bitset is fully constructed, the array is sorted alphabetically and the resulted converted into the leaves of a Merkle tree.
 
 %  and claim that a domain name does not exist when in fact it does
 
 % at startup, clients should be given the root of the Merkle tree for the hashtable collisions, or at least hashes in the tree
+
+Faythe has divided her bitset into $ Q $ sections, digitally signed each section, digitally signed the root hash of the Merkle tree, and send the signatures to Alice.
 
 Let Alice and a trusted authority Faythe maintain a common page-chain, and let Alice be a resolver for a third-party Bob. In the event that Bob asks Alice to resolve a domain name to a hidden service and Alice claims that the domain name does not exist, Bob must be able to verify the non-existence of that record. Demonstrating non-existence is a challenge often overlooked in DNS: even if existing records can be authenticated by Bob, Alice may still lie and claim a false negative on the existence of a domain name. Bob may choose to query Faythe to confirm non-existence, but this introduces additional load onto Faythe. Bob cannot easily determine the accuracy of Alice's claim without downloading all of the records and confirming for himself, but this is impractical in most environments.
 
@@ -730,6 +732,10 @@ Note that a Bloom filter with $ k $ hash functions could be used instead of a co
 % merkle tree: leafs contain <domain name, recordHash>?
 
 % since we already have in this application it is only necessary to track whether a domain name exists or not. Therefore we represent each bucket as a bit.
+
+At verification level 0, Alice first checks the hashtable bitset to confirm that the record exists. If it does, Alice then queries the AVL tree to find the latest record that contains the requested domain name. Alice resolves the requested domain and repeats this lookup up to eight times if the resulting destination uses the .tor TLD. Once a .onion TLD destination is encountered, Alice returns to Bob all records containing the intermediate and final destinations. If a lookup fails, Alice returns to Bob records containing any intermediary destinations, and the Faythe-signed section of the bitset. If the hash maps to a ``1'' bucket, Alice also returns the Faythe-signed root of the Merkle collision tree, the leaves of the branch containing neighbouring second-level domain names that alphabetically span the failed domain, and all other hashes at the top level of the branch in the Merkle tree.
+
+Bob receives from Alice the data structures containing the domain name resolutions. Bob confirms the resolution path and confirms the validity, signature, and proof-of-work of each record in turn. Finally, Bob looks up the .onion hidden service in the traditional manner. If the resolution was unsuccessful, Bob also verifies the signed section of the bitset. If the domain maps to a ``0'', Bob's client software returns that the DNS lookup failed, otherwise Bob confirms that no such second-level domain name exists in the Merkle tree branch returned by Alice. Since the leaves of the branch alphabetically span the requested domain and would otherwise contain it if it existed, Bob knows that it does not exist. Finally, Bob hashes the leaves to reconstructs the branch, and constructs the rest of the tree by combining the root of that branch with the other hashes returned by Alice at that level, and verifies the root hash against Faythe's signature. If this validates, Bob's software also informs the Tor Browser that DNS lookup failed. The resolution can also fail if the service has not published a recent hidden service descriptor to Tor's distributed hash table. End-to-end verification (relative to the authenticity of the hidden service itself) is complete when \emph{pubHSKey} can be successfully used to encrypt the hidden service cookie and the service proves that it can decrypt $ sec $ as part of the hidden service protocol.
 
 \subsection{Trie}
 
