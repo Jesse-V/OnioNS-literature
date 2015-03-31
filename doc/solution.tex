@@ -197,7 +197,7 @@ Bob first generates a valid Record which he transmits over a Tor circuit to a ra
 			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={Snapshot}, raise=3pt}}] (6) to [bend right=18] (4){};
 
 		\end{tikzpicture}
-	\caption{Bob uses his existing circuit (green) to inform \emph{quorum} node $ Q_{4} $ of the new record. $ Q_{4} $ then floods it via \emph{Snapshots} to all other \emph{Quorum} nodes. Each node stores it in their own \emph{Page} for long-term storage. Bob confirms from another \emph{Quorum} node $ Q_{5} $ that his Record has been received.}
+	\caption{Bob uses his existing circuit (green) to inform Quorum node $ Q_{4} $ of the new record. $ Q_{4} $ then floods it via Snapshots to all other Quorum nodes. Each node stores it in their own Page for long-term storage. Bob confirms from another Quorum node $ Q_{5} $ that his Record has been received.}
 	\label{fig:recordBroadcast}
 \end{figure}
 
@@ -228,6 +228,7 @@ In this way, Alice can query an OnioNS resolver for some Dave-selected domain na
 \section{Primitives}
 
 \subsection{Cryptographic}
+\label{sec:CryptoPrim}
 
 OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of-work, and a pseudorandom number generator.
 
@@ -686,66 +687,72 @@ Alice can be certain that the Record $ r $ she receives is authentic and that it
 
 Alice may also issue a reverse-hostname lookup to Charlie to find second-level domains that resolve to a given .onion address. This request is known as an Onion Query. Charlie performs a reverse-chronological search in the Pagechain for Records that .onion as a destination and returns the results corresponding to the verification level. Onion Queries have a high likelihood of failure as not every .onion name has a corresponding .tor domain name, but all OnioNS domain names will have Forward-Confirmed Reverse DNS match.
 
-
-
-
-
-
-
-
-
-
 \section{Optimizations}
 
-\subsection{AVL Tree}
-\label{sec:AVLTree}
+There are several improvements that be made upon the basic design protocols that significantly enhance the performance of Mirrors when responding to Domain or Onion Requests. We also introduce the Hashtable Bitset data structure, which improves security on the client end.
 
-A self-balancing binary AVL tree is used as a local cache of existing records. Its nodes hold references to the location of records in a local copy of the page-chain and it is sorted by alphabetical comparison of second-level domain names. As a page-chain is a linear data structure that requires a $ \mathcal{O}(n) $ scan to find a record, the $ \mathcal{O}(n\log{}n) $ generation of an AVL tree cache allows lookups of second-level domain names to occur in $ \mathcal{O}(\log{}n) $ time.
+\subsection{AVL Tree}
+
+An AVL tree is a self-balancing binary search tree with $ \mathcal{O}(\mathrm{log}(n)) $ time for search, insert, and delete. OnioNS mirrors can cache all the Records in its local Pagechain in an AVL tree. After the Pagechain is validated, the Mirror iterates through the Pagechain in chronological order and constructs a list of associations between a second-level domain name and the location in the Pagechain of the Record containing that domain. The Mirror then inserts that list into the AVL tree, where sorting occurs by alphabetical comparison of domain names. This effectively transforms the lookup time of Records for Domain Queries from $ \mathcal{O}(n) $ to $ \mathcal{O}(\mathrm{log}(n)) $ in the worst case.
+
+As the Mirror handles new Records sent to Quorum nodes, it must update this AVL tree. Create Records trigger an insert operation, Delete Records cause a deletion, and all other Records update a location pointer to the more recent Record.
 
 % todo: illustration of an AVL tree with pointers to page-chain records
 
+\subsection{Trie}
 
-% this really could be a Merkle tree, then the top root could be published in the consensus doc
-
-% todo: this works well for names, but how about for Moves?
-% records that are less than a day old will have a hard time with the hashtable, but once in a page they are good
+We also suggest utilizing a trie, a digital tree, for efficiently structuring .onion addresses and optimizing Onion Query lookups. If each node in the trie is a character in the .onion address, the trie has a branching factor of 58 and a maximum depth of 16. Let the leaves of the trie be the location of the most recent Record in the Pagechain that has that address as a destination. Like the AVL tree, Mirrors must take care to update the trie cache when processing new Records, but this is efficient as trie search, insertion, and deletion all occur in $ \mathcal{O}(1) $.
 
 \subsection{Hashtable Bitset}
 \label{sec:HashtableBitset}
 
-A hashtable bitset is a special and highly compact adaptation of a traditional hashtable. Unlike its AVL tree counterpart, its purpose to prove the non-existence of a record. As an extension of an ordinary hashtable, the hashtable bitset maps keys to buckets, but here we are interested in only tracking the existence of keys and have no need to store the keys themselves. Therefore each bucket in the structure is represented as a bit, creating a compact bitset of $ \mathcal{O}(n) $ size. The hashtable bitset records a ``1'' if a second-level domain name exists, and a ``0'' if not. In the event of a hash collision, all second-level domains that map to that bucket should be added to an array list. Once the bitset is fully constructed, the array is sorted alphabetically and the resulted converted into the leaves of a Merkle tree.
+A hashtable bitset is a special and highly compact adaptation of a traditional hashtable. We introduce a hashtable bitset for two purposes: 1) to prove the non-existence of a domain name, and 2) to improve the efficiency of lookups for non-existent domain names from $ \mathcal{O}(\mathrm{log}(n)) $ through the AVL tree to $ \mathcal{O}(1) $ time. This first property is a challenge often overlooked in other domain name systems: even if domain names can be authenticated by a client (e.g. OnioNS Records or SSL certificates) a DNS resolver may lie about the non-existence and claim a false negative. In OnioNS, Alice can download the entire Pagechain and confirm for herself, but as we stated earlier this is not practical. Alice could also query another trusted source such as Quorum Candidates, but this approach does not scale well. Instead, a trusted authority can sign a hashtable bitset once and allow Mirrors to prove non-existence for any domain name.
 
-%  and claim that a domain name does not exist when in fact it does
+As an extension of an ordinary hashtable, the hashtable bitset maps keys to buckets, but here we only track the existence of a key but not the keys themselves. Therefore each bucket in the structure is represented as a bit, creating a compact $ z * n $-length bitset, where $ z $ is a scaling factor. Let the hashtable use the $ H(m) $ function from section \ref{sec:CryptoPrim}. A Mirror constructs a hashtable bitset in $ \mathcal{O}(n) $ time by the following algorithm:
 
-% at startup, clients should be given the root of the Merkle tree for the hashtable collisions, or at least hashes in the tree
+\begin{enumerate}
+	\item Construct the hashtable bitset \emph{hb} with all bits set to zero.
+	\item Construct an empty AVL tree $ t $.
+	\item For each domain name $ d $ in each Record $ r $ in the Pagechain,
+		\begin{enumerate}
+			\item If $ \mathit{hb}(H(d)) $ is 1, add $ H(d) \rightarrow r $ to \emph{hb}.
+			\item If $ \mathit{hb}(H(d)) $ is 0, set $ \mathit{hb}(H(d)) $ to 1.
+		\end{enumerate}
+	\item Divide \emph{hb} into $ k $ equally-sized section and digitally sign each section with $ S_{\mathit{ed}}(m, c) $.
+	\item Digitally sign \emph{t} with $ S_{\mathit{ed}}(m, c) $.
+	\item Make \emph{hb}, $ t $, and their signatures for download.
+\end{enumerate}
 
-Faythe has divided her bitset into $ Q $ sections, digitally signed each section, digitally signed the root hash of the Merkle tree, and send the signatures to Alice.
+A Mirror, Charlie, then obtains the signatures from a Quorum node. When Alice requests a domain name $ d $ that does not exist, 
 
-Let Alice and a trusted authority Faythe maintain a common page-chain, and let Alice be a resolver for a third-party Bob. In the event that Bob asks Alice to resolve a domain name to a hidden service and Alice claims that the domain name does not exist, Bob must be able to verify the non-existence of that record. Demonstrating non-existence is a challenge often overlooked in DNS: even if existing records can be authenticated by Bob, Alice may still lie and claim a false negative on the existence of a domain name. Bob may choose to query Faythe to confirm non-existence, but this introduces additional load onto Faythe. Bob cannot easily determine the accuracy of Alice's claim without downloading all of the records and confirming for himself, but this is impractical in most environments.
-
-The hashtable bitset efficiently resolves this issue. Faythe periodically generates a timestamped hashtable bitset for all existing domain names, digitally signs it, and publishes the result to Alice. As described in section \ref{sec:DomainQuery}, Alice then includes this bitset along with any non-existence responses sent back to Bob. Since Bob knows and trusts Faythe, he can verify Alice's claim by verifying the authenticity of the bitset and confirming that the domain he requested does not appear in the hashtable or in the Merkle tree in $ \mathcal{O}(1) $ time on average. The hashtable also serves as an optimization to Alice: she can check the bitset for Bob's request in $ \mathcal{O}(1) $ time, bypassing the $ \mathcal{O}(log n) $ lookup if the second-level domain name does not exist.
+\begin{enumerate}
+	\item Charlie returns back a 404 message, the relevant section of \emph{hb}, and the signature on that section.
+	\item Alice verifies the signature on the \emph{hb} section.
+	\item Alice checks that $ \mathit{hb}(H(d)) $ is a 0. If it is, she knows the domain name does not exist.
+	\item If $ \mathit{hb}(H(d)) $ is a 1, Alice asks Charlie for $ t $.
+	\item Charlie returns $ t $ and the signature on $ t $.
+	\item Alice verifies the signature on $ t $.
+	\item Alice confirms that $ H(d) $ does not exist within $ t $, demonstrating that the domain does not exist.
+\end{enumerate}
 
 Note that a Bloom filter with $ k $ hash functions could be used instead of a compact hashtable, but a Bloom filter would require sending up to $ k $ sections of buckets to the client. Therefore, we use a simple hashtable scheme, which is effectively a Bloom filter with $ k = 1 $.
 
-% Additionally, after signing, the Bloom filter would require $ \mathcal{O}(C * n * k * Q * M) $ space, rather than $ \mathcal{O}(C * n * Q * M) $
 
-% merkle tree: leafs contain <domain name, recordHash>?
-
-% since we already have in this application it is only necessary to track whether a domain name exists or not. Therefore we represent each bucket as a bit.
-
-At verification level 0, Alice first checks the hashtable bitset to confirm that the record exists. If it does, Alice then queries the AVL tree to find the latest record that contains the requested domain name. Alice resolves the requested domain and repeats this lookup up to eight times if the resulting destination uses the .tor TLD. Once a .onion TLD destination is encountered, Alice returns to Bob all records containing the intermediate and final destinations. If a lookup fails, Alice returns to Bob records containing any intermediary destinations, and the Faythe-signed section of the bitset. If the hash maps to a ``1'' bucket, Alice also returns the Faythe-signed root of the Merkle collision tree, the leaves of the branch containing neighbouring second-level domain names that alphabetically span the failed domain, and all other hashes at the top level of the branch in the Merkle tree.
-
-Bob receives from Alice the data structures containing the domain name resolutions. Bob confirms the resolution path and confirms the validity, signature, and proof-of-work of each record in turn. Finally, Bob looks up the .onion hidden service in the traditional manner. If the resolution was unsuccessful, Bob also verifies the signed section of the bitset. If the domain maps to a ``0'', Bob's client software returns that the DNS lookup failed, otherwise Bob confirms that no such second-level domain name exists in the Merkle tree branch returned by Alice. Since the leaves of the branch alphabetically span the requested domain and would otherwise contain it if it existed, Bob knows that it does not exist. Finally, Bob hashes the leaves to reconstructs the branch, and constructs the rest of the tree by combining the root of that branch with the other hashes returned by Alice at that level, and verifies the root hash against Faythe's signature. If this validates, Bob's software also informs the Tor Browser that DNS lookup failed. The resolution can also fail if the service has not published a recent hidden service descriptor to Tor's distributed hash table. End-to-end verification (relative to the authenticity of the hidden service itself) is complete when \emph{pubHSKey} can be successfully used to encrypt the hidden service cookie and the service proves that it can decrypt $ sec $ as part of the hidden service protocol.
-
-\subsection{Trie}
-
-A trie, also known as a digital tree, is used for efficiently resolving Onion Queries (section \ref{sec:OnionQuery}). Each node in the trie corresponds to a base58 digit of the .onion hidden service address. These addresses are currently defined at 16 characters, so the trie has a maximum depth of 16 and up to 58 branches per node.
 
 
 
 
 % END OF DOCUMENT, THE BELOW IS SUPPLEMENTAL NOTES AND OLD WRITINGS
 
+% Additionally, after signing, the Bloom filter would require $ \mathcal{O}(C * n * k * Q * M) $ space, rather than $ \mathcal{O}(C * n * Q * M) $
+
+% merkle tree: leafs contain <domain name, recordHash>?
+
+
+% this really could be a Merkle tree, then the top root could be published in the consensus doc
+
+% todo: this works well for names, but how about for Moves?
+% records that are less than a day old will have a hard time with the hashtable, but once in a page they are good
 
 % introduce protocol changes like BTC does: set a logic fork at some point in the future
 
