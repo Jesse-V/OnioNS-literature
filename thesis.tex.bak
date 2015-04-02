@@ -119,10 +119,10 @@
 	\include{doc/problemStatement}
 	%\include{doc/challenges}
 	%\include{doc/existingWorks}
-	%\include{doc/solution}
+	\include{doc/solution}
 	\include{doc/analysis}
 	%\include{doc/results}
-	\include{doc/futureWork}
+	%\include{doc/futureWork}
 	%\include{doc/conclusion}
 
 	\references{thesis}{IEEEtran.bst}
