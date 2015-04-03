@@ -218,7 +218,7 @@ Our contribution to this problem is six-fold:
 \begin{itemize}
 	\item We introduce a novel distributed naming system that enables Tor hidden service operators to choose a unique human-meaningful domain name and construct a strong association between that domain name and their hidden service address, squaring Zooko's Triangle (section \ref{sec:ZookosTriangle}).
 	\item We described a new distributed, publicly confirmable, and partially self-healing transactional database.
-	\item We rely on the existing Tor network and other infrastructure, rather than introduce a new network. This simplifies our assumptions and reduces our threat model to attack vectors already known and well-understood on the Tor network.
+	\item We provide OnioNS as a Tor plugin and rely on the existing Tor network and other infrastructure, rather than introduce a new network. This simplifies our assumptions and reduces our threat model to attack vectors already known and well-understood on the Tor network.
 	\item We introduce a novel protocol for proving the non-existence of any domain name.
 	\item We enable Tor clients to verify the authenticity of a domain name against its corresponding hidden service address with minimal data transfers and without requiring any additional queries.
 	\item We preserve the privacy of both the hidden service and the anonymity of Tor clients connecting to it.

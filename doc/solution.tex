@@ -36,38 +36,38 @@ To discuss OnioNS precisely we must first define some central terms that we will
 
 \begin{description}
 	\item[domain name] \hfill \\
-		A \emph{domain name} is a case-insensitive identification string claimed by a hidden service operator. The syntax of OnioNS domain names mirrors the Clearnet DNS; we use a sequence of name-delimiter pairs with the .tor Top Level Domain (TLD). The TLD is a name at depth one and is preceded by names at sequentially increasing depth. The term ``domain name'' refers to the identiciation string as a whole, while ``second-level domain'' refers to the central name that is immediately followed by the TLD, as illustrated in Figure \ref{fig:sampleDomain}. Domain names point to \emph{destinations} -- other domain names with either the .tor or .onion TLD.
-		
+		A \emph{domain name} is a case-insensitive identification string claimed by a hidden service operator. The syntax of OnioNS domain names mirrors the Internet DNS; we use a sequence of name-delimiter pairs with the .tor Top Level Domain (TLD). The TLD is a name at depth one and is preceded by names at sequentially increasing depth. The term ``domain name'' refers to the identiciation string as a whole, while ``second-level domain'' refers to the central name that is immediately followed by the TLD, as illustrated in Figure \ref{fig:sampleDomain}. Domain names point to \emph{destinations} -- other domain names with either the .tor or .onion TLD.
+
 		\begin{figure}[htbp]
 			\centering
 			\includegraphics[width=0.5\textwidth]{images/domain-name.eps}
 			\caption{A sample domain name: a sequence of labels separated by delimiters. In OnioNS, hidden service operators build associations between second-level domain names and their hidden service address.}
 			\label{fig:sampleDomain}
 		\end{figure}
-		
-	The Clearnet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim second-level names and then control all names of greater depth under that second-level name. Hidden service operators may then choose to administer or sell the use of their subdomains, but this is outside the scope of this project.
+
+	The Internet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim second-level names and then control all names of greater depth under that second-level name. Hidden service operators may then choose to administer or sell the use of their subdomains, but this is outside the scope of this project.
 
 	\item[Record] \hfill \\
 		A \emph{Record} is a small textual data structure that contains one or more domain-destination pairs, a proof-of-work, a digital signature, and a public key. Records are issued by hidden service operators and sent to OnioNS servers. Every Record is self-signed with the hidden service's key. In section \ref{sec:Record} we describe the five different types of Records: Create, Modify, Move, Renew, and Delete. A Create Record represents a registration on an unclaimed second-level domain name, Modify, Move, and Renew are operations on that domain name or its subdomains, and a Delete Record relinquishes ownership over the second-level domain name and all its subdomains.
-		
+
 	\item[broadcast] \hfill \\
 		The term for the protocol described in section \ref{sec:ProtoHiddenServices} that describes the uploading of new Records to OnioNS servers through Tor circuits and then the subsequent confirmation that the Record has been received.
-		
+
 	\item[Snapshot] \hfill \\
 		A \emph{Snapshot} is textual database designed to hold collections of Records in a short-term volatile cache. They are also used to transmit sets of Records between OnioNS servers.
 
 	\item[Page] \hfill \\
-		A \emph{Page} is textual database designed to archive one or more Records in long-term storage. Pages are held and digitally signed by OnioNS nodes and are writable only for fixed periods of time before they are read-only. Each Page contains a link to a previous Page, forming an append-only public ledger known as an \emph{Pagechain}. This forms a two dimensional distributed data structure: the chain of Pages grows over time and there are multiple redundant copies of each Page spread out across the network at any given time. 
-		
+		A \emph{Page} is textual database designed to archive one or more Records in long-term storage. Pages are held and digitally signed by OnioNS nodes and are writable only for fixed periods of time before they are read-only. Each Page contains a link to a previous Page, forming an append-only public ledger known as an \emph{Pagechain}. This forms a two dimensional distributed data structure: the chain of Pages grows over time and there are multiple redundant copies of each Page spread out across the network at any given time.
+
 	\item[Mirror] \hfill \\
 		A \emph{Mirror} is any machine (inside or outside of the Tor network) that has performed a synchronization (section \ref{sec:Synchronization}) against the OnioNS network and now holds a complete copy of the Pagechain. Mirrors do not actively participate in the OnioNS network and do not have the power to manipulate the central page-chain.
 
 	\item[Quorum Candidate] \hfill \\
 		A \emph{Quorum Candidates} are \emph{Mirrors} inside the Tor network that have also fulfilled two additional requirements: 1) they must demonstrate that they are an up-to-date Mirror, and 2) that they have sufficient CPU and bandwidth capabilities to handle powering OnioNS in addition to their regular Tor duties. In other words, they are qualified and capable to power OnioNS, but have not yet been chosen to do so.
-		
+
 	\item[Quorum] \hfill \\
 		A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master OnioNS Pagechain. Each Quorum node actively its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates as described in section \ref{sec:ProtoTorClients}.
-					
+
 	\item[flood] \hfill \\
 		The term for the periodic burst of communication that occurs between Quorum nodes wherein Snapshots are exchanged and each Quorum node obtains the state and digital signature of the current Page maintained by all other Quorum nodes. This communication is described in section \ref{sec:ProtoOnioNServers}.
 \end{description}
@@ -222,7 +222,7 @@ Any Mirror may continue its own Pagechain by generating a new Page, adding that 
 
 Let Bob and Dave be two hidden services, and assume that OnioNS knows a Record from Bob containing an ``example.tor $ \rightarrow $ example0uyw6wgve.onion'' association, and a Record from Dave containing ``example2.tor $ \rightarrow $ example5chqt7to6.onion, sub.example2.tor $ \rightarrow $ example.tor''. Now let Alice request ``sub.example2.tor''.
 
-Since the .tor TLD is not used by the Clearnet DNS, Alice's client software must direct the request through a Tor circuit to some OnioNS resolver, $ O_{r} $. By default, $ O_{r} $ belongs to the set of Quorum Candidate nodes although Alice may override this and choose some Mirror if she wishes. For security and load reasons, Quorum nodes refuse to respond to queries, so Alice cannot ask them. Following Alice's request, $ O_{r} $ searches its local Pagechain for ``example2.tor'' and finds Dave's Record, which it then sends to Alice. Alice sees the ``sub.example2.tor $ \rightarrow $ example.tor'' association and now queries $ O_{r} $ for ``example.tor''. $ O_{r} $ then locates and sends Bob's Record to Alice. Alice sees that ``example.tor'' has a destination of ``example0uyw6wgve.onion'', and because it has a .onion address she does not need to issue any more queries. Instead, Alice connects to Bob's example0uyw6wgve.onion service via the Tor hidden service protocol and sends her original request (``sub.example2.tor'') to Bob. As is the case with the Clearnet, Bob's web server may or may not provide specific content to Alice based on this request, but his configuration is outside our scope.
+Since the .tor TLD is not used by the Internet DNS, Alice's client software must direct the request through a Tor circuit to some OnioNS resolver, $ O_{r} $. By default, $ O_{r} $ belongs to the set of Quorum Candidate nodes although Alice may override this and choose some Mirror if she wishes. For security and load reasons, Quorum nodes refuse to respond to queries, so Alice cannot ask them. Following Alice's request, $ O_{r} $ searches its local Pagechain for ``example2.tor'' and finds Dave's Record, which it then sends to Alice. Alice sees the ``sub.example2.tor $ \rightarrow $ example.tor'' association and now queries $ O_{r} $ for ``example.tor''. $ O_{r} $ then locates and sends Bob's Record to Alice. Alice sees that ``example.tor'' has a destination of ``example0uyw6wgve.onion'', and because it has a .onion address she does not need to issue any more queries. Instead, Alice connects to Bob's example0uyw6wgve.onion service via the Tor hidden service protocol and sends her original request (``sub.example2.tor'') to Bob. As is the case with the Internet, Bob's web server may or may not provide specific content to Alice based on this request, but his configuration is outside our scope.
 
 In this way, Alice can query an OnioNS resolver for some Dave-selected domain name and recursively resolve it to a .onion address transparently. The number of resolutions Alice makes is fixed to a maximal length (section \ref{sec:Record}) so this algorithm always completes. We discuss minor optimizations and security enhancements to this procedure in section \ref{sec:ProtoTorClients}.
 
@@ -323,7 +323,7 @@ Snapshots contain four fields: \emph{originTime}, \emph{recentRecords}, \emph{fi
 	\item[snapshotSig] \hfill \\
 		The output of $ S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}], c) $ where $ c $ is the machine's private Curve25519 NTor key.
 \end{description}
-		
+
 \subsection{Page}
 
 Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, \emph{fingerprint}, and \emph{pageSig}.
@@ -339,8 +339,8 @@ Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consen
 		The hash of the public key of the machine maintaining this page, the Tor fingerprint.
 	\item[pageSig] \hfill \\
 		The output of $ S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash})], c) $ where $ c $ is the machine's private Curve25519 NTor key.
-\end{description}	
-		
+\end{description}
+
 \section{Protocols}
 \label{sec:Protocols}
 
@@ -405,9 +405,9 @@ Let Carol be a Tor client or a Mirror that receives a Record from another Mirror
 	\item Carol checks that $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{difficulty} * \mathit{count}} $
 	\item Carol calculates $ \mathrm{PoW}(\mathit{central}) $ and confirms that the output matches \emph{nonce}.
 \end{enumerate}
-	
+
 If at any step an assertion fails, the Record is not valid and Carol does not accept it.
-		
+
 \subsubsection{Record Broadcast}
 
 % Page Selection protocol may be useful here
@@ -488,14 +488,14 @@ The Page Selection protocol is used to select a Page in the midst of Page disagr
 	\item Charlie obtains the set of Pages maintained by $ \mathit{Quorum}_{q} $.
 	\item Charlie obtains the consensus document $ \mathit{cd} $ issued on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 GMT and authenticates it against the Tor authority public keys.
 	\item Charlie uses $ \mathit{cd} $ to calculate the Quorum via the Quorum Derivation protocol.
-	\item For each Page, 
+	\item For each Page,
 		\begin{enumerate}
 			\item Charlie calculates $ h = H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}) $.
 			\item Charlie checks that $ \mathit{fingerprint} $ is a member of $ \mathit{Quorum}_{q} $.
 			\item Charlie checks that $ V_{\mathit{ed}}(h, C) $ returns true where $ C $ is $ \mathit{fingerprint} $'s public Curve25519 key.
 		\end{enumerate}
 	\item Charlie sorts the set of Pages by $ h $, and constructs a 2D array of Pages that have the same $ h $.
-	\item For each set of Pages with equal $ h $, 
+	\item For each set of Pages with equal $ h $,
 		\begin{enumerate}
 			\item Charlie checks that $ \mathit{consensusDocHash} = H(\mathit{cd}) $.
 			\item Charlie checks each Record in \emph{recordList} via the Record Validation protocol.
@@ -557,7 +557,7 @@ A Quorum node $ Q_{j} $ listens for new Records from hidden service operators. W
 			\item Its \emph{pubHSKey} does not match the latest Record found in the Pagechain under its second-level domain names.
 		\end{enumerate}
 	\item If $ Q_{j} $ has rejected the Record, $ Q_{j} $ informs Bob of this outcome and its reason.
-	\item If $ Q_{j} $ has not rejected the Record, 
+	\item If $ Q_{j} $ has not rejected the Record,
 		\begin{enumerate}
 			\item $ Q_{j} $ informs Bob that his Record was accepted.
 			\item $ Q_{j} $ merges the Record into its current Snapshot as shown in Figure \ref{fig:recordInSS}.
@@ -647,7 +647,7 @@ Every $ \Delta s $ minutes, a burst of communication happens between Quorum node
 \subsection{Tor Clients}
 \label{sec:ProtoTorClients}
 
-Let Alice be a Tor client. We assume now that Alice has chosen Charlie as her domain resolver and that Charlie is not a member of the current Quorum. 
+Let Alice be a Tor client. We assume now that Alice has chosen Charlie as her domain resolver and that Charlie is not a member of the current Quorum.
 
 \subsubsection{Quorum Derivation}
 
@@ -667,7 +667,7 @@ There are three verification levels in a Domain Query, each providing progressiv
 
 \begin{enumerate}
 	\item Alice constructs a Tor circuit to Charlie, so from Charlie's perspective she is anonymous.
-	\item Alice provides a .tor domain name $ d $ into the Tor Browser. The Clearnet has no .tor TLD, so $ d $ is not processed as a traditional domain name would be.
+	\item Alice provides a .tor domain name $ d $ into the Tor Browser. The Internet has no .tor TLD, so $ d $ is not processed as a traditional domain name would be.
 	\item \label{step:trim} If $ d $'s highest-level name is ``www'', Alice removes that name.
 	\item \label{step:level} Alice asks Charlie for the most recent Record $ r $ associated with $ d $ at verification level 0.
 	\item Charlie reviews his Pagechain reverse-chronological order until he finds a Record containing $ d $, which he returns to Alice.
@@ -675,7 +675,7 @@ There are three verification levels in a Domain Query, each providing progressiv
 	\item If the destination for $ d $ in $ r $ uses a .tor TLD, $ d $ becomes that destination and Alice jumps back to step \ref{step:trim}.
 	\item Otherwise, the destination must have a .onion TLD, which Alice looks up by the Tor hidden service protocol.
 	\item Alice checks that $ r $'s \emph{pubHSKey} matches the one in Tor's distributed hash table.
-	\item Alice sends the original $ d $ to the hidden service.	
+	\item Alice sends the original $ d $ to the hidden service.
 \end{enumerate}
 
 Verification level 1 proceeds nearly identical to level 0. Alice sends ``level 1'' to Charlie in step \ref{step:level} and Charlie returns the Page $ p $ containing $ r $. Then Alice can check the integrity of $ p $ via the Page Selection protocol and can verify its authenticity via checking that $ V_{\mathit{ed}}(m, C) $ returns true when $ m $ is the Page hash $ h $ and $ C $ is \emph{fingerprint}'s public Curve25519 NTor key.
@@ -724,7 +724,7 @@ As an extension of an ordinary hashtable, the hashtable bitset maps keys to buck
 	\item Make \emph{hb}, $ t $, and their signatures for download.
 \end{enumerate}
 
-A Mirror, Charlie, then obtains the signatures from a Quorum node. When Alice requests a domain name $ d $ that does not exist, 
+A Mirror, Charlie, then obtains the signatures from a Quorum node. When Alice requests a domain name $ d $ that does not exist,
 
 \begin{enumerate}
 	\item Charlie returns back a 404 message, the relevant section of \emph{hb}, and the signature on that section.
