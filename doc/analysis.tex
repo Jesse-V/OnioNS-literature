@@ -2,6 +2,8 @@
 \chapter{ANALYSIS}
 \label{Chapter:Analysis}
 
+\emph{This section is under development and it will expand as I continue my experiments and implementation.}
+
 \section{Security}
 
 Now we examine and compare OnioNS's central protocols against our security assumptions and expected threat model.
@@ -10,43 +12,78 @@ Now we examine and compare OnioNS's central protocols against our security assum
 
 \subsubsection{Record Generation}
 
-Tor hidden services are identified by their public keys, and assuming a hidden service Bob does not provide a PGP key in his Record, we leak no identifiable information 
+The Record Generation protocol can safely take place within an offline machine under the operator's control. We designed the protocol to require resigning the Record fields after every round of scrypt so as to require the owner of the private key to also perform the scrypt proof-of-work. Scrypt introduces a cost and its memory demands increases the difficulty of custom hardware and massively-parallel attacks, effectively limiting adversaries to the same hardware as legitimate users. 
 
- Although this approach does not entirely thwart Sybil attack, this attack vector is difficulty to impossible to counter in a privacy-enhanced environment, and trading anonymity for defence is highly undesirable.
+However, our protocol does not entirely prevent a hidden service operator from outsourcing the computation to secondary resource. Let Bob be the hidden service and Craig the owner of the computational resource. We assume that Craig does not have Bob's private key. Then,
 
-Let Bob create the Record $ r $.
+\begin{enumerate}
+	\item Bob creates an initial Record $ R $ and completes the \emph{type}, \emph{nameList}, \emph{contact}, \emph{timestamp}, and \emph{consensusHash} fields.
+	\item Bob sends $ R $ to Craig.
+	\item Let $ \mathit{central} $ be $\mathit{type} \concat \mathit{nameList} \concat \mathit{contact} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} $.
+	\item Craig generates a random integer $ K $ and then for each iteration $ j $ from 0 to $ K $,
+		\begin{enumerate}
+			\item Craig increments \emph{nonce}.
+			\item Craig sets \emph{PoW} as $ \mathrm{PoW}(\mathit{central}) $.
+			\item Craig saves the new $ R $ as $ C_{j} $.
+		\end{enumerate}
+	\item Craig sends all $ C_{0 \le j \le K} $ to Bob.
+	\item For each Record $ C_{0 \le j \le K} $ Bob computes
+		\begin{enumerate}
+			\item Bob sets \emph{pubHSKey} to his public RSA key.
+			\item Bob sets \emph{recordSig} to $ S_{d}(m, r) $ where $ m = \mathit{central} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
+			\item Bob has found a valid record if $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{difficulty} * \mathit{count}} $
+		\end{enumerate}
+\end{enumerate}
 
-The proof-of-work scheme is carefully designed to limit Eve to the same capabilities as legitimate users, thus significantly deterring this attack. The use of scrypt makes custom hardware and massively-parallel computation expensive, and the digital signature in every record forces the hidden service operator to resign the fields for every iteration in the proof-of-work. While the scheme would not entirely prevent the operator from outsourcing the computation to a cloud service or to a secondary offline resource, the other machine would need the hidden service private key to regenerate \emph{recordSig}, which the operator can't reveal without compromising his security. However, the secondary resource could perform the scrypt computations in batch without generating \emph{recordSig}, but it would always perform more than the necessary amount of computation because it would could not generate the SHA-384 hash and thus know when to stop. Furthermore, offloading the computation would still incur a cost to the hidden service operator, who would have to pay another party for the consumed computational resources. Thus the scheme always requires some cost when claiming a domain name.
+% todo: calculate chances of Craig computing a correct record
+
+Our protocol ensures that Craig must always compute more scrypt iterations than necessary; Craig cannot generate \emph{recordSig} and thus cannot compute if the hash is below the threshold. Moreover, the scrypt work incurs a cost onto Craig that must be compensated financially by Bob. Thus the Record Generation protocol places a lower bound on the cost paid by Bob.
 
 \subsubsection{Record Broadcast}
 
-Tor circuit preserves privacy.
+\emph{Todo: what are the implications of Bob sending his Record to a malicious Quorum node?}
+
+A Tor circuit is used to protect Bob's privacy during Record Broadcast.
 
 \subsection{OnioNS Server Protocols}
 
 \subsubsection{Page Selection}
 
+\emph{What are the implications of the whole Quorum being malicious? Can the network be misled? What are the chances of that occurring? Page Selection seems dependent on the Quorum's last flood.}
+
 \subsubsection{Synchronization}
+
+\emph{What could a Mirror lie about, and what are the implications? I'm really not sure what could happen here because of the Page signatures.}
 
 \subsubsection{Quorum Qualification}
 
-The quorum nodes hold the greatest amount of responsibility and control over OnionNS out of all participating nodes in the Tor network, therefore ensuring their security and limiting their attack capabilities is of primary importance.
+\emph{I am still analysing the statistics of an attacker gaining control of the Quorum, assuming all of their machines collude. We explore the optimal Quorum rotation rate, given the balance between high overhead and high security risk if the Quorum is rotated quickly, and long-term implications and possible stability issues associated with very slow rotation.}
 
-In section \ref{sec:Assumptions}, we assumed that an attacker, Eve, already controls a fraction of Tor routers. For a dynamic network size, a fixed fraction of dishonest nodes, and a fixed quorum size, every time a quorum is selected there is a probability that more than half of the quorum is dishonest and is colluding together. If this occurs, records may be dropped rather than archived. \emph{Here we explore the optimal quorum rotation rate, given the balance between high overhead and high security risk if the quorum is rotated quickly, and long-term implications and possible stability issues associated with very slow rotation.}
+The Quorum holds the greatest amount of responsibility over OnioNS and they likewise have greater attack capabilities than any other class of participants in OnioNS. In a Tor network of $ N = 5400 $ routers, we assume that Eve controls some fixed fraction $ x $ of them. The chance of Eve controlling more than half of the Quorum and the Pagechain assuming all of her machines collude is given by the summation of the hypergeometric distribution, $ \displaystyle\sum_{x=\ceil{\frac{n}{2}}}^{n} \frac{\binom{n}{k}\binom{N-k}{n-x}}{\binom{N}{n}} $. 
 
-If Eve controls some Tor nodes (who may be assumed to be colluding with one another), the attacker may desire to include their nodes in the quorum for malicious manipulation, passive observation, or for other purposes. Alternatively, Eve may wish to exclude certain legitimate nodes from inclusion in the quorum. In order to carry out either of these attacks, Eve must have the list of qualified Tor nodes scrambled in such a way that the output is pleasing to Eve. Specifically, the scrambled list must contain at least some of Eve's malicious nodes for the first attack, or exclude the legitimate target nodes for the second attack. We initialize Mersenne Twister with a 384-bit seed, thus Eve can find $ k $ seeds that generates a desirable scrambled list in $ 2^{192} $ operations on average, or $ 2^{384} $ operations in the worst case. The chance of any of those seeds being selected, and thus Eve successfully carrying out the attack, is thus $ \frac{2^{384}}{k} $.
+\emph{I will include graphs, but early results strongly suggest that the chances of Eve compromising the Quorum is extremely slim, even when the Quorum is small and the Tor network is highly corrupted.}
 
-Eve may attempt to manipulate the consensus document in such a way that the SHA-384 hash is one of these $ k $ seeds. Eve may instruct her Tor nodes to upload a custom status report to the authority nodes in an attempt to maliciously manipulate the contents of the consensus document, but SHA-384's strong preimage resistance and the unknown state and number of Tor nodes outside Eve's control makes this attack infeasible. The time to break preimage resistance of full SHA-384 is still $ 2^{384} $ operations. This also implies that Eve cannot determine in advance the next consensus document, so the new quorum cannot be predicted. If Eve has compromised at least some of the Tor authority nodes she has significantly more power in manipulating the consensus document for her own purposes, but this attack vector can also break the Tor network as a whole and is thus outside the scope of our analysis. Therefore, the computation required to maliciously generate the quorum puts this attack vector outside the reach of computationally-bound adversaries.
+If Eve controls some Tor nodes (who may be assumed to be colluding with one another), the attacker may desire to include their nodes in the Quorum for malicious manipulation, passive observation, or for other purposes. Alternatively, Eve may wish to exclude certain legitimate nodes from inclusion in the Quorum. In order to carry out either of these attacks, Eve must control the Tor consensus documents, and thus the Quorum Generation protocol, to generate a Quorum pleasing to Eve. Specifically, the scrambled list of Quorum Candidates must contain at least some of Eve's malicious nodes for the first attack, or exclude the legitimate target nodes for the second attack. We initialize Mersenne Twister with a 384-bit seed, thus Eve can find $ k $ seeds that generates a desirable scrambled list in $ 2^{192} $ operations on average, or $ 2^{384} $ operations in the worst case. The chance of any of those seeds being selected, and thus Eve successfully carrying out the attack, is thus $ \frac{2^{384}}{k} $.
 
-OnionNS and the Tor network as a whole are both susceptible to Sybil attacks, though these attacks are made significantly more challenging by the slow building of trust in the Tor network. Eve may attempt to introduce large numbers of nodes under her control in an attempt to increase her chances of at least one of the becoming members of the \emph{quorum}. Sybil attacks are not unknown to Tor; in December 2014 the black hat hacking group LizardSquad launched ~3000 nodes in the Google Cloud in an attempt to intercept the majority of Tor traffic. However, as Tor authority nodes grant consensus weight to new Tor nodes very slowly, despite controlling a third of all Tor nodes, these 3,000 nodes moved 0.2743 percent of Tor traffic before they were banned from the Tor network. The Stable and Fast flags are also granted after weeks of uptime and a history of reliability. As nodes must have these flags to be qualified as a \emph{quorum} \emph{candidate}, these large-scale Sybil attacks are financially demanding and time-consuming for Eve.
+Eve may attempt to manipulate the consensus document in such a way that the SHA-384 hash is one of these $ k $ seeds. Eve may instruct her Tor nodes to upload a custom status report to the authority nodes in an attempt to maliciously manipulate the contents of the consensus document, but SHA-384's strong preimage resistance and the unknown state and number of Tor nodes outside Eve's control makes this attack infeasible. The time to break preimage resistance of full SHA-384 is still $ 2^{384} $ operations. This also implies that Eve cannot determine in advance the next consensus document, so the new Quorum cannot be predicted. If Eve has compromised at least some of the Tor authority nodes she has significantly more power in manipulating the consensus document for her own purposes, but this attack vector can also break the Tor network as a whole and is thus outside the scope of our analysis. Therefore, the computation required to maliciously generate the quorum puts this attack vector outside the reach of computationally-bound adversaries.
+
+OnionNS and the Tor network as a whole are both susceptible to Sybil attacks, though these attacks are made significantly more challenging by the slow building of trust in the Tor network. Eve may attempt to introduce large numbers of nodes under her control in an attempt to increase her chances of at least one of the becoming members of the Quorum. Sybil attacks are not unknown to Tor, however they are difficulty and slow to carry out in practice as as Tor authority nodes grant consensus weight to new Tor nodes very slowly. The Stable and Fast flags are also granted after weeks of uptime and a history of reliability. As nodes must have these flags to be qualified as a Quorum Candidate, large-scale Sybil attacks are financially demanding and time-consuming to Eve.
 
 \subsubsection{Flooding}
+
+\emph{What happens if Quorum nodes are unavailable? How is their unavailability secured for future reference? What are the implications of a Quorum node withholding or forging a Record before flooding their Snapshot out? Can a single node mislead the rest of the Quorum?}
+
+%Although this approach does not entirely thwart Sybil attack, this attack vector is difficulty to impossible to counter in a privacy-enhanced environment, and trading anonymity for defence is highly undesirable.
 
 \subsection{Tor Clients}
 
 \subsubsection{Quorum Derivation}
 
+\emph{Todo: is there enough entropy in the consensus documents to provide a strong degree of unpredictability to the next Quorum? What if Eve could guess the next Quorum? Likely resolved by having each Tor authority contributed entropy into the document. Initial results suggest that the Levenshtein distance between consensus documents on consecutive days is large, but that's not the same thing as entropy.}
+
 \subsubsection{Domain Query}
+
+\emph{How could the Mirror/resolver lie to client, and what are the implications?}
 
 Tor circuit preserves privacy.
 
@@ -57,6 +94,8 @@ Hidden service .onion addresses will continue to have an extremely high chance o
 As we have stated earlier, falsely claiming a negative on the existence of a record is a problem overlooked in other domain name systems. One of the primary challenges with this approach is that the space of possible names so vast that attempting to enumerate and digitally sign all names that are not taken is highly impractical. Without a solution, this weakness can degenerate into a denial-of-service attack if the DNS resolver is malicious towards the client. Our counter-measure is the highly compact hashtable bitset with a Merkle tree for collisions. We set the size of the hashtable such that the number of collisions is statistically very small, allowing an efficient lookup in $ \mathcal{O}(1) $ time on average with minimal data transferred to the client.
 
 \subsubsection{Onion Query}
+
+\emph{What could be exploited here, if anything?}
 
 \section{Design Objectives}
 
@@ -85,30 +124,42 @@ We therefore believe that we have squared Zooko's Triangle; OnioNS is distribute
 
 \section{Performance}
 
-bandwidth, CPU, RAM, latency for clients to be determined...
+\emph{Todo: I will carry out experiments in test deployments of the Tor network and see what the demand is. I anticipate it being relatively lightweight. The proof-of-work will almost certainly be the computational bottleneck.}
 
-demand on participating nodes to be determined...
+\emph{Bandwidth, CPU, RAM, latency for clients to be determined...}
 
-Unlike Namecoin, OnionNS' \emph{page}-chain is of $ L $ days in maximal length. This serves two purposes:
+%demand on participating nodes to be determined...
 
-\begin{enumerate}
-	\item Causes domain names to expire, which reduced the threat of name squatting.
-	\item Prevents the data structure from growing to an unmanageable size.
-\end{enumerate}
+%Unlike Namecoin, OnionNS' \emph{page}-chain is of $ L $ days in maximal length. This serves two purposes:
+
+%\begin{enumerate}
+%	\item Causes domain names to expire, which reduced the threat of name squatting.
+%	\item Prevents the data structure from growing to an unmanageable size.
+%\end{enumerate}
 
 \subsection{Proof-of-work}
 
+\emph{What are the optimal parameters for scrypt? What are the implications of setting it too high or too low?}
+
 \subsection{Broadcast}
+
+\emph{How much bandwidth and time does this take?}
 
 \subsection{Flood}
 
+\emph{How does the bandwidth and CPU load scale in response to a larger Quorum? Assuming reasonable clockskew, how off will the exchanges be? Are there any race conditions that need to be resolved?}
+
 \subsection{Query}
+
+\emph{How long does this take, and how can we improve efficiency? Can clients on even low-end hardware calculate the proof-of-work?}
 
 \section{Reliability}
 
+\emph{Tor nodes provide no guarantee of availability. What are the implications of Quorum nodes or Mirrors suddenly disappearing? How can data be lost? What if a Quorum node is offline temporarily during active duty, will it catch up?}
+
 %  on Unreliable Hosts
 
-Tor nodes have no reliability guarantee and may disappear from the network momentarily or permanently at any time. Old \emph{quorums} may disappear from the network without consequence of data loss, as their data is cloned by current \emph{mirrors}. So long as the \emph{quorum} nodes remain up for the $ \Delta i $ days that they are active, the system will suffer no loss of functionality. Nodes that become temporarily unavailable will have out-of-sync \emph{pages} and will have to fetch recent records from other \emph{quorum} nodes in the time of their absence.
+%Tor nodes have no reliability guarantee and may disappear from the network momentarily or permanently at any time. Old \emph{quorums} may disappear from the network without consequence of data loss, as their data is cloned by current \emph{mirrors}. So long as the \emph{quorum} nodes remain up for the $ \Delta i $ days that they are active, the system will suffer no loss of functionality. Nodes that become temporarily unavailable will have out-of-sync \emph{pages} and will have to fetch recent records from other \emph{quorum} nodes in the time of their absence.
 
 
 

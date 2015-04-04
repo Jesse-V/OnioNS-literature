@@ -391,6 +391,8 @@ Bob then must increment \emph{nonce} and reset \emph{pow} and \emph{recordSig} u
 
 \subsubsection{Record Validation}
 
+% todo: Q member must check that the HS exists, and that no more than 2 domains go to that key
+
 Let Carol be a Tor client or a Mirror that receives a Record from another Mirror. Bob must also perform these procedures to ensure that he sends a valid Record.
 
 \begin{enumerate}
@@ -403,7 +405,7 @@ Let Carol be a Tor client or a Mirror that receives a Record from another Mirror
 	\item Carol checks the validity of \emph{recordSig} deterministic signature against \emph{pubHSKey} and $ \mathit{central} \concat \mathit{pow} $.
 	\item Carol obtains the $ \floor[\big]{\frac{q}{\Delta q}} $ 00:00 GMT consensus document and checks $ H(x) $ on it against \emph{consensusHash}. She also confirms that the consensus document is no older than $ \mathrm{min}(48, 12 * \Delta q) $.
 	\item Carol checks that $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{difficulty} * \mathit{count}} $
-	\item Carol calculates $ \mathrm{PoW}(\mathit{central}) $ and confirms that the output matches \emph{nonce}.
+	\item Carol calculates $ \mathrm{pow}(\mathit{central}) $ and confirms that the output matches \emph{nonce}.
 \end{enumerate}
 
 If at any step an assertion fails, the Record is not valid and Carol does not accept it.
