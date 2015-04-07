@@ -492,6 +492,7 @@ The Page Selection protocol is used to select a Page in the midst of Page disagr
 	\item Charlie uses $ \mathit{cd} $ to calculate the Quorum via the Quorum Derivation protocol.
 	\item For each Page,
 		\begin{enumerate}
+			\item Charlie checks that \emph{prevHash} references some page from the previous Quorum.
 			\item Charlie calculates $ h = H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}) $.
 			\item Charlie checks that $ \mathit{fingerprint} $ is a member of $ \mathit{Quorum}_{q} $.
 			\item Charlie checks that $ V_{\mathit{ed}}(h, C) $ returns true where $ C $ is $ \mathit{fingerprint} $'s public Curve25519 key.

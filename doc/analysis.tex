@@ -59,9 +59,20 @@ A Tor circuit is used to protect Bob's privacy during Record Broadcast.
 
 \emph{I am still analysing the statistics of an attacker gaining control of the Quorum, assuming all of their machines collude. We explore the optimal Quorum rotation rate, given the balance between high overhead and high security risk if the Quorum is rotated quickly, and long-term implications and possible stability issues associated with very slow rotation.}
 
-The Quorum holds the greatest amount of responsibility over OnioNS and they likewise have greater attack capabilities than any other class of participants in OnioNS. In a Tor network of $ N = 5400 $ routers, we assume that Eve controls some fixed fraction $ x $ of them. The chance of Eve controlling more than half of the Quorum and the Pagechain assuming all of her machines collude is given by the summation of the hypergeometric distribution, $ \displaystyle\sum_{x=\ceil{\frac{n}{2}}}^{n} \frac{\binom{n}{k}\binom{N-k}{n-x}}{\binom{N}{n}} $. 
+The Quorum holds the greatest amount of responsibility over OnioNS and they likewise have greater attack capabilities than any other class of participants in OnioNS. In a Tor network of $ N = 5400 $ routers, we assume that Eve controls some fixed fraction $ x $ of them. The chance of Eve controlling more than half of the Quorum and the Pagechain assuming all of her machines collude is given by the summation of the hypergeometric distribution, $ \displaystyle\sum_{x=\ceil{\frac{n}{2}}}^{n} \frac{\binom{n}{k}\binom{N-k}{n-x}}{\binom{N}{n}} $. We graph this distribution for $ N $ routers in Figure \ref{chart:quorumMajority}.
 
-\emph{I will include graphs, but early results strongly suggest that the chances of Eve compromising the Quorum is extremely slim, even when the Quorum is small and the Tor network is highly corrupted.}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.95\textwidth]{images/QuorumMajorityProbability.eps}
+	\caption{We assume that Eve controls some percentage of potentially-colluding nodes on the Tor network. This chart represents the probability (given by the summation of hypergeometric distribution) that half or more of the Quorum is Eve's control, on a network of 5,400 nodes and Quorum sizes of 31, 63, 127, and 511. If the majority of the Quorum is controlled in this way, it represents a complete compromise of the Quorum's integrity as Eve's Pages will always be selected regardless of the behavior of the rest of the Quorum.}
+	\label{chart:quorumMajority}
+\end{figure}
+
+1/256 = 10^-77.064
+
+1/192 = 10^-57.798
+
+1/128 = 10^-38.532
 
 If Eve controls some Tor nodes (who may be assumed to be colluding with one another), the attacker may desire to include their nodes in the Quorum for malicious manipulation, passive observation, or for other purposes. Alternatively, Eve may wish to exclude certain legitimate nodes from inclusion in the Quorum. In order to carry out either of these attacks, Eve must control the Tor consensus documents, and thus the Quorum Generation protocol, to generate a Quorum pleasing to Eve. Specifically, the scrambled list of Quorum Candidates must contain at least some of Eve's malicious nodes for the first attack, or exclude the legitimate target nodes for the second attack. We initialize Mersenne Twister with a 384-bit seed, thus Eve can find $ k $ seeds that generates a desirable scrambled list in $ 2^{192} $ operations on average, or $ 2^{384} $ operations in the worst case. The chance of any of those seeds being selected, and thus Eve successfully carrying out the attack, is thus $ \frac{2^{384}}{k} $.
 
