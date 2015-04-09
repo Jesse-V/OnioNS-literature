@@ -1,6 +1,8 @@
 
 \chapter{FUTURE WORK}
 
+OnioNS is designed as a plugin for Tor and to operate on top of Tor's hidden service protocol. While our implementation functions with a centralized solution, we will pursue its expansion onto larger and more realistic simulation environments until it is fully ready to integrate with Tor. To do this, we plan to develop and deploy a distributed edition of OnioNS on simulated Tor networks using the Chutney software, extend it to PlanetLab, before developing a Tor proposal document and merging it into the Tor source once it's approved by the Tor community.
+
 We introduce no changes to Tor's hidden service protocol and also note that the existence of a DNS system introduces forward-compatibility: developers can replace hash functions and PKI in the hidden service protocol without disrupting its users, so long as records are transferred and OnionNS is updated to support the new public keys.
 
 web of trust for .onion keys to thwart Sybil attack

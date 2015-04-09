@@ -1,0 +1,38 @@
+
+\chapter{IMPLEMENTATION}
+
+\section{Prototype Design}
+
+We have developed a prototype of OnioNS and have implemented most of the hidden service, server, and client protocols in C++11. We package the software on the Launchpad online build system and support Linux Debian and derivates such as Ubuntu and Linux Mint. We use the Botan library for cryptographic operations, with the Mersenne Twister provided through the C++ Standard Template Library (STL). We have made our software online at github.com/Jesse-V/OnioNS. Our reference implementation uses the libjsoncpp header-only library for encoding and decoding purposes. The library is also available as the libjsoncpp-dev package in the Debian, Ubuntu, and Linux Mint repositories.
+
+\section{Experimentation}
+
+
+\emph{Todo: I will carry out experiments in test deployments of the Tor network and see what the demand is. I anticipate it being relatively lightweight. The proof-of-work will almost certainly be the computational bottleneck.}
+
+\emph{Bandwidth, CPU, RAM, latency for clients to be determined...}
+
+%demand on participating nodes to be determined...
+
+%Unlike Namecoin, OnionNS' \emph{page}-chain is of $ L $ days in maximal length. This serves two purposes:
+
+%\begin{enumerate}
+%	\item Causes domain names to expire, which reduced the threat of name squatting.
+%	\item Prevents the data structure from growing to an unmanageable size.
+%\end{enumerate}
+
+\subsection{Proof-of-work}
+
+\emph{What are the optimal parameters for scrypt? What are the implications of setting it too high or too low?}
+
+\emph{How much bandwidth and time does this take?}
+
+\emph{How does the bandwidth and CPU load scale in response to a larger Quorum? Assuming reasonable clockskew, how off will the exchanges be? Are there any race conditions that need to be resolved?}
+
+\emph{Queres: How long does this take, and how can we improve efficiency? Can clients on even low-end hardware calculate the proof-of-work?}
+
+
+\section{Results}
+
+
+\emph{This will be expanded/rewritten once I finish implementation and deploy it in test/prototyping networks. I plan on using Chutney.}
