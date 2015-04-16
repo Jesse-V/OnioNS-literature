@@ -1,6 +1,7 @@
 good:
 https://commons.wikimedia.org/wiki/File:Network-server.svg
 https://commons.wikimedia.org/wiki/File:Server-tower.svg
+https://commons.wikimedia.org/wiki/File:Portable_violet.png
 
 okay:
 https://commons.wikimedia.org/wiki/File:Gnome-fs-server.svg

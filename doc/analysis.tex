@@ -97,15 +97,25 @@ However, our protocol does not entirely prevent a hidden service operator from o
 
 Our protocol ensures that Craig must always compute more scrypt iterations than necessary; Craig cannot generate \emph{recordSig} and thus cannot compute if the hash is below the threshold. Moreover, the scrypt work incurs a cost onto Craig that must be compensated financially by Bob. Thus the Record Generation protocol places a lower bound on the cost paid by Bob.
 
-\subsection{Forgeries and False Negatives Claims}
+\subsection{Sybil Attack}
 
 \emph{What could a Mirror lie about, and what are the implications? I'm really not sure what could happen here because of the Page signatures.}
+
+One countermeasure against this attack is SSL certificates: if a 
+
+Although Tor hosts approxiemetly 25,000 hidden services, as of April 2015 only three use browser-trusted SSL certificates: Blockchain.info at https://blockchainbdgpzk.onion, Facebook at https://facebookcorewwwi.onion, and The Intercept's SecureDrop instance at https://y6xjgkgwj47us5ca.onion. Modern web browsers check that the SSL certificate matches the user-entered domain name, so in this application a Certificate Authority must sign the .tor domain, rather than the .onion address. However, given the low degree of practicality of this attack and the overhead of a redundant layer of TLS encryption, we do not recommend applying SSL certificates in the general sense.
+
+\subsection{False Negatives Claims}
 
 OnionNS records are self-signed and include the hidden service's public key, so anyone --- particularly the client --- can confirm the authenticity (relative to the authenticity of the public key) and integrity of any record. This does not entirely prevent Sybil attacks, but this is a very hard problem to address in a distributed environment without the confirmation from a central authority. However, the proof-of-work component makes record spoofing a costly endeavour, but it is not impossible to a well-resourced attacker with sufficient access to high-end general-purpose hardware.
 
 Hidden service .onion addresses will continue to have an extremely high chance of being securely unique as long the key-space is sufficiently large to avoid hash collisions.
 
 As we have stated earlier, falsely claiming a negative on the existence of a record is a problem overlooked in other domain name systems. One of the primary challenges with this approach is that the space of possible names so vast that attempting to enumerate and digitally sign all names that are not taken is highly impractical. Without a solution, this weakness can degenerate into a denial-of-service attack if the DNS resolver is malicious towards the client. Our counter-measure is the highly compact hashtable bitset with a Merkle tree for collisions. We set the size of the hashtable such that the number of collisions is statistically very small, allowing an efficient lookup in $ \mathcal{O}(1) $ time on average with minimal data transferred to the client.
+
+\section{DNS Leakage}
+
+leaking onto the clearnet DNS, papers on this
 
 \section{Reliability}
 

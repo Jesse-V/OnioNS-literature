@@ -74,7 +74,7 @@ To discuss OnioNS precisely we must first define some central terms that we will
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.5\textwidth]{images/LucidCharts/Participants.png}
+	\includegraphics[width=0.5\textwidth]{images/LucidCharts/Participants.pdf}
 	\caption{The relationship between Mirrors, Quorum Candidates, and the Quorum. A Mirror is any machine that holds the OnioNS Pagechain, Quorum Candidates are both up-to-date Mirrors and reliable Tor nodes, and the Quorum is randomly selected from the pool of Quorum Candidates.}
 \end{figure}
 
@@ -210,7 +210,7 @@ Any Mirror may continue its own Pagechain by generating a new Page, adding that 
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.65\textwidth]{images/LucidCharts/Page-chain.png}
+	\includegraphics[width=0.65\textwidth]{images/LucidCharts/Page-chain.pdf}
 	\caption{An example Pagechain across four Quorums. Each Page contains a references to a previous Page, forming a distributed append-only chain. $ \mathrm{Quorum}_{1} $ is honest and maintains reliable flooding communication, and thus has identical Pages. $ \mathrm{Quorum}_{2} $'s largest cluster is likewise in agreement, but there are three nodes which are acting maliciously together and have changed their Pages. Node 5 in $ \mathrm{Quorum}_{3} $ references an old page in attempt to bypass $ \mathrm{Quorum}_{2} $'s records, and nodes 6-7 are colluding with nodes 5-7 from $ \mathrm{Quorum}_{2} $. Finally, $ \mathrm{Quorum}_{4} $ has two nodes that acted honestly but did not record new records, so their Pagechains differ from the others. However, across all four days the largest clusters are honest nodes and thus integrity remains in the master Pagechain.}
 	\label{fig:sidechains}
 \end{figure}
