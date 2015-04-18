@@ -55,6 +55,7 @@ If a selected Quorum is malicious, fast rotation rates will minimize the duratio
 Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} \geq 127 $ and $ \Delta q \geq 1 $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to those attacks. Based on our security analysis, we suggest $ L_{Q} \geq 127 $ and $ \Delta q \geq 1 $.
 
 \subsection{Entropy of Tor Consensus Documents}
+\label{sec:docEntropy}
 
 OnioNS can be adapted and deployed on any network that is both fully connected and that contains a common source of entropy. In Tor's case, we use the Tor consensus documents to derive the Quorum, but the consensus documents were designed as a common source of \emph{information}, and thus we must prove that the consensus documents contain enough entropy to be securely used. If there is not enough entropy, Eve can subvert the Quorum Derivation protocol in a variety of attack vectors, including to include her malicious routers in the Quorum, or to reject specific honest routers. As before, we also conclude that ensuring sufficient entropy in these documents is the more effective solution to these threats.
 
@@ -96,6 +97,8 @@ However, our protocol does not entirely prevent a hidden service operator from o
 % todo: calculate chances of Craig computing a correct record
 
 Our protocol ensures that Craig must always compute more scrypt iterations than necessary; Craig cannot generate \emph{recordSig} and thus cannot compute if the hash is below the threshold. Moreover, the scrypt work incurs a cost onto Craig that must be compensated financially by Bob. Thus the Record Generation protocol places a lower bound on the cost paid by Bob.
+
+% UTF-8 encoding vs alphanumeric-'0' vs base58, UFT-16 future work
 
 \subsection{Sybil Attack}
 
