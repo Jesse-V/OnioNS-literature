@@ -1,23 +1,13 @@
 
 \chapter{FUTURE WORK}
 
-% UTF-8 encoding vs alphanumeric-'0' vs base58, UFT-16 future work
+In future work we will expand our implementation of OnioNS and develop the remaining protocols. While our implementation functions with a fixed resolver, we will deploy our implementation onto larger and more realistic simulation environments such as Chutney and PlanetLab. When we have completed dynamic functionality and the remaining protocols, we will pursuit integrating our implementation into Tor. We expect this to be straightforward as OnioNS is designed as a plugin for Tor, introduces no changes to Tor's hidden service protocol, and requires very few changes to Tor's software. In future developments, Tor's developers may also make significant changes to Tor's hidden services, but OnioNS' design enables our system to become forwards-compatible after a few minor changes.
 
-OnioNS is designed as a plugin for Tor and to operate on top of Tor's hidden service protocol. While our implementation functions with a centralized solution, we will pursue its expansion onto larger and more realistic simulation environments until it is fully ready to integrate with Tor. To do this, we plan to develop and deploy a distributed edition of OnioNS on simulated Tor networks using the Chutney software, extend it to PlanetLab, before developing a Tor proposal document and merging it into the Tor source once it's approved by the Tor community.
+Additionally, several questions need to answered in future studies:
 
-We introduce no changes to Tor's hidden service protocol and also note that the existence of a DNS system introduces forward-compatibility: developers can replace hash functions and PKI in the hidden service protocol without disrupting its users, so long as records are transferred and OnionNS is updated to support the new public keys.
-
-web of trust for .onion keys to thwart Sybil attack
-
-Some open problems that I need to address include:
-
-\begin{enumerate}
-	\item How frequently should domains expire? Are there any security risk in sending a Renew request?
-	\item How should unreachable or temporarily down nodes be handled? I'd like to know the percentage of the Tor network that is reachable at any given time.
-	\item How many nodes in the Tor network should be assumed to be actively malicious? What are the implications of increasing this percentage?
-	\item What attack vectors are there from the committee nodes, and how can I thwart the attacks?
-	\item What are the implications of a node intentionally voting the opposite way, or ignoring the request altogether?
-	\item What would happen if a node was too slow or did not have enough storage space to do its job properly?
-	\item What other open problems are there?
-	\item What related works are there in the literature that relate to the concepts I have created here?
-\end{enumerate}
+\begin{itemize}
+	\item Should the Quorum expire registrations that point to non-existent hidden services, and if so, how can this be done securely?
+	\item How can we reduce vulnerability to phishing/spoofing attacks? Can OnioNS be adapted to include a privacy-enhanced reputation system?
+	\item How can OnioNS support domain names with international encodings? A na\"{i}ve approach to this is to simply support UTF-16, though care must also be taken to prevent phishing attacks by domain names that use Unicode characters that visually appear very similar.
+	\item What other networks can OnioNS apply to? We require a fully-connected networked and an global source of entropy. We encourage the community to adapt our work to other systems that fit these requirements.
+\end{itemize}
