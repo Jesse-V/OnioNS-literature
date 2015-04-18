@@ -1,10 +1,10 @@
 
 \chapter{ANALYSIS}
-\label{Chapter:Analysis}
+\label{ch:Analysis}
 
 \section{Security}
 
-Now we examine and compare OnioNS' central protocols against our security assumptions and expected threat model. 
+Now we examine and compare OnioNS' central protocols against our security assumptions and expected threat model.
 
 
 % Tor circuits work, no global attacker, privacy and anonymity achieved, no crypto breaks
@@ -19,7 +19,7 @@ The Quorum nodes have greater attack capabilities than any other class of partic
 The Quorum Derivation protocol selects an $ L_{Q} $-sized subset of routers from the set of Quorum Candidates, and rotates this selection every $ \Delta q $ days. The optimal selection of $ L_{Q} $ and $ \Delta q $ is dependent on both security and performance analysis; our security analysis introduces a bound on both $ L_{Q} $ and $ \Delta q $. For the following evaluations, we feel it safe to discard threats that have probabilities at or below $ \frac{1}{2^{128}} \approx 10^{-38.532} $ --- the probability of Eve randomly guessing a 128-bit AES key, a threat that would violate our security assumptions.
 
 Our security analysis assumes that $ L_{Q} $ will be selected from a pool of 5,400 Quorum Candidates --- the number, as of April 2015, of Tor routers with the Fast and Stable flags, whom we assume are all up-to-date Mirrors. Let $ L_{E} $ be the number of Quorum nodes under Eve's control. Then Eve controls the Quorum if the $ L_{E} $ routers become the largest agreeing subset in the Quorum, which can occur if either more than $ \frac{L_{Q} - L_{E}}{2} $ honest Quorum nodes disagree or if $ L_{E} > \frac{L_{Q}}{2} $. Here we examine the second scenario, which can be theoretically modelled.
-%The first scenario requires experimental analysis, so . 
+%The first scenario requires experimental analysis, so .
 
 Quorum selection is mathematically an $ L_{Q} $-sized random sample taken from an $ N $-sized population without replacement, where the population contains a subset of $ f_{E} $ entities that are considered special. Then the probability that Eve controls $ k $ Tor routers in the Quorum is given by the hypergeometric distribution, whose probability mass function (PMF) is $ \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}} $. Then the probability that $ L_{E} > \frac{L_{Q}}{2} $ is given by $ \displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}} $. Odd choices for $ L_{Q} $ prevents the possibility of network disruption when the Quorum is evenly split in terms of the current Page. We examine the probability of Eve's success for increasing amounts of $ f_{E} $ in Figure \ref{chart:quorumMajority}.
 
@@ -52,7 +52,7 @@ If a selected Quorum is malicious, fast rotation rates will minimize the duratio
 	\label{chart:quorumLongevity}
 \end{figure}
 
-Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} \geq 127 $ and $ \Delta q \geq 1 $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to those attacks. Based on our security analysis, we suggest $ L_{Q} \geq 127 $ and $ \Delta q \geq 1 $. 
+Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} \geq 127 $ and $ \Delta q \geq 1 $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to those attacks. Based on our security analysis, we suggest $ L_{Q} \geq 127 $ and $ \Delta q \geq 1 $.
 
 \subsection{Entropy of Tor Consensus Documents}
 
@@ -70,7 +70,7 @@ The entropy of the consensus documents can be easily further increased if each o
 
 \subsection{Outsourcing Record Proof-of-Work}
 
-The Record Generation protocol can safely take place within an offline machine under the operator's control. We designed the protocol to require resigning the Record fields after every round of scrypt so as to require the owner of the private key to also perform the scrypt proof-of-work. Scrypt introduces a cost and its memory demands increases the difficulty of custom hardware and massively-parallel attacks, effectively limiting adversaries to the same hardware as legitimate users. 
+The Record Generation protocol can safely take place within an offline machine under the operator's control. We designed the protocol to require resigning the Record fields after every round of scrypt so as to require the owner of the private key to also perform the scrypt proof-of-work. Scrypt introduces a cost and its memory demands increases the difficulty of custom hardware and massively-parallel attacks, effectively limiting adversaries to the same hardware as legitimate users.
 
 However, our protocol does not entirely prevent a hidden service operator from outsourcing the computation to secondary resource. Let Bob be the hidden service and Craig the owner of the computational resource. We assume that Craig does not have Bob's private key. Then,
 
@@ -101,7 +101,7 @@ Our protocol ensures that Craig must always compute more scrypt iterations than 
 
 \emph{What could a Mirror lie about, and what are the implications? I'm really not sure what could happen here because of the Page signatures.}
 
-One countermeasure against this attack is SSL certificates: if a 
+One countermeasure against this attack is SSL certificates: if a
 
 Although Tor hosts approxiemetly 25,000 hidden services, as of April 2015 only three use browser-trusted SSL certificates: Blockchain.info at https://blockchainbdgpzk.onion, Facebook at https://facebookcorewwwi.onion, and The Intercept's SecureDrop instance at https://y6xjgkgwj47us5ca.onion. Modern web browsers check that the SSL certificate matches the user-entered domain name, so in this application a Certificate Authority must sign the .tor domain, rather than the .onion address. However, given the low degree of practicality of this attack and the overhead of a redundant layer of TLS encryption, we do not recommend applying SSL certificates in the general sense.
 
@@ -115,7 +115,7 @@ As we have stated earlier, falsely claiming a negative on the existence of a rec
 
 \section{DNS Leakage}
 
-leaking onto the clearnet DNS, papers on this
+leaking onto the internet DNS, papers on this
 
 \section{Reliability}
 
