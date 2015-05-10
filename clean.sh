@@ -6,5 +6,5 @@ rm -f conference/acm-ccs.aux conference/acm-ccs.bbl conference/acm-ccs.blg confe
 rm -f doc/*.aux conference/*.aux
 rm -f doc/*.log conference/*.log
 
-rm -f *.tex.bak conference/*.tex.bak
-rm -f doc/*.tex.bak conference/*.tex.bak
+rm -f *.tex.bak conference/*.bak
+rm -f doc/*.tex.bak conference/*.bak

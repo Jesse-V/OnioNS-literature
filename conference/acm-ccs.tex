@@ -351,7 +351,7 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 	\item Let $ \mathit{R}(s) $ be a pseudorandom number generator that accepts an initial seed $ s $ and returns a list of numerical pseudorandom numbers. $ \mathit{R}(s) $ does not need to be cryptographically secure. We suggest MT19937, commonly known as the Mersenne Twister. This generator is widely used throughout most programming languages and is well known for its speed, long period, and the high quality of its pseudorandom output.\cite{matsumoto1998mersenne}
 \end{itemize}
 
-\subsection{Definitions} % done
+ \subsection{Definitions} % done
 
 \begin{description}
 	\item[domain name] \hfill \\
@@ -394,14 +394,14 @@ All textual databases are encoded in JSON. JSON is significantly more compact th
 %	\end{minipage}
 %\end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[h]
 	\centering
 	\includegraphics[width=0.85\linewidth]{../images/LucidCharts/Page-chain2.pdf}
 	\caption{An example Pagechain across four Quorums with three side-chains. The valid master Pagechain from honest Quorum nodes (green) resists corruption from maliciously-colluding nodes (red) and malfunctioning nodes (orange).}
 	\label{fig:sideChains}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[h!]
 	\centering
 	\includegraphics[width=1\linewidth]{../images/LucidCharts/Data-Structure-Overview.pdf}
 	\caption{The master Pagechain is one-dimensional but spans across the network as each Mirror holds a copy. Each Page is maintained by a respective Quorum.}
@@ -418,6 +418,8 @@ All textual databases are encoded in JSON. JSON is significantly more compact th
 	\item Let $ s $ be a Snapshot iteration counter.
 	\item Let $ \Delta s $ be the lifetime of a Snapshot in minutes.
 \end{itemize}
+
+\newpage
 
 \subsection{Protocols} % done
 
@@ -557,8 +559,6 @@ A Quorum node $ Q_{j} $ listens for new Records from hidden service operators. W
 
 Then every $ \Delta s $ minutes each Quorum node floods its Snapshot to all other Quorum nodes, merges in Snapshots from other Quorum nodes into its Page, and generates a fresh Snapshot.
 
-\newpage
-
 \subsubsection{Quorum Derivation} % done
 
 \begin{enumerate}[noitemsep,nolistsep]
@@ -568,6 +568,8 @@ Then every $ \Delta s $ minutes each Quorum node floods its Snapshot to all othe
 	\item Alice uses \emph{f} to randomly scramble \emph{qc}.
 	\item The first $ \mathrm{min}(\mathrm{size}(\mathit{qc}), L_{Q}) $ routers are the Quorum.
 \end{enumerate}
+
+\newpage
 
 \subsubsection{Domain Query} % done
 
