@@ -1,8 +1,13 @@
-% SIG-ALTERNATE.CLS - VERSION 2.5
+% SIG-ALTERNATE.CLS - VERSION 2.8
 % "COMPATIBLE" WITH THE "ACM_PROC_ARTICLE-SP.CLS" V3.2SP
 % Gerald Murray - May 23rd 2012
+% Boris Veytsman - April 23 2013
+% Boris Veytsman - May 12 2013
+% Boris Veytsman - June 09 2013
+% Boris Veytsman - August 12 2013
 %
 % ---- Start of 'updates'  ----
+% Added new permission/copyright statement - BV
 % Changed $10 fee to $15 -- May 2012  --  Gerry
 % Changed $5 fee to $10 --  April 2009 -- Gerry
 % April 22nd. 2009 - Fixed 'Natbib' incompatibility problem - Gerry
@@ -42,9 +47,9 @@
 %
 % ---- End of 'updates' ----
 %
-\def\fileversion{v2.5}          % for ACM's tracking purposes
-\def\filedate{May 23, 2012}    % Gerry Murray's tracking data
-\def\docdate {Wednesday 23rd. May 2012} % Gerry Murray (with deltas to doc}
+\def\fileversion{v2.9}          % for ACM's tracking purposes
+\def\filedate{August 12, 2013}    % Gerry Murray's tracking data
+\def\docdate {\filedate}
 \usepackage{epsfig}
 \usepackage{amssymb}
 \usepackage{amsmath}
@@ -113,12 +118,55 @@
 %%% You may turn this hackery off via the -e option:
 %%%     dvips -e 0 foo.dvi >foo.ps
 %%%
-\typeout{Document Class 'sig-alternate' <23rd. May '12>.  Modified by G.K.M. Tobin/Gerry Murray}
+\typeout{Document Class 'sig-alternate' <9th June '13>.  Modified by
+  G.K.M. Tobin/Gerry Murray/Boris Veytsman}
 \typeout{Based in part upon document Style `acmconf' <22 May 89>. Hacked 4/91 by}
 \typeout{shivers@cs.cmu.edu, 4/93 by theobald@cs.mcgill.ca}
 \typeout{Excerpts were taken from (Journal Style) 'esub2acm.cls'.}
 \typeout{****** Bugs/comments/suggestions/technicalities to Gerry Murray -- murray@hq.acm.org ******}
 \typeout{Questions on the style, SIGS policies, etc. to Adrienne Griscti griscti@acm.org}
+
+
+\let\@concepts\@empty
+% Support for CCSXML file
+\RequirePackage{comment}
+\excludecomment{CCSXML}
+
+% New concepts scheme
+%
+% The first argument is the significance, the
+% second is the concept(s)
+%
+\newcommand\ccsdesc[2][100]{%
+  \ccsdesc@parse#1~#2~}
+%
+% The parser of the expression Significance~General~Specific
+%
+\def\ccsdesc@parse#1~#2~#3~{%
+  \expandafter\ifx\csname CCS@#2\endcsname\relax
+    \expandafter\gdef\csname CCS@#2\endcsname{\textbullet\textbf{#2} $\to$ }%
+  \g@addto@macro{\@concepts}{\csname CCS@#2\endcsname}\fi
+  \expandafter\g@addto@macro\expandafter{\csname CCS@#2\endcsname}{%
+    \ifnum#1>499\textbf{#3; }\else
+    \ifnum#1>299\textit{#3; }\else
+    #3; \fi\fi}}
+
+\newcommand\printccsdesc{%
+  \ifx\@concepts\@empty\else
+  \if@twocolumn
+    \section*{CCS Concepts}
+    \@concepts
+    \else \small
+    \quotation{\@concepts}%
+    \fi
+    \fi}
+
+
+
+
+\def\doi#1{\def\@doi{#1}}
+\doi{http://dx.doi.org/10.1145/0000000.0000000}
+
 \oddsidemargin 4.5pc
 \evensidemargin 4.5pc
 \advance\oddsidemargin by -1in  % Correct for LaTeX gratuitousness
@@ -214,6 +262,13 @@
   document style.}\@eha}
 
 \@options
+
+\RequirePackage{ifpdf}%
+\ifpdf
+\pdfpagewidth=8.75in
+\pdfpageheight=11.25in
+\fi
+
 
 \lineskip 2pt           % \lineskip is 1pt for all font sizes.
 \normallineskip 2pt
@@ -610,7 +665,7 @@
 
 \if@ll
   \NeedsTeXFormat{LaTeX2e}
-  \ProvidesClass{sig-alternate} [2012/05/23 - V2.5 - based on acmproc.cls V1.3 <Nov. 30 '99>]
+  \ProvidesClass{sig-alternate} [2013/05/12 v2.7 based on acmproc.cls V1.3 <Nov. 30 '99>]
   \RequirePackage{latexsym}% QUERY: are these two really needed?
   \let\dooptions\ProcessOptions
 \else
@@ -798,11 +853,13 @@
 \quotation
 \fi}
 
-\def\terms{\if@twocolumn
-\section*{General Terms}
-\else \small
-\quotation
-\fi}
+\def\terms#1{%
+%\if@twocolumn
+%\section*{General Terms}
+%\else \small
+%\quotation
+%\fi
+}
 
 % -- Classification needs to be a bit smart due to optionals - Gerry/Georgia November 2nd. 1999
 \newcount\catcount
@@ -814,6 +871,7 @@
 \advance\catcount by 1\else{\unskip; }\fi
     \@ifnextchar [{\@category{#1}{#2}{#3}}{\@category{#1}{#2}{#3}[]}%
 }
+
 
 \def\@category#1#2#3[#4]{%
     \begingroup
@@ -829,6 +887,11 @@
     \endgroup
 }
 %
+
+
+
+
+
 
 %%% This section (written by KBT) handles the 1" box in the lower left
 %%% corner of the left column of the first page by creating a picture,
@@ -1423,16 +1486,49 @@
 \newtoks\acmcopyr
 \newtoks\boilerplate
 \global\acmcopyr={X-XXXXX-XX-X/XX/XX}  % Default - 5/11/2001 *** Gerry
-\global\copyrtyr={20XX}                % Default - 3/3/2003 *** Gerry
+\global\copyrtyr={\the\year}                % Default - 3/3/2003 *** Gerry
+\def\acmPrice#1{\gdef\@acmPrice{#1}}
+\acmPrice{} %article price  % Changed to 15 - June 2012 - Gerry
+
+
 \def\CopyrightYear#1{\global\copyrtyr{#1}}
 \def\crdata#1{\global\acmcopyr{#1}}
 \def\permission#1{\global\boilerplate{#1}}
+
+% ISBN
 %
-\global\boilerplate={Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page.  To copy otherwise, to republish, to post on servers or to redistribute to lists, requires prior specific permission and/or a fee.}
+\def\isbn#1{\global\acmcopyr={#1}}
+\isbn{978-1-4503-2138-9}
+
+\RequirePackage{url}
+\urlstyle{rm}
+\def\doi#1{\def\@doi{#1}}
+\doi{10.1145/1235}
+\def\printdoi#1{\url{#1}}
+
+
+
+% Copyright
+\RequirePackage{acmcopyright}
+\setcopyright{none}
+
+%
+\global\boilerplate={\@copyrightpermission}
+
+
+
 \newtoks\copyrightetc
-\global\copyrightetc{Copyright \the\copyrtyr\ ACM \the\acmcopyr\ ...\$15.00} % Gerry changed to 15 May 2012
-\toappear{\the\boilerplate\par
-{\confname{\the\conf}} \the\confinfo\par \the\copyrightetc.}
+\global\copyrightetc{%
+{\noindent\confname\ \the\conf\ \the\confinfo}\par\smallskip
+  \if@printcopyright
+    \copyright\ \the\copyrtyr\ \@copyrightowner
+  \fi
+  \if@acmowned ISBN \else\ifnum\acm@copyrightmode=2 ISBN \else \par\smallskip ACM ISBN \fi\fi
+ \the\acmcopyr\ifx\@acmPrice\@empty.\else\dots\@acmPrice\fi\par\smallskip
+{DOI: \small\expandafter\printdoi\expandafter{\@doi}}} 
+\toappear{\fontsize{7pt}{8pt}\fontfamily{ptm}\selectfont
+  \the\boilerplate\par\smallskip
+ \the\copyrightetc}
 %\DeclareFixedFont{\altcrnotice}{OT1}{tmr}{m}{n}{8}  % << patch needed for accenting e.g. Montreal - Gerry, May 2007
 %\DeclareFixedFont{\altconfname}{OT1}{tmr}{m}{it}{8}  % << patch needed for accenting in italicized confname - Gerry, May 2007
 %
@@ -1545,8 +1641,7 @@
 \DeclareOption{cm}{\renewcommand\@ae@switch[4]{#2}}
 \DeclareOption{cyr}{\renewcommand\@ae@switch[4]{#3}}
 \DeclareOption{pl}{\renewcommand\@ae@switch[4]{#4}}
-\ExecuteOptions{pl}
-\ProcessOptions
+
 
 %
 % Load necessary packages
@@ -1646,4 +1741,3 @@
 
 \endinput
 %
-
