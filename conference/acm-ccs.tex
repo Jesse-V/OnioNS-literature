@@ -423,7 +423,7 @@ All textual databases are encoded in JSON. JSON is significantly more compact th
 
 \subsection{Protocols} % done
 
-We now describe the protocols fundamental to OnioNS functionality. Further readings on our protocols may be found at the OnioNS hidden service, \url{http://onions55e7yam27n.onion}.
+We now describe the protocols fundamental to OnioNS functionality.
 
 \subsubsection{Record Generation} % done
 
@@ -441,75 +441,6 @@ Bob must first generate a valid Record to claim a second-level domain name for h
 \end{enumerate}
 
 The Record is valid when $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{d} * \mathit{c}} $ where \emph{d} is a fixed constant that specifies the work difficulty and \emph{c} is the number of second-level domain names claimed in the Record. This also requires Bob to increment \emph{nonce} and resign his Record at every iteration of $ \mathrm{PoW}(\mathit{central}) $.
-
-%\subsubsection{Record Broadcast}
-%
-%\begin{enumerate}[noitemsep,nolistsep]
-%	\item Bob derives the current Quorum by the Quorum Derivation protocol described in section \ref{sec:ProtoTorClients}.
-%	\item Bob constructs a circuit, $ c_{1} $, to a Mirror node $ m_{1} $.
-%	\item Bob asks for and receives from $ c_{1} $ the $ h_{j} = H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusHash}) $ hash and \emph{pageSig} (the Ed25519 signature on that hash) from each Quorum node.
-%	\item Bob confirms that $ V_{\mathit{ed}}(h_{j}, E) $ returns true for each $ h_{j} $ and defines $ U $ as the largest set of Quorum nodes that have the same hash.
-%	\item Bob randomly chooses a node $ n_{1} $ from $ U $ and builds a circuit to it, $ c_{2} $.
-%	\item Bob uploads his Record through $ c_{2} $ to $ n_{1} $.
-%	\item Bob waits up to $ \Delta s $ minutes for the next $ s $ flood iteration.
-%	\item Bob uses $ c_{1} $ to ask $ m_{1} $ for any second-level domain name contained in his Record.
-%	\item Bob has confirmation that his Record was accepted and processed by the Quorum if $ m_{1} $ returns the Record he uploaded.
-%	\item If $ m_{1} $ does not return Bob's Record, he can either query another Mirror or repeat this procedure and broadcast to a different Quorum node.
-%\end{enumerate}
-
-%\begin{figure}[htbp]
-%	\centering
-%	\begin{tikzpicture}[->, node distance=2.2cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries}]
-%
-%			\node[main node] (1) {$ Q_{1} $};
-%			\node[main node] (2) [right of=1] {$ Q_{2} $};
-%			\node[main node] (3) [right of=2] {};
-%			\node[main node] (4) [right of=3] {$ Q_{3} $};
-%
-%			\node[main node] (5) [below of=1] {};
-%			\node[main node] (6) [right of=5] {$ Q_{4} $};
-%			\node[main node] (7) [right of=6] {};
-%			\node[main node] (8) [right of=7] {};
-%
-%			\node[main node] (9) [below of=5] {$ R_{M} $};
-%			\node[main node] (10) [right of=9] {};
-%			\node[main node] (11) [right of=10] {$ R_{E} $};
-%			\node[main node] (12) [right of=11] {$ Q_{5} $};
-%
-%			\node[main node] (13) [below of=9] {};
-%			\node[main node] (14) [right of=13] {};
-%			\node[main node] (15) [right of=14] {$ R_{E} $};
-%			\node[main node] (16) [right of=15] {HS};
-%
-%			% draw 1st and 2nd part of circuit
-%			\tikzstyle{EdgeStyle}=[bend right=12, -, green]
-%			\Edge[](16)(15)
-%			\Edge[](9)(15)
-%
-%			% draw last part of circuit
-%			\tikzstyle{EdgeStyle}=[bend left=17, -, green]
-%			\Edge[](9)(11)
-%
-%			% draw record moving from exit to 1st q. node
-%			\draw[thick, red, <-, postaction={decorate, decoration={text along path, text align=center, text={Record}, raise=3pt}}] (6) to [bend right=15] (11){};
-%
-%			% draw verification with second q. node
-%			\draw[thick, red, ->, postaction={decorate}] (12) to [bend left=15] (11){};
-%
-%			% draw upper left propegation
-%			\tikzstyle{EdgeStyle}=[bend left=12, ->, blue]
-%			\Edge[](6)(2)
-%			\Edge[](6)(1)
-%
-%			% draw upper right propegation
-%			\tikzstyle{EdgeStyle}=[bend left=20, ->, blue]
-%			\Edge[](6)(12)
-%			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={Snapshot}, raise=3pt}}] (6) to [bend right=18] (4){};
-%
-%		\end{tikzpicture}
-%	\caption{Bob uses his existing circuit (green) to inform Quorum node $ Q_{4} $ of the new record. $ Q_{4} $ then floods it via Snapshots to all other Quorum nodes. Each node stores it in their own Page for long-term storage. Bob confirms from another Quorum node $ Q_{5} $ that his Record has been received.}
-%	\label{fig:recordBroadcast}
-%\end{figure}
 
 \subsubsection{Page Selection} % done
 
@@ -624,7 +555,9 @@ Then if Alice requests a domain name that Charlie claims does not exist,
 	\item Otherwise, either Charlie or the Quorum nodes who signed \emph{bset} are dishonest.
 \end{enumerate}
 
-Note that a Bloom filter with $ k $ hash functions could be used instead of a compact hashtable, but a Bloom filter would require sending up to $ k $ sections of buckets to the client. Therefore, we use a simple hashtable scheme, which is effectively a Bloom filter with $ k = 1 $. 
+Note that a Bloom filter with $ k $ hash functions could be used instead of a compact hashtable, but a Bloom filter would require sending up to $ k $ sections of buckets to the client. Therefore, we use a simple hashtable scheme, which is effectively a Bloom filter with $ k = 1 $.
+
+\newpage
 
 
 
