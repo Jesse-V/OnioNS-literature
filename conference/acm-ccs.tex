@@ -193,15 +193,15 @@ Tor also supports \emph{hidden services} -- anonymous servers that intentionally
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=\linewidth]{../images/LucidCharts/Hidden_Services.pdf}
-	\caption{A Tor client, Alice, and a hidden service, Bob, communicate by mating two Tor circuits at a \emph{rendezvous point} (RP). Bob maintains circuits (red) to his \emph{introduction points} (IPs) and advertises IPs and $ \mathrm{PK}_{B} $ to the Tor network. When Alice obtains Bob's address through a backchannel, she selects and builds a circuit (blue) to \emph{RP} and other circuit (purple) to one of Bob's IPs. She then tells $ \mathit{IP}_{B} \mathcal{E}_{\mathrm{PK}_{B}}(\mathit{RP}) $. Then Bob construct a circuit (green) to \emph{RP} and Alice and Bob can communicate with bi-directional anonymity.\cite{overlier2006locating}}
+	\caption{A Tor client, Alice, and a hidden service, Bob, communicate by mating two Tor circuits at a \emph{rendezvous point} (RP). Bob maintains circuits (red) to his \emph{introduction points} (IPs) and advertises his IPs and $ \mathrm{PK}_{B} $ to the Tor network. When Alice obtains Bob's address through a backchannel, she selects and builds a circuit (blue) to an RP and other circuit (purple) to one of Bob's IPs. She then tells $ \mathcal{E}_{\mathrm{PK}_{B}}(\mathit{RP}) $ to $ \mathit{IP}_{B}$. Then Bob construct a circuit (green) to the \emph{RP} and Alice and Bob can communicate with bi-directional anonymity.\cite{overlier2006locating}}
 \end{figure}
 
 Tor hidden service addresses are distributed and globally collision-free, but there is a strong discontinuity between the address and the service's purpose. For example, a visitor cannot determine that \url{3g2upl4pq6kufc4m.onion} is the DuckDuckGo search engine without visiting the hidden service. Generally speaking, it is currently impossible to categorize or fully label hidden services in advance. Over time, third-party directories -- both on the Clearnet and Darknet -- have appeared in attempt to counteract this issue, but these directories must be constantly maintained and the approach is neither convenient nor does it scale well. Given the approximetly 25,000 hidden services on the Tor network,  (Figure \ref{fig:OnionCount}) this suggests the strong need for a more complete solution to solve the usability issue. 
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=\linewidth]{../images/Tor/onion_2014-10_2015-04.pdf}
-	\caption{The number of unique .onion addresses seen in Tor's distributed hashtable between January through April 2015.\cite{kadianakis2015extrapolating}\cite{TorMetrics}}
+	\includegraphics[width=\linewidth]{../images/Tor/onion_2014-10_2015-05.pdf}
+	\caption{The number of unique .onion addresses seen in the Tor network between December 2014 and May 2015.\cite{kadianakis2015extrapolating}\cite{TorMetrics}}
 	\label{fig:OnionCount}
 \end{figure}
 
@@ -416,9 +416,9 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 \subsection{Symbols}
 
 \begin{center}
-  \begin{tabular}{ | l | l | } \hline
-    $ L_{Q} $ & the size of the Quorum \\
-    $ L_{T} $ & the number of routers in the Tor network \\
+  \begin{tabular}{ | l | l } \hline
+    $ L_{Q} $ & the size of the Quorum \\ \hline
+    $ L_{T} $ & the number of routers in the Tor network \\ \hline
     $ L_{P} $ & the maximum number of Pages in the Pagechain \\ \hline
     $ q $ & the Quorum iteration counter \\ \hline
     $ \Delta q $ & the lifetime of a Quorum in days \\ \hline
