@@ -205,7 +205,7 @@ Tor hidden service addresses are distributed and globally collision-free, but th
 	\label{fig:OnionCount}
 \end{figure}
 
-\section{Contributions}
+\subsection{Contributions}
 
 In this paper, we present the design, analysis and implementation of the Onion Name System, (OnioNS) a distributed, secure, and usable domain name system for Tor hidden services. Any hidden service can anonymously register an association between a meaningful human-readable domain name and its .onion address and clients can query against OnioNS in a privacy-preserving and verifiable manner. OnioNS is powered by a random subset of nodes within the existing infrastructure of Tor, significantly limiting the additional attack surface. We devise a distributed DNS database using a blockchain-based data structure that are tamper-proof, self-healing, resistant to node compromise and achieves authenticated denial-of-existence. We design OnioNS as a backwards-compatible plugin to the Tor software. Our prototype implementation demonstrates the high usability and performance of OnioNS. To the best of our knowledge, this is the first alternative DNS for Tor hidden services which is distributed, secure, and usable at the same time.
 
@@ -224,7 +224,7 @@ Tor's privacy-enhanced environment introduces a distinct set of challenges that 
 	\item \textbf{The system should be lightweight.} In most realistic environments clients have neither the bandwidth nor storage capacity to hold the system's entire database, nor the capability of meeting significant computation or memory burdens.
 \end{enumerate}
 
-\section{Challenges}
+\newpage
 
 \subsection{Zooko's Triangle}
 
@@ -260,7 +260,9 @@ The Internet DNS is another one candidate and is already well established as a f
 
 The GNU Name System\cite{wachs2014censorship} (GNS) is another zone-based alternative DNS. GNS describes a hierarchical zones of names with each user managing their own zone and distributing zone access peer-to-peer within social circles. While GNS' design guarantees the uniqueness of names within each zone and users are capable of selecting meaningful nicknames for themselves, GNU does not guarantee that names are \emph{globally} unique. Furthermore, the selection of a trustworthy zone to use would be a significant challenge for using GNS for Tor hidden services and such a selection no longer makes the system distributed. Awerbuch and Scheideler,\cite{awerbuch2004group} constructed a distributed peer-to-peer naming system, but like GNS, made no guarantee that domain names would be globally unique.
 
-Namecoin\cite{NamecoinHome}\cite{jacobs2014providing} was an early fork of Bitcoin\cite{nakamoto2008bitcoin} and is noteworthy for achieving all three properties of Zooko's Triangle. Namecoin holds information transactions in a distributed ledger known as a blockchain. Storing textual information such as a domain registration consumes some Namecoins, a unit of currency. While Namecoin is often advertised as capable of assigning names to Tor hidden services, it has several practical issues that make it generally infeasible to be used for that purpose. First, to authenticate registrations, clients must be able to prove the relationship between a Namecoin owner's secp256k1 ECDSA key and the target hidden service's RSA key: constructing this relationship is non-trivial. Second, Namecoin generally requires users to pre-fetch the blockchain which introduces significant logistical issues due to high bandwidth, storage, and CPU load. Third, although Namecoin supports anonymous ownership of information, it is non-trivial to anonymously purchase Namecoins, thus preventing domain registration from being truly anonymous. These issues prevent Namecoin from being a practical alternative DNS for Tor hidden service. However, our work shares some design principles with Namecoin.
+% \cite{jacobs2014providing} was
+
+Namecoin\cite{NamecoinHome} is an early fork of Bitcoin\cite{nakamoto2008bitcoin} and is noteworthy for achieving all three properties of Zooko's Triangle. Namecoin holds information transactions in a distributed ledger known as a blockchain. Storing textual information such as a domain registration consumes some Namecoins, a unit of currency. While Namecoin is often advertised as capable of assigning names to Tor hidden services, it has several practical issues that make it generally infeasible to be used for that purpose. First, to authenticate registrations, clients must be able to prove the relationship between a Namecoin owner's secp256k1 ECDSA key and the target hidden service's RSA key: constructing this relationship is non-trivial. Second, Namecoin generally requires users to pre-fetch the blockchain which introduces significant logistical issues due to high bandwidth, storage, and CPU load. Third, although Namecoin supports anonymous ownership of information, it is non-trivial to anonymously purchase Namecoins, thus preventing domain registration from being truly anonymous. These issues prevent Namecoin from being a practical alternative DNS for Tor hidden service. However, our work shares some design principles with Namecoin.
 
 \section{Assumptions and Threat Model}
 
@@ -379,7 +381,7 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 		A \emph{Mirror} is any name server that holds a complete copy of the Pagechain and maintains synchronization against the Quorum. Mirrors respond to queries but must provide signatures from Quorum nodes to prevent Mirrors from falsifying responses. We note that Mirrors may be outside the Tor network, but in this work we do not specify any protocols for this scenario.
 
 	\item[Quorum Candidate] \hfill \\
-		A \emph{Quorum Candidates} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their regular Tor duties.
+		A \emph{Quorum Candidates} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their Tor duties.
 
 	\item[Quorum] \hfill \\
 		A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates.
@@ -392,25 +394,25 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 	\label{fig:sideChains}
 \end{figure}
 
+%\setlength{\belowcaptionskip}{-10pt}
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=\linewidth]{../images/LucidCharts/Data-Structure-Overview.pdf}
 	\caption{The master Pagechain is one-dimensional but spans across the network as each Mirror holds a copy. Each Page is maintained by a respective Quorum.}
 \end{figure}
 
-\subsection{Symbols}
-
-\begin{center}
-  \begin{tabular}{ | l | l } \hline
-    $ L_{Q} $ & the size of the Quorum \\ \hline
-    $ L_{T} $ & the number of routers in the Tor network \\ \hline
-    $ L_{P} $ & the maximum number of Pages in the Pagechain \\ \hline
-    $ q $ & the Quorum iteration counter \\ \hline
-    $ \Delta q $ & the lifetime of a Quorum in days \\ \hline
-    $ s $ & a Snapshot iteration counter \\ \hline
-    $ \Delta s $ & the lifetime of a Snapshot in minutes \\ \hline
-  \end{tabular}
-\end{center}
+\begin{table}[h]
+	\begin{tabular}{ | l | l | } \hline
+    	$ L_{Q} $ & the size of the Quorum \\ \hline
+    	$ L_{T} $ & the number of routers in the Tor network \\ \hline
+    	$ L_{P} $ & the maximum number of Pages in the Pagechain \\ \hline
+    	$ q $ & the Quorum iteration counter \\ \hline
+    	$ \Delta q $ & the lifetime of a Quorum in days \\ \hline
+    	$ s $ & the Snapshot iteration counter \\ \hline
+    	$ \Delta s $ & the lifetime of a Snapshot in minutes \\ \hline
+  	\end{tabular}
+  	\caption[Table caption text]{Frequently used notations}
+\end{table}
 
 \subsection{Protocols}
 
@@ -496,14 +498,14 @@ New Quorum nodes must select a Page from the previous Quorum to reference when g
 
 \subsubsection{Domain Query}
 
-Alice needs only Bob's Record to contact Bob by his meaningful domain name. Let Alice type a domain $ d $ into the Tor Browser.
+Alice needs only Bob's Record to contact Bob by his meaningful domain name. Let Alice type a domain $ d $ into the Tor Browser, and let Alice pre-fetch from Charlie, a Quorum Candidate, the Merkle tree $ T $ described in section \ref{sec:authDenial}.
 
 \begin{enumerate}[noitemsep,nolistsep]
 	\item Alice constructs a Tor circuit to Charlie.
-	\item Alice asks and receives from Charlie the hashtable bitset described in section \ref{sec:authDenial}.
 	\item \label{step:ask} Alice asks Charlie for the most recent Record $ r $ containing $ d $.
-	\item Charlie finds and returns $ r $ to Alice.
-	\item Alice asserts that $ r $ is valid and contained in the bitset, as otherwise Charlie is acting dishonestly.
+	\item Charlie finds and returns $ r $ to Alice, or an error if $ d $ cannot be found.
+	\item If $ r $ is not found, Alice asserts that the second-level name of $ d $ is not found in $ T $, as otherwise Charlie is dishonest.
+	\item If $ r $ is found, Alice asserts that $ r $ is valid and contained in $ T $, as otherwise Charlie is dishonest.
 	\item If $ d $ in $ r $ points to a domain with a .tor pseudo-TLD, $ d $ becomes that destination and Alice jumps to step \ref{step:ask}.
 	\item Alice assets that the destination uses a .onion pseudo-TLD and contacts Bob by the traditional hidden service protocol.
 	\item Alice extracts Bob's key from his hidden service descriptor and asserts that it matches $ r $'s \emph{pubHSKey}.
@@ -521,49 +523,40 @@ OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a
 \subsection{Authenticated Denial-of-Existence}
 \label{sec:authDenial}
 
-In any system that serves authenticable names, a name server can prove a claim on the existence of a name by simply returning it. An often overlooked problem is ensuring that name servers cannot claim false negatives on resolutions; clients must be able to authenticate a denial-of-existence claim. Extensions to DNSSEC attempt to close this attack vector, but DNSSEC is not widely deployed, and we are not aware of any alternative DNS that addresses this. Although Alice may download the entire Pagechain and prove non-existence herself, we do not consider this approach practical in most realistic environments. Instead, we introduce a mechanism for authenticating denial-of-existence with minimal networking costs. To our knowledge this represents the first work to authenticate denial-of-existence claims on domains en-masse.
+In any system that serves authenticable names, a name server can prove a claim on the existence of a name by simply returning it. An often overlooked problem is ensuring that name servers cannot claim false negatives on resolutions; clients must be able to authenticate a denial-of-existence claim. Extensions to DNSSEC attempt to close this attack vector, but DNSSEC is not widely deployed, and we are not aware of any alternative DNS that addresses this. Although Alice may download the entire Pagechain and prove non-existence herself, we do not consider this approach practical in most realistic environments. Instead, we introduce a mechanism for authenticating denial-of-existence with minimal networking costs. To our knowledge this represents the first alternative DNS to authenticate denial-of-existence claims on domains en-masse.
 
-A simple solution to authenticated denial-of-existence is to enumerate all existing domain names, have a trusted party sign the list, and pass the list to clients to prove non-existence. However, as each domain may be up to 128 characters long, this leads to a list up to 3.2 MB in size for the $ \approx $ 25,000 hidden services currently advertising on the Tor network, which would take approximately twenty seconds to send over a Tor circuit.\cite{TorMetrics} Instead, we utilize a hashtable with an underlying bitset to compact the representation. If each Quorum node signs the bitset, clients can then verify non-existence for any domain in $ \mathcal{O}(1) $ time on average.
- 
-Let $ n $ be the number of domain names in the Pagechain, $ s $ be a space scaling factor, $ m $ a security scaling factor, and $ z $ a network load scaling factor. Let each bucket in the hashtable be $ m + 2 $ bits: an ``existence'' bit, a ``collision'' bit, and $ m $ key bits. Then each Quorum node
+We suggest reducing the networking costs with a Merkle tree\cite{merkle1988digital} $ T $. Let each Quorum node
 
 \begin{enumerate}[noitemsep,nolistsep]
-	\item Constructs and zeros a bitset \emph{bset} of size $ L = s * n * (m + 2) $ bits.
-	\item Constructs an empty array list \emph{arr}.
-	\item For each domain $ d $ in each Record $ r $ in the Pagechain,
-		\begin{enumerate}[noitemsep,nolistsep]
-			\item If bit 0 in $ \mathit{bset}(H(d)) $ is ``1'', sets bit 1 to ``1'' and add $ H(d) $ to \emph{arr}.
-			\item If bit 0 in $ \mathit{bset}(H(d)) $ is ``0'', sets bit 0 to ``1'' and set the last $ m $ bits of the $ \mathit{bset}(H(d)) $ bucket to the last $ m $ bits of $ H(d) $.
-		\end{enumerate}
-	\item Sorts \emph{arr} in numerical order.
-	\item Divides \emph{bset} into $ z $ sections, signs each section via $ S_{\mathit{ed}}(m, e) $, and generates $ S_{\mathit{ed}}(\mathit{arr}, e) $. This division further reduces the network requirement: clients need only the section of the bitset that contains the domain they query for.
+	\item Construct an array list \emph{arr}.
+	\item For each second-level domain $ c $ in each Record $ r $ in the Pagechain, add $ c \concat H(r) $ to \emph{arr}.
+	\item Sort \emph{arr}.
+	\item Construct a Merkle tree $ T $ from \emph{arr}.
+	\item Generate $ \mathit{sig}_{T} = S_{\mathit{ed}}(t \concat r, e) $ where $ t $ is a timestamp and $ r $ is the root hash of $ T $.
 \end{enumerate}
 
-Alice then uses the hashtable bitset to authenticate denial-of-existence and as a defence against forged Records by the following:
+Then during a Domain Query Alice may use $ T $ to authenticate a domain $ d $ and verify non-existence for a Record $ r $.
 
 \begin{enumerate}[noitemsep,nolistsep]
-	\item Charlie returns back the section $ t $ of \emph{bset} that contains $ \mathit{bset}(H(d)) $ and all signatures on $ t $ from $ \mathit{Quorum}_{q} $.
-	\item Alice asserts via $ V_{\mathit{ed}}(t, E) $ that $ t $ is signed by the Quorum nodes maintaining the current main Page, in accordance with our last security assumption.
-	\item If bit 0 in $ \mathit{bset}(H(d)) $ is ``0'', $ d $ does not exist.
-	\item If bit 0 is ``1'', and the last $ m $ bits of $ \mathit{bset}(H(d)) $ do not match $ H(d) $, Alice knows $ d $ does not exist. If Charlie returns a Record in the Domain Query protocol, and if the bits match, Alice knows Charlie returned an authentic Record.
-	\item If bit 0 and bit 1 are both ``1'' and $ H(d) $ does not exist in \emph{arr}, Alice knows $ d $ does not exist.
-	\item Otherwise, either Charlie or the Quorum nodes who signed \emph{bset} are dishonest.
+	\item Alice extracts the second-level name $ c $ from $ d $.
+	\item If Charlie returns $ r $, Alice finds the leaf $ l $ in $ T $ containing $ c $ and then asserts that $ H(r) \in l $.
+	\item If Charlie claims non-existence, Alice asserts that $ c $ does not exist in $ T $.
+	\item If either assertion fails, Charlie is dishonest.
 \end{enumerate}
 
-Note that a Bloom filter with $ k $ hash functions could be used instead of a compact hashtable, but a Bloom filter would require sending up to $ k $ sections of buckets to the client. Therefore, we use a simple hashtable scheme, which is effectively a Bloom filter with $ k = 1 $.
+As the leaves of $ T $ are sorted, Alice may locate $ l $ in $ \mathcal{O}(\mathrm{log}(n)) $ time via a binary search; she simply needs to find two leaves $ a $ and $ a $ such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf. As Records contain both second-level domains and their subdomains, $ T $ needs only contain $ c $ to reference all domains in $ r $, which further saves space. 
 
+The Quorum must regenerate $ T $ every $ \Delta T $ hours to include new Records. Then Alice needs only pre-fetch $ T $ and its $ \mathit{sig}_{T} $s at least every $ \Delta T $ hours to ensure that she can authenticate new Records during the Domain Query. Thus $ \Delta T $ is the primary factor in the speed of Record propagation: Alice cannot authenticate or verify denial-of-existence claims on Records newer than $ \Delta T $. However, the networking cost is $ \mathcal{O}(n \Delta T) $. Alice must also fetch the $ L_{Q} \mathit{sig}_{T} $s from all Quorum nodes and assert that $ T $ is signed by the largest set of nodes maintaining the same Page, in correspondence with our last security assumption.
 
+%	\item Construct a $ n $-sized sorted array list \emph{arr} of $ m $-sized elements. Let each element $ e_{1 < i < n} $ be the last $ m $ bits from $ H(d_{i}) $, where $ d_{i} $ is $ i $-th second-level domain in the Pagechain. Here $ m $ is the primary scaling factor for both space and security; a small value for $ m $ means $ T $ consumes less space, but a large $ m $ reduces the probability of hash collision.
+%	\item Construct $ T $ from \emph{arr}. Let $ T $'s leaves be the $ m $-sized elements.
+%	\item 
 
+% A simple solution to authenticated denial-of-existence is to enumerate all existing domain names, have a trusted party sign the list, and pass the list to clients to prove non-existence. However, as there are $ \approx $ 25,000 hidden services currently advertising on the Tor network and each domain may be up to 128 characters long, this least would be $ \approx $ 3.2 MB in size, which would take approximately twenty seconds to send over a Tor circuit.\cite{TorMetrics} Instead, 
 
+% Let $ n $ be the number of second-level domain names in the Pagechain.
 
-
-
-
-
-
-
-
-
+%augmenting AVL with Merkle
 
 \section{Security Analysis}
 
@@ -577,7 +570,7 @@ Quorum selection may be considered as an $ L_{Q} $-sized random sample taken fro
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../analysis/MaliciousQuorumProbability.eps}
+	\includegraphics[width=\linewidth]{../analysis/MaliciousQuorumProbability_tight.eps}
 	\caption{The probability that Eve controls the majority of the Quorum is given by the PMF of the hypergeometric distribution. We fix $ N $ at 5,400 nodes and graph Eve's success probability as a function of an increasing percentage of Eve-controlled colluding routers. We examine five selections for $ L_{Q} $: 31, 63, 127, 255, and 511. We do not consider percentages beyond 33 percent as 33 percent represents a complete compromise of the Tor network: it is near 100 percent that the three routers selected during circuit construction are under Eve's control, a violation of our security assumptions.}
 	\label{chart:quorumMajority}
 \end{figure}
@@ -588,7 +581,7 @@ If we assume that Eve controls 10 percent of the Tor network, then we can examin
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../analysis/CumulativeMaliciousQuorum.eps}
+	\includegraphics[width=\linewidth]{../analysis/CumulativeMaliciousQuorum_tight.eps}
 	\caption{The cumulative probability that Eve controls any Quorum at different rotation rates. We assume 10 percent collusion in a network of 5400 Tor routers, and view across 10 years. We do not graph $ L_{Q} $ values of 255 or 511 as they generate probabilities far below our $ 10^{-38.532} $ threshold; $ L_{Q} = 255 $ and $ L_{Q} = 511 $ produce values less than $ 10^{-58} $ and $ 10^{-134} $, respectively.}
 	\label{chart:cumulativeProbability}
 \end{figure}
@@ -695,9 +688,13 @@ The latency is circuit-dependent and heavily depends on the speed of each Tor ro
 
 \section{Future Work}
 
+However, Merkle trees do not support updates without complete rebuilding. Future work may explore more efficient data structures such as the hash tables proposed by Papamanthou et el.\cite{papamanthou2008authenticated}, which is noteworthy for achieving constant query cost and sublinear update cost.
+
 In future work we will expand our implementation of OnioNS and develop the remaining protocols. While our implementation functions with a fixed resolver, we will deploy our implementation onto larger and more realistic simulation environments such as Chutney and PlanetLab. When we have completed dynamic functionality and the remaining protocols, we will pursuit integrating our implementation into Tor. We expect this to be straightforward as OnioNS is designed as a plugin for Tor, introduces no changes to Tor's hidden service protocol, and requires very few changes to Tor's software. In future developments, Tor's developers may also make significant changes to Tor's hidden services, but OnioNS' design enables our system to become forwards-compatible after a few minor changes.
 
 Additionally, several questions need to answered in future studies:
+
+We support the same character set as the Internet DNS but disallow the digits zero and one (similar to base32 encoding) in order to reduce the threat of phishing attacks via spoofed domains with indistinguishable characters. In future work we will explore implementing Punycode to provide support for international character sets.
 
 \begin{itemize}
 	\item Should the Quorum expire registrations that point to non-existent hidden services, and if so, how can this be done securely?
