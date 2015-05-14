@@ -91,7 +91,7 @@
 
 \numberofauthors{3}
 \author{
-	[three authors redacted]
+	[anonymous submission]
 %% 1st. author
 %\alignauthor
 %Jesse Victors \\
@@ -368,7 +368,7 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 		The syntax of OnioNS domain names mirrors the Internet DNS; we use a sequence of name-delimiter pairs with a .tor pseudo-TLD. The Internet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim second-level names and then control all names of greater depth under that second-level name.
 
 	\item[Record] \hfill \\
-		A \emph{Record} contains \emph{nameList}, a one-to-one map of .tor pseudo-TLD domain names and .tor or .onion pseudo-TLD destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{nonce}, four bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{recordSig}, the output of $ S_{d}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key; and \emph{pubHSKey}, Bob's public hidden service RSA key.
+		A \emph{Record} contains \emph{nameList}, a one-to-one map of .tor pseudo-TLD domain names and .tor or .onion pseudo-TLD destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{nonce}, four bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{recordSig}, the output of $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key; and \emph{pubHSKey}, Bob's public hidden service RSA key.
 
 	\item[Snapshot] \hfill \\
 		A \emph{Snapshot} contains \emph{originTime}, the Unix time when the snapshot was first created; \emph{recentRecords}, an array list of Records in reverse chronological order; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Snapshot; and  \emph{snapshotSig}, the output of $ S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}], e) $ where $ e $ is the router's private Ed25519 key.
@@ -385,12 +385,12 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 		A \emph{Quorum Candidates} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their Tor duties.
 
 	\item[Quorum] \hfill \\
-		A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates.
+		A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively maintains its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates.
 \end{description}
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.9\linewidth]{../images/LucidCharts/Page-chain2.pdf}
+	\includegraphics[width=0.87\linewidth]{../images/LucidCharts/Page-chain2.pdf}
 	\caption{An example Pagechain across four Quorums with three side-chains. The valid master Pagechain from honest Quorum nodes (green) resists corruption from maliciously-colluding nodes (red) and malfunctioning nodes (orange).}
 	\label{fig:sideChains}
 \end{figure}
@@ -434,7 +434,7 @@ Quorum Candidate Tor routers can determine in  $ \mathcal{O}(L_{T}) $ time if th
 \begin{enumerate}[noitemsep,nolistsep]
 	\item Charlie obtains the consensus documents, $ cd $, published on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 GMT.
 	\item Charlie scans $ cd $ and constructs a list \emph{qc} of Quorum Candidates that have the Fast, Stable, Running, and Valid flags and that are in the largest set of Tor routers that publish an identical time-based hash. 
-	\item Alice constructs $ f = \mathit{R}(H(\mathit{cd}) $.
+	\item Alice constructs $ f = \mathit{R}(H(\mathit{cd})) $.
 	\item Alice uses \emph{f} to randomly scramble \emph{qc}.
 	\item The first $ \mathrm{min}(\mathrm{size}(\mathit{qc}), L_{Q}) $ routers are the Quorum.
 \end{enumerate}
@@ -450,7 +450,7 @@ Bob must first generate a valid Record to claim a second-level domain name for h
 	\item Bob initially defines \emph{nonce} as four zeros.
 	\item Let $ \mathit{central} $ be $\mathit{type} \concat \mathit{nameList} \concat \mathit{contact} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} $.
 	\item Bob sets \emph{pow} as $ \mathrm{PoW}(\mathit{central}) $.
-	\item Bob sets \emph{recordSig} as the output of $ S_{d}(m, r) $ where $ m = \mathit{central} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
+	\item Bob sets \emph{recordSig} as the output of $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{central} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
 	\item Bob saves the PKCS.1 DER encoding of his RSA public key in \emph{pubHSKey}.
 \end{enumerate}
 
@@ -508,7 +508,7 @@ Alice needs only Bob's Record to contact Bob by his meaningful domain name. Let 
 	\item If $ r $ is not found, Alice asserts that the second-level name of $ d $ is not found in $ T $, as otherwise Charlie is dishonest.
 	\item If $ r $ is found, Alice asserts that $ r $ is valid and contained in $ T $, as otherwise Charlie is dishonest.
 	\item If $ d $ in $ r $ points to a domain with a .tor pseudo-TLD, $ d $ becomes that destination and Alice jumps to step \ref{step:ask}.
-	\item Alice assets that the destination uses a .onion pseudo-TLD and contacts Bob by the traditional hidden service protocol.
+	\item Alice asserts that the destination uses a .onion pseudo-TLD and contacts Bob by the traditional hidden service protocol.
 	\item Alice extracts Bob's key from his hidden service descriptor and asserts that it matches $ r $'s \emph{pubHSKey}.
 	\item Alice sends the original $ d $ to the hidden service.
 \end{enumerate}
@@ -644,7 +644,7 @@ In the Record Generation protocol, we intentionally included the scrypt calculat
 	\item For each Record $ C_{0 \le j \le K} $ Bob computes
 		\begin{enumerate}[noitemsep,nolistsep]
 			\item Bob sets \emph{pubHSKey} to his public RSA key.
-			\item Bob sets \emph{recordSig} to $ S_{d}(m, r) $ where $ m = \mathit{central} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
+			\item Bob sets \emph{recordSig} to $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{central} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
 			\item Bob has found a valid Record if $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{d} * \mathit{c}} $
 		\end{enumerate}
 \end{enumerate}
@@ -661,13 +661,22 @@ Accidental leakage of .tor lookups over the Internet DNS via human mistakes or m
 
 \section{Implementation}
 
-We have built a partial reference implementation of OnioNS in C++11, primarily the Record Generation and Domain Query protocols. Botan provides the implementation of our cryptographic operations, Boost Asio provides our networking engine, and Linux libjsoncpp-dev library provides implementations of JSON encoding and decoding. We encode all the data structures in JSON; JSON is significantly more compact than XML, but retains user readability and its support of basic primitive types is highly applicable to our needs. Our code is available under the Modified BSD License at \url{https://github.com/Jesse-V/OnioNS}.
+We have built a partial reference implementation of OnioNS in C++11, primarily the Record Generation and Domain Query protocols. Botan provides the implementation of our cryptographic operations, Boost Asio provides our networking engine, and Linux libjsoncpp-dev library provides implementations of JSON encoding and decoding. We encode all the data structures in JSON; JSON is significantly more compact than XML, but retains user readability and its support of basic primitive types is highly applicable to our needs. Our code is available under the Modified BSD License. % at \url{https://github.com/Jesse-V/OnioNS}.
 
-We implemented the essential functionality for Bob, Charlie, and Alice. We used the Shallot\cite{KatmagicShallot} vanity key generator to find a hidden service key with a partially-meaningful address. Then we loaded the private key into OnioNS and constructed a Record containing an association between ``example.tor'' and ``onions55e7yam27n.onion''. Next, we transmit this Record to a fixed server over a Tor circuit and started a TCP server to respond to Domain Queries. Finally, we have also modified Tor such that when Alice types ``example.tor'' into the Tor Browser, Tor intercepts the pseudo-TLD and sends it via IPC to the OnioNS client. Then the OnioNS client performs a Domain Query to Charlie and writes ``onions55e7yam27n.onion'' back to the Tor client over IPC. Finally, Tor rewrites the original ``example.tor'' lookup to ``onions55e7yam27n.onion'' and contacts our hidden service over the traditional Tor protocol. Tor performs asynchronously here; it must place the lookup on hold, free its event loop to avoid a deadlock, and asynchronously resume the lookup once it receives the response. From the user's perspective, the content of \url{http://onions55e7yam27n.onion} loads transparently under the \url{http://example.tor} URL.
+% todo: need to test verifying agreement from multiple Quorum nodes
 
-\subsection{Analysis}
+We implemented the essential functionality for Bob, Charlie, and Alice. We used the Shallot\cite{KatmagicShallot} vanity key generator to find an RSA key that hashed to a hidden service address with the ``OnioNS'' prefix. Shallot found ``onions55e7yam-27n.onion''. We constructed a website and attached Tor to the nginx web server. Then we loaded the private key into OnioNS and constructed a Record containing an association between ``example.tor'' and ``onions55e7yam27n.onion''. Next, we transmit this Record to a fixed server over a Tor circuit and started a TCP server to respond to Domain Queries. Finally, we modified Tor such that when Alice types ``example.tor'' into the Tor Browser, Tor intercepts the pseudo-TLD and sends it via IPC to the OnioNS client. Then the OnioNS client performs a Domain Query to Charlie and writes ``onions55e7yam27n.onion'' back to the Tor client over IPC. Finally, Tor rewrites the original ``example.tor'' lookup to ``onions55e7yam27n.onion'' and contacts our hidden service over the traditional Tor protocol. Tor performs asynchronously here; it must place the lookup on hold, free its event loop to avoid a deadlock, and asynchronously resume the lookup once it receives the response. From the user's perspective, the content of \url{http://onions55e7yam27n.onion} loads transparently under the \url{http://example.tor} URL.
 
-We conducted several performance measurements for the Record Generation and Domain Query protocols. Our experiment involves two machines, A and B. Both were hosted on 1 Gbit connections at Utah State University. Machine A has an Intel Core2 Quad Q9000 (Penryn archicture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively. We hosted our hidden service and TCP server on Machine B.
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\linewidth]{../images/example.png}
+	\caption{We load the OnioNS' hidden service, onions55e7yam27n.onion, transparently under the ``example.tor'' domain on Tor Browser 4.5.1, a fork of Firefox ESR 31.7.0.}
+	\label{fig:cumulativeProbability}
+\end{figure}
+
+\subsection{Results}
+
+We conducted several performance measurements for the Record Generation and Domain Query protocols. Our experiment involves two machines, A and B. Both were hosted on 1 Gbit connections on a university campus. Machine A has an Intel Core2 Quad Q9000 (Penryn archicture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively. We hosted our hidden service and TCP server on Machine B.
 
 \subsubsection{Performance}
 
@@ -705,7 +714,7 @@ We measure the latency introduced by the Domain Query protocol and compare again
     \end{tabular}
 \end{center}
 
-Tor's latency is primarily dominated by circuit construction and negotiation with the hidden service. This time is highly dependent on the circuit's network distance and the speed of each Tor router. Our measurements include the time to build circuits to our TCP server and the Domain Query protocol. We avoid additional latency costs by implementing a DNS cache in order to allow subsequent queries to be resolved locally. In future work we will reduce the latency by recycling existing circuits that Tor constructs on startup and by moving the server to the circuit's exit router, eliminating an unnecessary network hop.
+Tor's latency is primarily dominated by circuit construction and negotiation with the hidden service. This time is highly dependent on the circuit's network distance and the speed of each Tor router. Our measurements include the time to build circuits to our TCP server and the Domain Query protocol. which includes a single call to scrypt and $ V_{\mathit{RSA}}(m, E) $. We avoid additional latency costs by implementing a DNS cache in order to allow subsequent queries to be resolved locally. In future work we will reduce the latency by recycling existing circuits that Tor constructs on startup and by moving the server to the circuit's exit router, eliminating an unnecessary network hop.
 
 \section{Future Work}
 
@@ -719,9 +728,9 @@ Our implementation currently only supports ASCII characters in domain names. In 
 
 We have presented the Onion Name System (OnioNS), a distributed, secure, and usable alternative DNS that maps globally-unique and meaningful .tor domains to .onion hidden service addresses, and achieve all three properties of Zooko's Triangle. We enable any hidden service operator to anonymously claim a human-readable name for their server and clients to query the system in privacy-enhanced manner. We introduce a distributed self-healing blockchain-based database and mechanisms that let clients authenticate and verify denial-of-existence claims. Additionally, we utilize the existing and semi-trusted infrastructure of Tor, which significantly narrows our threat model to already well-understood attack surfaces and allows our system to be integrated into Tor with minimal effort. Our reference implementation demonstrates high usability and shows that OnioNS successfully addresses the major usability issue that has been with Tor hidden services since their introduction in 2002.
 
-\section{Acknowledgements}
-
-We would like to thank Tor developers Roger Dingledine, Yawning Angel, and Nick Mathewson for their assistance with Tor technical support.
+%\section{Acknowledgements}
+%
+%We would like to thank Tor developers Roger Dingledine, Yawning Angel, and Nick Mathewson for their assistance with Tor technical support.
 
 %\subsection{Entropy of Tor Consensus Documents}
 %\subsection{Malicious Entropy Reduction}
