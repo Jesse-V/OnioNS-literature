@@ -51,6 +51,7 @@
 \usepackage{tikz}
 \usetikzlibrary{decorations.text}
 \usepackage{tkz-berge}
+\usepackage{amsmath}
 
 % https://tex.stackexchange.com/questions/42271/floor-and-ceiling-functions
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
@@ -115,7 +116,8 @@
 \maketitle
 
 \begin{abstract}
-Tor hidden services are anonymous servers of unknown location and ownership who can be accessed through any Tor-enabled web browser. They have gained popularity over the years, but still suffer from major usability challenges due to the cryptographically-generated non-human-readable addresses.
+
+Tor hidden services are anonymous servers of unknown location and ownership who can be accessed through any Tor-enabled web browser. They have gained popularity over the years, but still suffer from major usability challenges due to their cryptographically-generated non-memorable addresses.
 
 In response to this difficulty, in this work we introduce the Onion Name System (OnioNS), a privacy-enhanced distributed DNS that allows users to reference a hidden service by a meaningful globally-unique verifiable domain name chosen by the hidden service operator. We introduce a new distributed self-healing public ledger and construct OnioNS as an optional backwards-compatible plugin for Tor on top of existing hidden service infrastructure. We simplify our design and threat model by embedding OnioNS within the Tor network and provide mechanisms for authenticated denial-of-existence with minimal networking costs. Our reference implementation demonstrates that OnioNS successfully addresses the major usability issue that has been with Tor hidden services since their introduction in 2002.
 
@@ -570,7 +572,29 @@ In section \ref{sec:threatModel}, we assume that an attacker, Eve, controls some
 
 \subsubsection{Quorum Size}
 
-The probability that Eve controls $ L_{E} $ Quorum nodes is given by the hypergeometric distribution, whose probability mass function (PMF) is $ \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}} $. Then the probability that $ L_{E} > \frac{L_{Q}}{2} $, a complete compromise of the Quorum, is given by $ \displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}} $. Odd choices for $ L_{Q} $ prevents the possibility of network disruption in the event of the Quorum being evenly split across two Pages. We assume that $ L_{Q} $ will be selected from a pool of 5,400 Quorum Candidates --- the number, as of May 2015, of Tor routers with the Fast and Stable flags. We provide the statistical calculations in Figure \ref{fig:quorumMajority}.
+The probability that Eve controls $ L_{E} $ Quorum nodes is given by the hypergeometric distribution, whose probability mass function (PMF) is shown in Equation \ref{eq:hypergeoPMF}.
+
+%\setlength{\belowdisplayskip}{0pt} \setlength{\belowdisplayshortskip}{0pt}
+%\setlength{\abovedisplayskip}{0pt} \setlength{\abovedisplayshortskip}{0pt}
+
+% C^i_j = {\textstyle \sum_k} A^i_k B^k_j
+%\begin{equation} \label{eq:hypergeoPMF}
+%   \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}}
+%\end{equation}
+
+Then the probability that $ L_{E} > \frac{L_{Q}}{2} $, a complete compromise of the Quorum, is given by Equation \ref{eq:compromiseProb}. Odd choices for $ L_{Q} $ prevents the network from splintering in the event that the Quorum is evenly split across two Pages. We assume that $ L_{Q} $ will be selected from a pool of 5,400 Quorum Candidates --- the number, as of May 2015, of Tor routers with the Fast and Stable flags. We provide the statistical calculations in Figure \ref{fig:quorumMajority}.
+
+\begin{align}
+	\frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}} &= \mathrm{Pr}(L_{E})
+	\label{eq:hypergeoPMF}
+	\\
+	\displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}} &= \mathrm{Pr}(L_{E} > \frac{L_{Q}}{2})
+	\label{eq:compromiseProb}
+\end{align}
+
+%\begin{equation} \label{eq:compromiseProb}
+%   \displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}}
+%\end{equation}
 
 % todo: 512 isn't in legend, make font bigger
 \begin{figure}[h]
@@ -599,18 +623,38 @@ Figure \ref{fig:cumulativeProbability} suggests that although lower values of $ 
 
 % todo: \emph vs \textit
 
-Periodically, Tor routers upload signed \emph{descriptors} --- routing information, cryptographic keys, and other information --- to Tor's directory authorities (dirauths). Once per hour, the dirauths aggregate and republish the descriptors back to the network, enabling Tor's network to be dynamic and distributing new information to all parties in an efficient and timely manner. We use Tor's network consensus as a global source of entropy, enabling the entire network to agree on a common Quorum. While Tor makes no guarantee that the network is using the same consensus at the same time, the consensus is timestamped, so we can reference it by their time of publication. We focus on two essential documents that clients assemble from the consensus: \emph{cached-certs} and \emph{cached-microdesc-consensus}. Although these documents contain other elements, for the sake of brevity we briefly describe their essential components.
+Periodically, Tor routers upload signed \emph{descriptors} --- routing information, cryptographic keys, and other information --- to Tor's directory authorities (dirauths). Once per hour, the dirauths aggregate and republish the descriptors back to the network, enabling Tor's network to be dynamic and distributing new information to all parties in an efficient and timely manner. We use Tor's network consensus as a global source of entropy, enabling the entire network to agree on a common Quorum. While Tor provides no guarantee that the network is using the same consensus at the same time, the consensus is timestamped, so we can reference it by their time of publication. We focus on two essential documents that clients assemble from the consensus: \emph{cached-certs} and \emph{cached-microdesc-consensus}. Although these documents contain other elements, for the sake of brevity we briefly describe their essential components.
 
 \begin{itemize}[noitemsep,nolistsep]
 	\item \textbf{cached-certs} A list of long-term identity and short-term signing RSA keys from each dirauth.
-	\item \textbf{cached-microdesc-consensus} A list of names, time of last restart, IP address, network ports, flags, Tor version, and dirauth-estimated bandwidth from each Tor router.
+	\item \textbf{cached-microdesc-consensus} Essential information about each router, such as networking information and capabilities.
 \end{itemize}
 
-If \emph{cd} is $ \mathit{cached \mbox{--} certs} \concat \mathit{cached \mbox{--} microdesc \mbox{--} consensus} $, we initialize $ \mathit{R}(s) $ with the output of the $ H(\mathit{cd}) $. Eve may desire to find a hash $ k $ that generates a desirable Quorum, either one that includes her routers or excludes particular honest routers. As $ H(x) $ is SHA-384, SHA-384's strong resistance to preimage attack forces Eve to spend $ L_{T} * 2^{192} $ operations on average to find $ k $. Eve may also try to manipulate her router's descriptors such that $ H(\mathit{cd}_{q+1}) = k $, but SHA-384's resistance to second-preimage attacks also requires this to require $ L_{T} * 2^{192} $ operations as well. However, if \emph{cd} contains sufficient entropy, Eve is unable to predict the next Quorum or influence it to her favor.
+If \emph{cd} is $ \mathit{cached \mbox{--} certs} \concat \mathit{cached \mbox{--} microdesc \mbox{--} consensus} $, we initialize $ \mathit{R}(s) $ with the output of the $ H(\mathit{cd}) $. Eve may desire to find a hash $ k $ that generates a desirable Quorum, either one that includes her routers or excludes particular honest routers. As $ H(x) $ is SHA-384, SHA-384's strong resistance to preimage attack forces Eve to spend $ L_{T} * 2^{192} $ operations on average to find $ k $. Eve may also try to manipulate her router's descriptors such that $ H(\mathit{cd}_{q+1}) = k $, but SHA-384's resistance to second-preimage attacks also requires this to require $ L_{T} * 2^{192} $ operations as well. However, if \emph{cd} contains sufficient entropy, Eve is unable to predict the next Quorum or influence it to her favor. Since the dirauths publish a new consensus every hour, we must analyse the entropy rate between consecutive hours.
 
-\textbf{Entropy calculations and graphs are going here. I already have gone through 11 months of archived consensus documents that I obtained from collector.torproject.org}
+We constructed a first-order Markov model and estimated a lower bound on the entropy of the \emph{cached-microdesc-consensus} document by analysing the transitions for various fields between consecutive consensuses. We also provide analysis on the dynamics of the Tor network by counting routers that enter or leave the Tor network between consecutive consensuses in Figure \ref{fig:xorRouters}. Here we identity routers by their identity keys; just as Tor does, we consider routers that change their identity keys as two different routers; one leaving and one entering the network. For routers that are present between consecutive pairs, we focus on six critical fields from each router's descriptor inside \emph{cached-microdesc-consensus}: \emph{nickname}, the router's name chosen by its operator or a default name; \emph{publication}, the time when it last published a descriptor; \emph{IP address}, its network address; \emph{ORPort}, the network port for onion routing; \emph{version}, the version of the Tor protocol that this relay is running; and \emph{bandwidth}, as self-reported or as measured by the dirauths. Tor routers change \emph{publication} when either 18 hours has elapsed since the last descriptor publication, its fields have changed, or if its uptime has been reset.
 
-We note that additional entropy can be added into \emph{cached-microdesc-consensus} by either dirauths or by any router that intentionally changed information in its descriptor on a regular basis. However, based on our analysis we do not consider this necessary.
+We obtained from \url{collector.torproject.org} 5,067 archived versions of \emph{cached-microdesc-consensus} across a seven-month period between September 1, 2014 00:00 GMT and March 31, 2015 23:00 GMT. We observed 21 instances where the dirauths did not publish an hourly consensus due to a race condition bug in Tor's software. Until Tor patches this bug, in the rare event that the Quorum Formation protocol references a missing $ \mathrm{consensus}_{i} $, $ \mathrm{consensus}_{i + 1} $ may be used instead. Therefore our analysis includes transitions across these missing consensuses. We construct a Markov model for the six aforementioned fields and illustrate the number of observed transitions for each field in Figure \ref{fig:transitionCount}.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\linewidth]{../analysis/MarkovTransitionDistribution.eps} % todo: replace figure
+	\caption{A histogram of the number of routers entering or leaving the network between consecutive consensus across the seven-month period.}
+	\label{fig:xorRouters}
+\end{figure}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\linewidth]{../analysis/MarkovTransitionDistribution.eps}
+	\caption{The number of observed transitions for \emph{nickname}, \emph{publication}, \emph{IP address}, \emph{ORPort}, \emph{version}, and \emph{bandwidth} between consecutive consensuses across the seven-month period.}
+	\label{fig:transitionCount}
+\end{figure}
+
+\begin{equation}
+\mathrm{H}(\mathcal{S}) = - \sum_{i} P_{i} \sum_{j} P_{i}(j) \log_{2}P_{i}(j)
+\end{equation}
+
+%We note that additional entropy can be added into \emph{cached-microdesc-consensus} by either dirauths or by any router that intentionally changed information in its descriptor on a regular basis. However, based on our analysis we do not consider this necessary.
 
 % Periodically, Tor routers upload digitally-signed \textit{descriptors} -- containing routing information, cryptographic keys, bandwidth history, and other information -- to these authorities. Once an hour, the directory authorities aggregate, sign, and republish the descriptors as a \textit{network status consensus}. Clients download essential portions of these descriptors from the directory authorities or from known routers redistributing the consensus, forming \textit{microdescriptors}. These are aggregated into three files, \textit{cached-certs}, containing each directory authority's long-term identity RSA key, medium-term signing key chained to the identity key, and validity timeline for these keys; \textit{cached-microdescs}, containing public RSA and Curve25519\cite{bernstein2006curve25519} keys (used for TAP\cite{goldberg2006security} and NTor\cite{goldberg2013anonymity} circuit construction protocols, respectively); and \textit{cached-microdesc-consensus}, containing all microdescriptors. Although Tor provides no guarantee that the entire network has the same consensus at the same time, the consensus can be verified retrospectively, allowing the consensus to be referenced by its time of publication.
 
