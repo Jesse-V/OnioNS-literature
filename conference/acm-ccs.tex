@@ -632,16 +632,18 @@ Periodically, Tor routers upload signed \emph{descriptors} --- routing informati
 
 If \emph{cd} is $ \mathit{cached \mbox{--} certs} \concat \mathit{cached \mbox{--} microdesc \mbox{--} consensus} $, we initialize $ \mathit{R}(s) $ with the output of the $ H(\mathit{cd}) $. Eve may desire to find a hash $ k $ that generates a desirable Quorum, either one that includes her routers or excludes particular honest routers. As $ H(x) $ is SHA-384, SHA-384's strong resistance to preimage attack forces Eve to spend $ L_{T} * 2^{192} $ operations on average to find $ k $. Eve may also try to manipulate her router's descriptors such that $ H(\mathit{cd}_{q+1}) = k $, but SHA-384's resistance to second-preimage attacks also requires this to require $ L_{T} * 2^{192} $ operations as well. However, if \emph{cd} contains sufficient entropy, Eve is unable to predict the next Quorum or influence it to her favor. Since the dirauths publish a new consensus every hour, we must analyse the entropy rate between consecutive hours.
 
-We constructed a first-order Markov model and estimated a lower bound on the entropy of the \emph{cached-microdesc-consensus} document by analysing the transitions for various fields between consecutive consensuses. We also provide analysis on the dynamics of the Tor network by counting routers that enter or leave the Tor network between consecutive consensuses in Figure \ref{fig:xorRouters}. Here we identity routers by their identity keys; just as Tor does, we consider routers that change their identity keys as two different routers; one leaving and one entering the network. For routers that are present between consecutive pairs, we focus on six critical fields from each router's descriptor inside \emph{cached-microdesc-consensus}: \emph{nickname}, the router's name chosen by its operator or a default name; \emph{publication}, the time when it last published a descriptor; \emph{IP address}, its network address; \emph{ORPort}, the network port for onion routing; \emph{version}, the version of the Tor protocol that this relay is running; and \emph{bandwidth}, as self-reported or as measured by the dirauths. Tor routers change \emph{publication} when either 18 hours has elapsed since the last descriptor publication, its fields have changed, or if its uptime has been reset.
-
-We obtained from \url{collector.torproject.org} 5,067 archived versions of \emph{cached-microdesc-consensus} across a seven-month period between September 1, 2014 00:00 GMT and March 31, 2015 23:00 GMT. We observed 21 instances where the dirauths did not publish an hourly consensus due to a race condition bug in Tor's software. Until Tor patches this bug, in the rare event that the Quorum Formation protocol references a missing $ \mathrm{consensus}_{i} $, $ \mathrm{consensus}_{i + 1} $ may be used instead. Therefore our analysis includes transitions across these missing consensuses. We construct a Markov model for the six aforementioned fields and illustrate the number of observed transitions for each field in Figure \ref{fig:transitionCount}.
+We constructed a first-order Markov model and estimated a lower bound on the entropy of the \emph{cached-microdesc-consensus} document by analysing the transitions for various fields between consecutive consensuses. We also provide analysis on the dynamics of the Tor network by counting routers that enter or leave the Tor network between consecutive consensuses in Figure \ref{fig:xorRouters}. Here we identity routers by their identity keys; just as Tor does, we consider routers that change their identity keys as two different routers; one leaving and one entering the network. Routers entering the network introduce significant amounts of information into the consensus. For example, \emph{cached-microdesc-consensus} contains the 160-bit SHA-1 hash of the router's identity key and the router's 32-bit IP addresses. Thus new routers contribute at least 192 bits of information. Figure \ref{fig:xorRouters} suggests that we may expect approximately 100 to 175 routers to leave or enter the network per hour. Thus we may expect 19,200 to 33,600 bits of entropy per hour at the minimum from this dynamic.
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../analysis/MarkovTransitionDistribution.eps} % todo: replace figure
-	\caption{A histogram of the number of routers entering or leaving the network between consecutive consensus across the seven-month period.}
+	\includegraphics[width=\linewidth]{../analysis/LeaveJoinFrequency.eps}
+	\caption{A histogram of the number of routers entering or leaving the network between consecutive consensuses across the seven-month period.}
 	\label{fig:xorRouters}
 \end{figure}
+
+For routers that are present between consecutive pairs, we focus on six critical fields from each router's descriptor inside \emph{cached-microdesc-consensus}: \emph{nickname}, the router's name chosen by its operator or a default name; \emph{publication}, the time when it last published a descriptor; \emph{IP address}, its network address; \emph{ORPort}, the network port for onion routing; \emph{version}, the version of the Tor protocol that this relay is running; and \emph{bandwidth}, as self-reported or as measured by the dirauths. Tor routers change \emph{publication} when either 18 hours has elapsed since the last descriptor publication, its fields have changed, or if its uptime has been reset.
+
+We obtained from \url{collector.torproject.org} 5,067 archived hourly publications of \emph{cached-microdesc-consensus} across a seven-month period between September 1, 2014 00:00 GMT and March 31, 2015 23:00 GMT. We construct a Markov model for the six aforementioned fields and illustrate the number of observed transitions for each field in Figure \ref{fig:transitionCount}.
 
 \begin{figure}[h]
 	\centering
@@ -650,9 +652,21 @@ We obtained from \url{collector.torproject.org} 5,067 archived versions of \emph
 	\label{fig:transitionCount}
 \end{figure}
 
+Then the entropy rate is given by equation \ref{eq:entropyRate}, where $ P_{i} $ is the probability of state $ i $ and $ P_{i}(j) $ is the probability of state $ j $ given $ i $ (the $ i $-$ j $ transition). We calculate this rate for each of the six fields and illustrate the results in Figure \ref{fig:entropyRates}.
+
 \begin{equation}
-\mathrm{H}(\mathcal{S}) = - \sum_{i} P_{i} \sum_{j} P_{i}(j) \log_{2}P_{i}(j)
+\mathrm{H}(\mathcal{S}) = - L_{T} \sum_{i} P_{i} \sum_{j} P_{i}(j) \log_{2}P_{i}(j)
+\label{eq:entropyRate}
 \end{equation}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\linewidth]{../analysis/EntropyDistribution.eps}
+	\caption{The entropy rate distribution for each of the six fields in \emph{cached-microdesc-consensus}, scaled by the average size of the Tor network.}
+	\label{fig:entropyRates}
+\end{figure}
+
+The average size of the Tor network across the seven-month period was 6,672 routers, thus together these fields contributed on average 8,538.7 bits of entropy per hour across our seven-month view. The two documents contain at least this much entropy; our analysis does not comprehensively cover all the fields in \emph{cached-certs} and \emph{cached-microdesc-consensus}, so other fields also contribute additional information. Based on this analysis, the at least 19,200 entropy bits contributed hourly by routers joining or entering the Tor network, and our previous statistical calculations, we conclude that with $ L_{Q} \geq 127 $, the Quorum Formation protocol is secure under our design assumptions. Our analysis shows that the size and dynamic nature of the Tor network provides the strongest defence against Quorum-level attacks. 
 
 %We note that additional entropy can be added into \emph{cached-microdesc-consensus} by either dirauths or by any router that intentionally changed information in its descriptor on a regular basis. However, based on our analysis we do not consider this necessary.
 
@@ -669,6 +683,8 @@ We obtained from \url{collector.torproject.org} 5,067 archived versions of \emph
 %The $ v $ field describes the version of Tor that the router is running. Although the versions of Tor are publicly known and the official and unofficial Linux repositories are publicly accessible, Eve cannot predict when an administrator will upgrade their router to the next available Tor version. Although new versions of Tor are not frequently released and routers are upgraded infrequently as shown in XYZ the $ v $ field still introduces a degree of medium-term entropy into the document.
 %
 %The $ w $ field contains the router's estimated bandwidth capacity as calculated by bandwidth authorities. Clients use this field during circuit construction; routers with a higher bandwidth capacity relative to the rest of the network have a higher probability of being included in a circuit. Although it is likely that a given router will have similar bandwidth measurements between consecutive consensus documents, Eve cannot predict the exact performance of a router from the perspective of the bandwidth authority. Eve's capacity to predict the performance of all routers falls outside of Tor's and OnioNS' security assumptions; Eve must therefore be a global attacker who would be capable of compromising the Tor network as a whole anyway.
+
+\newpage
 
 \subsection{Outsourcing Record Generation}
 
@@ -731,10 +747,10 @@ We selected the parameters of scrypt such that it consumed 128 MB of RAM during 
     \begin{tabular}{ | c | c | c | c |}
     \hline
     \textbf{Description} & \textbf{A (ms)} & \textbf{B (ms)} & \textbf{Samples} \\ \hline
-    Parsing JSON & 0.052 & 0.024 & 100 \\ \hline
-	Validating scrypt & 896.369 & 589.926 & 25 \\ \hline
-	$ V_{\mathit{RSA}}(m, E) $ & 0.063 & 0.027 & 200 \\ \hline
-	Total Time & 901.135 & 595.643 & 25 \\ \hline
+    Parsing JSON & 5.21 & 2.42 & 100 \\ \hline
+	Validating scrypt & 448.184 & 294.963 & 25 \\ \hline
+	$ V_{\mathit{RSA}}(m, E) $ & 6.35 & 2.74 & 200 \\ \hline
+	Total Time & 459.744 & 300.123 & 25 \\ \hline
     \end{tabular}
 \end{center}
 
@@ -758,13 +774,13 @@ We measure the latency introduced by the Domain Query protocol and compare again
     \end{tabular}
 \end{center}
 
-Tor's latency is primarily dominated by circuit construction and negotiation with the hidden service. This time is highly dependent on the circuit's network distance and the speed of each Tor router. Our measurements include the time to build circuits to our TCP server and the Domain Query protocol. which includes a single call to scrypt and $ V_{\mathit{RSA}}(m, E) $. We avoid additional latency costs by implementing a DNS cache in order to allow subsequent queries to be resolved locally. In future work we will reduce the latency by recycling existing circuits that Tor constructs on startup and by moving the server to the circuit's exit router, eliminating an unnecessary network hop.
+Tor's latency is primarily dominated by circuit construction and negotiation with the hidden service. This time is highly dependent on the circuit's network distance and the speed of each Tor router. Our measurements include the time to build circuits to our TCP server and the Domain Query protocol, which includes a single call to scrypt and $ V_{\mathit{RSA}}(m, E) $. We avoid additional latency costs by implementing a DNS cache in order to allow subsequent queries to be resolved locally. In future work we will reduce the latency by recycling existing circuits that Tor constructs on startup and by moving the server to the circuit's exit router, eliminating an unnecessary network hop.
 
 \section{Future Work}
 
 In future work we will expand our implementation and pursuit integrating it into Tor. We anticipate this to be straightforward as OnioNS requires few changes to Tor, namely a new .tor pseudo-TLD and Ed25519 router keys, and we introduce no changes to Tor's hidden service protocol. Should Tor's developers introduce changes to the hidden service protocol, OnioNS can become forwards-compatible with a few changes. For example, if hidden services migrated from RSA to Ed25519, OnioNS need only change $ S_{\mathit{RSA}}(m, r) $ and $ V_{\mathit{RSA}}(m, E) $ to Ed25519.
 
-We use a Merkle tree for authenticated denial-of-existence. Merkle trees with sorted leaves do not support updates, insertions, or deletions without complete rebuilding. In future work we will pursuit more efficient and dynamic data structures such as the hash tables proposed by Papamanthou et el.\cite{papamanthou2008authenticated}, which are noteworthy for achieving constant query cost and sublinear update cost.
+% We use a Merkle tree for authenticated denial-of-existence. Merkle trees with sorted leaves do not support updates, insertions, or deletions without complete rebuilding. In future work we will pursuit more efficient and dynamic data structures such as the hash tables proposed by Papamanthou et el.\cite{papamanthou2008authenticated}, which are noteworthy for achieving constant query cost and sublinear update cost.
 
 Our implementation currently only supports ASCII characters in domain names. In future work we will explore implementing Punycode to provide support for international character sets. However, unlike the Internet DNS, we will disallow digits zero and one (similar to base32 encoding) in order to reduce the threat of phishing attacks from spoofed domains with indistinguishable characters.
 
