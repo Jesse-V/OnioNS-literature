@@ -181,7 +181,6 @@ In response to this difficulty, in this work we introduce the Onion Name System 
 \category{C.2.0}{Computer Communications Networks}{Security and protection}
 \category{C.2.4}{Computer Communications Networks}{Distributed Systems}[Client/server, Distributed databases]
 \category{E.1}{Data Structures}{Distributed data structures}[Records]
-\category{E.2}{Data Structures}{Data storage representations}[Linked representations]
 
 \keywords{Tor, onion, hidden service, anonymity, privacy, network security, petname}
 
@@ -199,15 +198,15 @@ Tor also supports \emph{hidden services} -- anonymous servers that intentionally
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=\linewidth]{../images/LucidCharts/Hidden_Services.pdf}
-	\caption{A Tor client, Alice, and a hidden service, Bob, communicate by mating two Tor circuits at a \emph{rendezvous point} (RP). Bob maintains circuits (red) to his \emph{introduction points} (IPs) and advertises his IPs and $ \mathrm{PK}_{B} $ to the Tor network. When Alice obtains Bob's address through a backchannel, she selects and builds a circuit (blue) to an RP and other circuit (purple) to one of Bob's IPs. She then tells $ \mathcal{E}_{\mathrm{PK}_{B}}(\mathit{RP}) $ to $ \mathit{IP}_{B}$. Then Bob construct a circuit (green) to the \emph{RP} and Alice and Bob can communicate with bi-directional anonymity.\cite{overlier2006locating}}
+	\includegraphics[width=0.9\linewidth]{../images/LucidCharts/Hidden_Services.pdf}
+	\caption{A Tor client, Alice, and a hidden service, Bob, first mate two Tor circuits (purple and red) at one of Bob's long-term \emph{introduction points} (IP). They then renegotiate and communicate over another pair of Tor circuits (blue and green) at an ephemeral \emph{rendezvous point} (RP). This achieves communication with bi-directional anonymity.\cite{overlier2006locating}}
 \end{figure}
 
 Tor hidden service addresses are distributed and globally collision-free, but there is a strong discontinuity between the address and the service's purpose. For example, a visitor cannot determine that \url{3g2upl4pq6kufc4m.onion} is the DuckDuckGo search engine without visiting the hidden service. Generally speaking, it is currently impossible to categorize or fully label hidden services in advance. Over time, third-party directories -- both on the Clearnet and Darknet -- have appeared in attempt to counteract this issue, but these directories must be constantly maintained and the approach is neither convenient nor does it scale well. Given the approximetly 25,000 hidden services on the Tor network,  (Figure \ref{fig:OnionCount}) this suggests the strong need for a more complete solution to solve the usability issue. 
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=\linewidth]{../images/Tor/onion_2014-10_2015-05.pdf}
+	\includegraphics[width=0.95\linewidth]{../images/Tor/onion_2014-10_2015-05.pdf}
 	\caption{The number of unique .onion addresses seen in the Tor network between December 2014 and May 2015.\cite{kadianakis2015extrapolating}\cite{TorMetrics}}
 	\label{fig:OnionCount}
 \end{figure}
@@ -216,28 +215,43 @@ Tor hidden service addresses are distributed and globally collision-free, but th
 
 In this paper, we present the design, analysis and implementation of the Onion Name System, (OnioNS) a distributed, secure, and usable domain name system for Tor hidden services. Any hidden service can anonymously register an association between a meaningful human-readable domain name and its .onion address and clients can query against OnioNS in a privacy-preserving and verifiable manner. OnioNS is powered by a random subset of nodes within the existing infrastructure of Tor, significantly limiting the additional attack surface. We devise a distributed DNS database using a blockchain-based data structure that are tamper-proof, self-healing, resistant to node compromise and achieves authenticated denial-of-existence. We design OnioNS as a backwards-compatible plugin to the Tor software. Our prototype implementation demonstrates the high usability and performance of OnioNS. To the best of our knowledge, this is the first alternative DNS for Tor hidden services which is distributed, secure, and usable at the same time.
 
-\textbf{Paper Organization}
-
-This paper is divided into four main sections. First, we define our design objectives, the challenges that we seek to overcome, and explain why existing works do not meet our goals. We also define our threat model, which closely matches Tor's model with one additional assumption. Second, we describe the system overview and define several key protocols. Last, we evaluate our implementation prototype and show that it can access a hidden service under a meaningful domain name.
+\textbf{Paper Organization:} This paper is divided into four main sections. In section \ref{sec:problemStatement} we define our design objectives and explain why existing works do not meet our goals. We also define our threat model, which closely matches Tor's model with one additional assumption. In section \ref{sec:Solution}, we describe the system overview and define several key protocols. In section \ref{sec:Analysis} we analyse the security of our assumptions and examine other attack vectors. Last, in section \ref{sec:Analysis} we evaluate our implementation prototype and show that it can access a hidden service under a meaningful domain name.
 
 \section{Problem Statement}
+\label{sec:problemStatement}
 
-We design OnioNS as a plugin to Tor and integrate it into Tor's network. However, Tor's privacy-enhanced environment introduces a distinct set of security requirements that must be met by any additional infrastructure. We must preserve user privacy and avoid compromising other areas of the Tor network. Additionally, we seek to achieve all three properties of Zooko's Triangle (section \ref{sec:ZookosTriangle}) and providing a mechanism for authenticated denial-of-existence (section \ref{sec:authDenialIntro}).
+To integrate with Tor, we must provide a secure system, preserve user privacy, and avoid compromising other areas of the Tor network. Additionally, we seek to achieve all three properties of Zooko's Triangle (section \ref{sec:ZookosTriangle}) and to providing a mechanism for authenticated denial-of-existence (section \ref{sec:authDenialIntro}).
 
 \subsection{Design Objectives}
 
 Here we enumerate a list of requirements that must be met by any DNS applicable to Tor hidden services. In Section \ref{sec:RelatedWorks} we analyse existing works and show how these systems do not meet these requirements and in Section \ref{sec:Solution} we demonstrate how we overcome them with OnioNS.
 
-\begin{enumerate}[noitemsep]
-	\item \textbf{The system must support anonymous registrations.} The system should not require any personally-identifiable or location information from the registrant. Tor hidden services publicize no more information than a public key and Introduction Points.
-	\item \textbf{The system must support privacy-enhanced queries.} Clients should be anonymous, indistinguishable, and unable to be tracked by name servers.
-	\item \textbf{Registrations must be authenticable.} Clients must be able to verify that the domain-address pairing that they receive from name servers is authentic relative to the authenticity of the hidden service.
-	\item \textbf{Domain names must be globally unique.} Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack.
-	\item \textbf{The system must be distributed.} Systems with root authorities have distinct disadvantages compared to distributed networks: specifically, central authorities have absolute control over the system and root security breaches could easily compromise the integrity of the entire system. Root authorities may also be able to compromise the privacy of both users and hidden services or may not allow anonymous registrations.
-	\item \textbf{The system must be relatively easy to use.} It should be assumed that users are not security experts or have technical backgrounds. The system must resolve protocols with minimal input from the user and hide non-essential details.
-	\item \textbf{The system must be backwards compatible.} Naming systems for Tor must preserve the original Tor hidden service protocol, making the DNS optional but not required.
-	\item \textbf{The system should be lightweight.} In most realistic environments clients have neither the bandwidth nor storage capacity to hold the system's entire database, nor the capability of meeting significant computation or memory burdens.
-\end{enumerate}
+1. \textbf{The system must support anonymous registrations.} The system should not require any personally-identifiable or location information from the registrant. Tor hidden services publicize no more information than a public key and Introduction Points.
+
+2. \textbf{The system must support privacy-enhanced queries.} Clients should be anonymous, indistinguishable, and unable to be tracked by name servers.
+
+3. \textbf{Registrations must be authenticable.} Clients must be able to verify that the domain-address pairing that they receive from name servers is authentic relative to the authenticity of the hidden service.
+
+4. \textbf{Domain names must be globally unique.} Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack.
+
+5. \textbf{The system must be distributed.} Systems with root authorities have distinct disadvantages compared to distributed networks: specifically, central authorities have absolute control over the system and root security breaches could easily compromise the integrity of the entire system. Root authorities may also be able to compromise the privacy of both users and hidden services or may not allow anonymous registrations.
+
+6. \textbf{The system must be relatively easy to use.} It should be assumed that users are not security experts or have technical backgrounds. The system must resolve protocols with minimal input from the user and hide non-essential details.
+
+7. \textbf{The system must be backwards compatible.} Naming systems for Tor must preserve the original Tor hidden service protocol, making the DNS optional but not required.
+
+8. \textbf{The system should be lightweight.} In most realistic environments clients have neither the bandwidth nor storage capacity to hold the system's entire database, nor the capability of meeting significant computation burdens.
+
+%\begin{enumerate}[noitemsep]
+%	\item \textbf{The system must support anonymous registrations.} The system should not require any personally-identifiable or location information from the registrant. Tor hidden services publicize no more information than a public key and Introduction Points.
+%	\item \textbf{The system must support privacy-enhanced queries.} Clients should be anonymous, indistinguishable, and unable to be tracked by name servers.
+%	\item \textbf{Registrations must be authenticable.} Clients must be able to verify that the domain-address pairing that they receive from name servers is authentic relative to the authenticity of the hidden service.
+%	\item \textbf{Domain names must be globally unique.} Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack.
+%	\item \textbf{The system must be distributed.} Systems with root authorities have distinct disadvantages compared to distributed networks: specifically, central authorities have absolute control over the system and root security breaches could easily compromise the integrity of the entire system. Root authorities may also be able to compromise the privacy of both users and hidden services or may not allow anonymous registrations.
+%	\item \textbf{The system must be relatively easy to use.} It should be assumed that users are not security experts or have technical backgrounds. The system must resolve protocols with minimal input from the user and hide non-essential details.
+%	\item \textbf{The system must be backwards compatible.} Naming systems for Tor must preserve the original Tor hidden service protocol, making the DNS optional but not required.
+%	\item \textbf{The system should be lightweight.} In most realistic environments clients have neither the bandwidth nor storage capacity to hold the system's entire database, nor the capability of meeting significant computation or memory burdens.
+%\end{enumerate}
 
 \subsection{Challenges}
 
@@ -302,7 +316,7 @@ If $ C $ is a Tor network status consensus, (section \ref{sec:SolutionOverview})
 
 \begin{figure}[htbp]
 	\centering
-	\begin{tikzpicture}[->, node distance=2.2cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries}]
+	\begin{tikzpicture}[scale=0.76, ->, node distance=2.2cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries, transform shape}]
 
 			\node[main node] (1) {$ A_{G} $};
 			\node[main node] (2) [right of=1] {};
@@ -350,7 +364,7 @@ If $ C $ is a Tor network status consensus, (section \ref{sec:SolutionOverview})
 We propose the Onion Name System (OnioNS) as an abstraction layer to hidden service addresses and introduce ``.tor'' as a new pseudo-TLD for this purpose. First, Bob generates and self-signs a \emph{Record}, containing an association between a meaningful second-level domain name and his .onion address. Without loss of generality, let this be ``example.tor $ \rightarrow $ example0uyw6wgve.onion''. We introduce a proof-of-work scheme that requires Bob to expend computational and memory resources to claim ``example.tor'', a more privacy-enhanced alternative to financial compensation to a central authority. Proof-of-work systems are noteworthy for their asymmetry: they require the issuer to spend effort to find an answer to a moderately hard computational problem, but once solved can be easily verified correct by any recipient. The requirement of proof-of-work fulfils three main purposes:
 
 \begin{enumerate}[noitemsep,nolistsep]
-	\item Significantly reduces the threat of denial-of-service flood attack.
+	\item Significantly reduces the threat of DoS flood attack.
 	\item Introduces a barrier-of-entry that encourages the utilization of domain names and the availability of the underlying hidden services.
 	\item Increases the difficulty of domain squatting.
 \end{enumerate}
@@ -375,37 +389,55 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 
 \subsection{Definitions}
 
-\begin{description}
-	\item[network status consensus] \hfill \\
-		In Tor's existing infrastructure, a small set of semi-trusted \textit{directory authority} servers digitally sign and distribute the network information, status, and cryptographic keys of all Tor routers to the network every hour. This allows a dynamic network topology and introduces a PKI. The consensus is primarily useful for circuit construction via the TAP\cite{goldberg2006security} or NTor\cite{goldberg2013anonymity}, the latter of which utilizes Curve25519\cite{bernstein2006curve25519} keys for fast ECDHE. In this work, we utilize the consensus as an information distribution system and as a global source of agreed-upon entropy.
-		
-	\item[domain name] \hfill \\
-		The syntax of OnioNS domain names mirrors the Internet DNS; we use a sequence of name-delimiter pairs with a .tor pseudo-TLD. The Internet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim second-level names and then control all names of greater depth under that second-level name.
+\textbf{status consensus} In Tor's existing infrastructure, a small set of semi-trusted \textit{directory authority} servers digitally sign and distribute the network information, status, and cryptographic keys of all Tor routers to the network every hour. This allows a dynamic network topology and introduces a PKI. The consensus is primarily useful for circuit construction via the TAP\cite{goldberg2006security} or NTor\cite{goldberg2013anonymity}, the latter of which utilizes Curve25519\cite{bernstein2006curve25519} keys for fast ECDHE. In this work, we utilize the consensus as an information distribution system and as a global source of agreed-upon entropy.
 
-	\item[Record] \hfill \\
-		A \emph{Record} contains \emph{nameList}, a one-to-one map of .tor pseudo-TLD domain names and .tor or .onion pseudo-TLD destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{nonce}, four bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{recordSig}, the output of $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key; and \emph{pubHSKey}, Bob's public hidden service RSA key.
+\textbf{domain name} The syntax of OnioNS domain names mirrors the Internet DNS; we use a sequence of name-delimiter pairs with a .tor pseudo-TLD. The Internet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim second-level names and then control all names of greater depth under that second-level name.
 
-	\item[Snapshot] \hfill \\
-		A \emph{Snapshot} contains \emph{originTime}, the Unix time when the snapshot was first created; \emph{recentRecords}, an array list of Records in reverse chronological order; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Snapshot; and  \emph{snapshotSig}, the output of $ S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}], e) $ where $ e $ is the router's private Ed25519 key.
+\textbf{Record} A \emph{Record} contains \emph{nameList}, a one-to-one map of .tor pseudo-TLD domain names and .tor or .onion pseudo-TLD destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{nonce}, four bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{recordSig}, the output of $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key; and \emph{pubHSKey}, Bob's public hidden service RSA key.
 
-	\item[Page] \hfill \\
-		A \emph{Page} contains \emph{prevHash}, the output of $ H(\emph{prevHash} \concat \emph{recordList} \concat \emph{consensusHash}) $ of a previous Page; \emph{recordList}, a deterministically-sorted array list of Records; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Page; and \emph{pageSig}, the output of $ S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusHash})], e) $ where $ e $ is the router's private Ed25519 key.
-		
-		\emph{prevHash} links Pages over time, forming an append-only public ledger known as an \emph{Pagechain}. In contrast to existing cryptocurrencies such as Namecoin, we bound the Pagechain to a finite length, forcing hidden service operators to renew their domain periodically to avoid it being dropped from the network. In correspondence with our last security assumption, \emph{prevHash} must reference a Page that is both valid and maintained by the largest number of Quorum members, as illustrated in Figure \ref{fig:sideChains}. As \emph{prevHash} does not include the router-specific \emph{fingerprint} and \emph{pageSig} fields, \emph{prevHash} is equal across all Quorum members maintaining that Page.
+\textbf{Snapshot} A \emph{Snapshot} contains \emph{originTime}, the Unix time when the snapshot was first created; \emph{recentRecords}, an array list of Records in reverse chronological order; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Snapshot; and  \emph{snapshotSig}, the output of $ S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}], e) $ where $ e $ is the router's private Ed25519 key.
 
-	\item[Mirror] \hfill \\
-		A \emph{Mirror} is any name server that holds a complete copy of the Pagechain and maintains synchronization against the Quorum. Mirrors respond to queries but must provide signatures from Quorum nodes to prevent Mirrors from falsifying responses. We note that Mirrors may be outside the Tor network, but in this work we do not specify any protocols for this scenario.
+\textbf{Page} A \emph{Page} contains \emph{prevHash}, the output of $ H(\emph{prevHash} \concat \emph{recordList} \concat \emph{consensusHash}) $ of a previous Page; \emph{recordList}, a deterministically-sorted array list of Records; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Page; and \emph{pageSig}, the output of \\ $ S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusHash})], e) $ where $ e $ is the router's private Ed25519 key.
 
-	\item[Quorum Candidate] \hfill \\
-		A \emph{Quorum Candidates} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their Tor duties.
+\emph{prevHash} links Pages over time, forming an append-only public ledger known as an \emph{Pagechain}. In contrast to existing cryptocurrencies such as Namecoin, we bound the Pagechain to a finite length, forcing hidden service operators to renew their domain periodically to avoid it being dropped from the network. In correspondence with our last security assumption, \emph{prevHash} must reference a Page that is both valid and maintained by the largest number of Quorum members, as illustrated in Figure \ref{fig:sideChains}. As \emph{prevHash} does not include the router-specific \emph{fingerprint} and \emph{pageSig} fields, \emph{prevHash} is equal across all Quorum members maintaining that Page.
 
-	\item[Quorum] \hfill \\
-		A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively maintains its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates.
-\end{description}
+\textbf{Mirror} A \emph{Mirror} is any name server that holds a complete copy of the Pagechain and maintains synchronization against the Quorum. Mirrors respond to queries but must provide signatures from Quorum nodes to prevent Mirrors from falsifying responses. We note that Mirrors may be outside the Tor network, but in this work we do not specify any protocols for this scenario.
+
+\textbf{Quorum Candidate} A \emph{Quorum Candidates} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their Tor duties.
+
+\textbf{Quorum} A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively maintains its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates.
+
+%\begin{description}[noitemsep,nolistsep]
+%	\item[network status consensus] \hfill \\
+%		In Tor's existing infrastructure, a small set of semi-trusted \textit{directory authority} servers digitally sign and distribute the network information, status, and cryptographic keys of all Tor routers to the network every hour. This allows a dynamic network topology and introduces a PKI. The consensus is primarily useful for circuit construction via the TAP\cite{goldberg2006security} or NTor\cite{goldberg2013anonymity}, the latter of which utilizes Curve25519\cite{bernstein2006curve25519} keys for fast ECDHE. In this work, we utilize the consensus as an information distribution system and as a global source of agreed-upon entropy.
+%		
+%	\item[domain name] \hfill \\
+%		The syntax of OnioNS domain names mirrors the Internet DNS; we use a sequence of name-delimiter pairs with a .tor pseudo-TLD. The Internet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim second-level names and then control all names of greater depth under that second-level name.
+%
+%	\item[Record] \hfill \\
+%		A \emph{Record} contains \emph{nameList}, a one-to-one map of .tor pseudo-TLD domain names and .tor or .onion pseudo-TLD destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{nonce}, four bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{recordSig}, the output of $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key; and \emph{pubHSKey}, Bob's public hidden service RSA key.
+%
+%	\item[Snapshot] \hfill \\
+%		A \emph{Snapshot} contains \emph{originTime}, the Unix time when the snapshot was first created; \emph{recentRecords}, an array list of Records in reverse chronological order; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Snapshot; and  \emph{snapshotSig}, the output of $ S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}], e) $ where $ e $ is the router's private Ed25519 key.
+%
+%	\item[Page] \hfill \\
+%		A \emph{Page} contains \emph{prevHash}, the output of $ H(\emph{prevHash} \concat \emph{recordList} \concat \emph{consensusHash}) $ of a previous Page; \emph{recordList}, a deterministically-sorted array list of Records; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Page; and \emph{pageSig}, the output of $ S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusHash})], e) $ where $ e $ is the router's private Ed25519 key.
+%		
+%		\emph{prevHash} links Pages over time, forming an append-only public ledger known as an \emph{Pagechain}. In contrast to existing cryptocurrencies such as Namecoin, we bound the Pagechain to a finite length, forcing hidden service operators to renew their domain periodically to avoid it being dropped from the network. In correspondence with our last security assumption, \emph{prevHash} must reference a Page that is both valid and maintained by the largest number of Quorum members, as illustrated in Figure \ref{fig:sideChains}. As \emph{prevHash} does not include the router-specific \emph{fingerprint} and \emph{pageSig} fields, \emph{prevHash} is equal across all Quorum members maintaining that Page.
+%
+%	\item[Mirror] \hfill \\
+%		A \emph{Mirror} is any name server that holds a complete copy of the Pagechain and maintains synchronization against the Quorum. Mirrors respond to queries but must provide signatures from Quorum nodes to prevent Mirrors from falsifying responses. We note that Mirrors may be outside the Tor network, but in this work we do not specify any protocols for this scenario.
+%
+%	\item[Quorum Candidate] \hfill \\
+%		A \emph{Quorum Candidates} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their Tor duties.
+%
+%	\item[Quorum] \hfill \\
+%		A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively maintains its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates.
+%\end{description}
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.87\linewidth]{../images/LucidCharts/Page-chain2.pdf}
+	\includegraphics[width=0.7\linewidth]{../images/LucidCharts/Page-chain2.pdf}
 	\caption{An example Pagechain across four Quorums with three side-chains. The valid master Pagechain from honest Quorum nodes (green) resists corruption from maliciously-colluding nodes (red) and malfunctioning nodes (orange).}
 	\label{fig:sideChains}
 \end{figure}
@@ -413,7 +445,7 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 %\setlength{\belowcaptionskip}{-10pt}
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=\linewidth]{../images/LucidCharts/Data-Structure-Overview.pdf}
+	\includegraphics[width=0.9\linewidth]{../images/LucidCharts/Data-Structure-Overview.pdf}
 	\caption{The master Pagechain is one-dimensional but spans across the network as each Mirror holds a copy. Each Page is maintained by a respective Quorum.}
 \end{figure}
 
@@ -598,7 +630,7 @@ Then the probability that $ L_{E} > \frac{L_{Q}}{2} $, a complete compromise of 
 	\label{eq:compromiseProb}
 \end{align}
 
-% todo: 512 isn't in legend, make font bigger
+% todo: 512 isn't in legend
 \begin{figure*}
 	\centering
 	\includegraphics[width=0.75\linewidth]{../analysis/MaliciousQuorumProbability_tight.eps}
@@ -719,6 +751,7 @@ However, this ensures that ensures that Craig must always compute more scrypt it
 Accidental leakage of .tor lookups over the Internet DNS via human mistakes or misconfigured software may compromise user privacy. This vulnerability is not limited to OnioNS and applies to pseudo-TLD; Mohaisen and Thomas observed .onion lookups on root DNS servers at a frequency that corresponded to external global events and highlighting the human factor in those leakages.\cite{thomasmeasuring} Closing this leakage is difficult; arguably the simplest approach is to introduce whitelists or blacklists into common web browsers to prevent known pseudo-TLDs from being queried over the Internet DNS. Such changes are outside the scope of this work, but we highlight the potential for this attack.
 
 \section{Evaluation}
+\label{sec:eval}
 
 \subsection{Implementation}
 
@@ -737,7 +770,7 @@ We implemented the essential functionality for Bob, Charlie, and Alice. We used 
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../images/example.png}
+	\includegraphics[width=0.9\linewidth]{../images/example.png}
 	\caption{We load the OnioNS' hidden service, onions55e7yam27n.onion, transparently under the ``example.tor'' domain on Tor Browser 4.5.1, a fork of Firefox ESR 31.7.0.}
 	\label{fig:prototypeExample}
 \end{figure}
@@ -788,11 +821,12 @@ Tor's latency is primarily dominated by circuit construction and negotiation wit
 
 We have presented the Onion Name System (OnioNS), a distributed, secure, and usable alternative DNS that maps globally-unique and meaningful .tor domains to .onion hidden service addresses, and achieve all three properties of Zooko's Triangle. We enable any hidden service operator to anonymously claim a human-readable name for their server and clients to query the system in privacy-enhanced manner. We introduce a distributed self-healing blockchain-based database and mechanisms that let clients authenticate and verify denial-of-existence claims. Additionally, we utilize the existing and semi-trusted infrastructure of Tor, which significantly narrows our threat model to already well-understood attack surfaces and allows our system to be integrated into Tor with minimal effort. Our reference implementation demonstrates high usability and shows that OnioNS successfully addresses the major usability issue that has been with Tor hidden services since their introduction in 2002.
 
-In future work we will expand our implementation and pursuit integrating it into Tor. We anticipate this to be straightforward as OnioNS requires few changes to Tor, namely a new .tor pseudo-TLD and Ed25519 router keys, and we introduce no changes to Tor's hidden service protocol. Should Tor's developers introduce changes to the hidden service protocol, OnioNS can become forwards-compatible with a few changes. For example, if hidden services migrated from RSA to Ed25519, OnioNS need only change $ S_{\mathit{RSA}}(m, r) $ and $ V_{\mathit{RSA}}(m, E) $ to Ed25519.
+In future work we will expand our implementation and pursuit integrating it into Tor. OnioNS requires a few changes to Tor, namely a new .tor pseudo-TLD and Ed25519 router keys, but we introduce no changes to Tor's hidden service protocol. Should Tor's developers introduce changes to the hidden service protocol, OnioNS can become forwards-compatible with a few changes. Additionally, our implementation currently only supports ASCII characters in domain names, so in future work we will explore implementing Punycode to provide support for international character sets. Unlike the Internet DNS, we will disallow digits zero and one (similar to base32 encoding) in order to reduce the threat of phishing attacks from spoofed domains with indistinguishable characters.
+
 
 % We use a Merkle tree for authenticated denial-of-existence. Merkle trees with sorted leaves do not support updates, insertions, or deletions without complete rebuilding. In future work we will pursuit more efficient and dynamic data structures such as the hash tables proposed by Papamanthou et el.\cite{papamanthou2008authenticated}, which are noteworthy for achieving constant query cost and sublinear update cost.
 
-Our implementation currently only supports ASCII characters in domain names. In future work we will explore implementing Punycode to provide support for international character sets. However, unlike the Internet DNS, we will disallow digits zero and one (similar to base32 encoding) in order to reduce the threat of phishing attacks from spoofed domains with indistinguishable characters.
+
 
 
 
