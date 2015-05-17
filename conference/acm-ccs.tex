@@ -434,7 +434,7 @@ Tor's infrastructure already provides a mechanism for demonstrating the latter r
 Quorum Candidate Tor routers can determine in  $ \mathcal{O}(L_{T}) $ time if they have been chosen as part of the current Quorum. By the same procedure, clients can derive the Quorum in the past or present. Let Charlie be a Quorum Candidate.
 
 \begin{enumerate}[noitemsep,nolistsep]
-	\item Charlie obtains the consensus documents, $ cd $, published on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 GMT.
+	\item Charlie obtains the consensus documents, $ cd $, published on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 UTC.
 	\item Charlie scans $ cd $ and constructs a list \emph{qc} of Quorum Candidates that have the Fast, Stable, Running, and Valid flags and that are in the largest set of Tor routers that publish an identical time-based hash. 
 	\item Alice constructs $ f = \mathit{R}(H(\mathit{cd})) $.
 	\item Alice uses \emph{f} to randomly scramble \emph{qc}.
@@ -448,7 +448,7 @@ Bob must first generate a valid Record to claim a second-level domain name for h
 \begin{enumerate}[noitemsep,nolistsep]
 	\item Bob constructs the \emph{nameList} domain-destination associations. He must include at least one second-level domain name. Each domain name can be up to 128 characters and contain any number of names.
 	\item Bob optionally provides his PGP key fingerprint in \emph{contact}.
-	\item Bob sets \emph{consensusHash} to the output of $ H(x) $, where $ x $ is the consensus documents published at 00:00 GMT on day $ \floor[\big]{\frac{q}{\Delta q}} $.
+	\item Bob sets \emph{consensusHash} to the output of $ H(x) $, where $ x $ is the consensus documents published at 00:00 UTC on day $ \floor[\big]{\frac{q}{\Delta q}} $.
 	\item Bob initially defines \emph{nonce} as four zeros.
 	\item Let $ \mathit{central} $ be $\mathit{type} \concat \mathit{nameList} \concat \mathit{contact} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} $.
 	\item Bob sets \emph{pow} as $ \mathrm{PoW}(\mathit{central}) $.
@@ -479,7 +479,7 @@ New Quorum nodes must select a Page from the previous Quorum to reference when g
 
 \begin{enumerate}[noitemsep,nolistsep]
 	\item Charlie obtains the set of Pages maintained by $ \mathit{Quorum}_{q} $.
-	\item Charlie obtains the consensus $ \mathit{cd} $ issued on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 GMT and authenticates it.
+	\item Charlie obtains the consensus $ \mathit{cd} $ issued on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 UTC and authenticates it.
 	\item Charlie uses $ \mathit{cd} $ to derive the Quorum.
 	\item For each Page,
 		\begin{enumerate}[noitemsep,nolistsep]
@@ -619,7 +619,7 @@ In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not
 
 Figure \ref{fig:cumulativeProbability} suggests that although lower values of $ \Delta q $ negatively impact security, the choice of $ L_{Q} $ is more significant. It also supports our earlier conclusion that the choices of $ L_{Q} = 31 $ and $ L_{Q} = 63 $ are suboptimal. Based on Figure \ref{fig:cumulativeProbability} we further reiterate our recommendation of $ L_{Q} \geq 127 $ and suggest $ \Delta q \geq 1 $. Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} $ and $ \Delta q $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to specific Quorum-level attacks.
 
-\subsubsection{Network Consensus}
+\subsubsection{Entropy Estimation}
 
 % todo: \emph vs \textit
 
@@ -643,7 +643,7 @@ We constructed a first-order Markov model and estimated a lower bound on the ent
 
 For routers that are present between consecutive pairs, we focus on six critical fields from each router's descriptor inside \emph{cached-microdesc-consensus}: \emph{nickname}, the router's name chosen by its operator or a default name; \emph{publication}, the time when it last published a descriptor; \emph{IP address}, its network address; \emph{ORPort}, the network port for onion routing; \emph{version}, the version of the Tor protocol that this relay is running; and \emph{bandwidth}, as self-reported or as measured by the dirauths. Tor routers change \emph{publication} when either 18 hours has elapsed since the last descriptor publication, its fields have changed, or if its uptime has been reset.
 
-We obtained from \url{collector.torproject.org} 5,067 archived hourly publications of \emph{cached-microdesc-consensus} across a seven-month period between September 1, 2014 00:00 GMT and March 31, 2015 23:00 GMT. We construct a Markov model for the six aforementioned fields and illustrate the number of observed transitions for each field in Figure \ref{fig:transitionCount}.
+We obtained from \url{collector.torproject.org} 5,067 archived hourly publications of \emph{cached-microdesc-consensus} across a seven-month period between September 1, 2014 00:00 UTC and March 31, 2015 23:00 UTC. We construct a Markov model for the six aforementioned fields and illustrate the number of observed transitions for each field in Figure \ref{fig:transitionCount}.
 
 \begin{figure}[h]
 	\centering
