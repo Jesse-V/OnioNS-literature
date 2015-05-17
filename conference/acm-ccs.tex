@@ -242,17 +242,6 @@ Here we enumerate a list of requirements that must be met by any DNS applicable 
 
 8. \textbf{The system should be lightweight.} In most realistic environments clients have neither the bandwidth nor storage capacity to hold the system's entire database, nor the capability of meeting significant computation burdens.
 
-%\begin{enumerate}[noitemsep]
-%	\item \textbf{The system must support anonymous registrations.} The system should not require any personally-identifiable or location information from the registrant. Tor hidden services publicize no more information than a public key and Introduction Points.
-%	\item \textbf{The system must support privacy-enhanced queries.} Clients should be anonymous, indistinguishable, and unable to be tracked by name servers.
-%	\item \textbf{Registrations must be authenticable.} Clients must be able to verify that the domain-address pairing that they receive from name servers is authentic relative to the authenticity of the hidden service.
-%	\item \textbf{Domain names must be globally unique.} Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack.
-%	\item \textbf{The system must be distributed.} Systems with root authorities have distinct disadvantages compared to distributed networks: specifically, central authorities have absolute control over the system and root security breaches could easily compromise the integrity of the entire system. Root authorities may also be able to compromise the privacy of both users and hidden services or may not allow anonymous registrations.
-%	\item \textbf{The system must be relatively easy to use.} It should be assumed that users are not security experts or have technical backgrounds. The system must resolve protocols with minimal input from the user and hide non-essential details.
-%	\item \textbf{The system must be backwards compatible.} Naming systems for Tor must preserve the original Tor hidden service protocol, making the DNS optional but not required.
-%	\item \textbf{The system should be lightweight.} In most realistic environments clients have neither the bandwidth nor storage capacity to hold the system's entire database, nor the capability of meeting significant computation or memory burdens.
-%\end{enumerate}
-
 \subsection{Challenges}
 
 \subsubsection{Zooko's Triangle}
@@ -406,34 +395,6 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 \textbf{Quorum Candidate} A \emph{Quorum Candidates} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their Tor duties.
 
 \textbf{Quorum} A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively maintains its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates.
-
-%\begin{description}[noitemsep,nolistsep]
-%	\item[network status consensus] \hfill \\
-%		In Tor's existing infrastructure, a small set of semi-trusted \textit{directory authority} servers digitally sign and distribute the network information, status, and cryptographic keys of all Tor routers to the network every hour. This allows a dynamic network topology and introduces a PKI. The consensus is primarily useful for circuit construction via the TAP\cite{goldberg2006security} or NTor\cite{goldberg2013anonymity}, the latter of which utilizes Curve25519\cite{bernstein2006curve25519} keys for fast ECDHE. In this work, we utilize the consensus as an information distribution system and as a global source of agreed-upon entropy.
-%		
-%	\item[domain name] \hfill \\
-%		The syntax of OnioNS domain names mirrors the Internet DNS; we use a sequence of name-delimiter pairs with a .tor pseudo-TLD. The Internet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim second-level names and then control all names of greater depth under that second-level name.
-%
-%	\item[Record] \hfill \\
-%		A \emph{Record} contains \emph{nameList}, a one-to-one map of .tor pseudo-TLD domain names and .tor or .onion pseudo-TLD destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{nonce}, four bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{recordSig}, the output of $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key; and \emph{pubHSKey}, Bob's public hidden service RSA key.
-%
-%	\item[Snapshot] \hfill \\
-%		A \emph{Snapshot} contains \emph{originTime}, the Unix time when the snapshot was first created; \emph{recentRecords}, an array list of Records in reverse chronological order; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Snapshot; and  \emph{snapshotSig}, the output of $ S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}], e) $ where $ e $ is the router's private Ed25519 key.
-%
-%	\item[Page] \hfill \\
-%		A \emph{Page} contains \emph{prevHash}, the output of $ H(\emph{prevHash} \concat \emph{recordList} \concat \emph{consensusHash}) $ of a previous Page; \emph{recordList}, a deterministically-sorted array list of Records; \emph{consensusHash}, the hash of the consensus document that generated the current Quorum; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Page; and \emph{pageSig}, the output of $ S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusHash})], e) $ where $ e $ is the router's private Ed25519 key.
-%		
-%		\emph{prevHash} links Pages over time, forming an append-only public ledger known as an \emph{Pagechain}. In contrast to existing cryptocurrencies such as Namecoin, we bound the Pagechain to a finite length, forcing hidden service operators to renew their domain periodically to avoid it being dropped from the network. In correspondence with our last security assumption, \emph{prevHash} must reference a Page that is both valid and maintained by the largest number of Quorum members, as illustrated in Figure \ref{fig:sideChains}. As \emph{prevHash} does not include the router-specific \emph{fingerprint} and \emph{pageSig} fields, \emph{prevHash} is equal across all Quorum members maintaining that Page.
-%
-%	\item[Mirror] \hfill \\
-%		A \emph{Mirror} is any name server that holds a complete copy of the Pagechain and maintains synchronization against the Quorum. Mirrors respond to queries but must provide signatures from Quorum nodes to prevent Mirrors from falsifying responses. We note that Mirrors may be outside the Tor network, but in this work we do not specify any protocols for this scenario.
-%
-%	\item[Quorum Candidate] \hfill \\
-%		A \emph{Quorum Candidates} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their Tor duties.
-%
-%	\item[Quorum] \hfill \\
-%		A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively maintains its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates.
-%\end{description}
 
 \begin{figure}[h]
 	\centering
@@ -593,16 +554,6 @@ The Quorum must regenerate $ T $ every $ \Delta T $ hours to include new Records
 
 We note that a sorted Merkle tree does not support efficient dynamic record updates. The tree needs to be rebuilt to handle updates. To support efficient record update in $ \mathcal{O}(\mathrm{log}(n)) $ time, we can adopt the skip list data structure proposed in \cite{goodrich2001implementation}. Proof of existence and non-existence still works in a similar way.
 
-%	\item Construct a $ n $-sized sorted array list \emph{arr} of $ m $-sized elements. Let each element $ e_{1 < i < n} $ be the last $ m $ bits from $ H(d_{i}) $, where $ d_{i} $ is $ i $-th second-level domain in the Pagechain. Here $ m $ is the primary scaling factor for both space and security; a small value for $ m $ means $ T $ consumes less space, but a large $ m $ reduces the probability of hash collision.
-%	\item Construct $ T $ from \emph{arr}. Let $ T $'s leaves be the $ m $-sized elements.
-%	\item 
-
-% A simple solution to authenticated denial-of-existence is to enumerate all existing domain names, have a trusted party sign the list, and pass the list to clients to prove non-existence. However, as there are $ \approx $ 25,000 hidden services currently advertising on the Tor network and each domain may be up to 128 characters long, this least would be $ \approx $ 3.2 MB in size, which would take approximately twenty seconds to send over a Tor circuit.\cite{TorMetrics} Instead, 
-
-% Let $ n $ be the number of second-level domain names in the Pagechain.
-
-%augmenting AVL with Merkle
-
 \section{Security Analysis}
 \label{sec:Analysis}
 
@@ -701,23 +652,7 @@ Then the entropy rate is given by equation \ref{eq:entropyRate}, where $ P_{i} $
 	\label{fig:entropyRates}
 \end{figure}
 
-The average size of the Tor network across the seven-month period was 6,672 routers, thus together these fields contributed on average approximately 8,896.7 bits of entropy per hour across our seven-month view. The two documents contain at least this much entropy; our analysis does not comprehensively cover all the fields in \emph{cached-certs} and \emph{cached-microdesc-consensus}, so other fields may also contribute additional information. Based on this analysis, the approximately 16,000 to 28,000 entropy bits contributed hourly by routers joining or entering the Tor network, and our previous statistical calculations, we conclude that with $ L_{Q} \geq 127 $, the Quorum Formation protocol is secure under our design assumptions. Our analysis shows that the size and dynamic nature of the Tor network provides the strongest defence against Quorum-level attacks. 
-
-%We note that additional entropy can be added into \emph{cached-microdesc-consensus} by either dirauths or by any router that intentionally changed information in its descriptor on a regular basis. However, based on our analysis we do not consider this necessary.
-
-% Periodically, Tor routers upload digitally-signed \textit{descriptors} -- containing routing information, cryptographic keys, bandwidth history, and other information -- to these authorities. Once an hour, the directory authorities aggregate, sign, and republish the descriptors as a \textit{network status consensus}. Clients download essential portions of these descriptors from the directory authorities or from known routers redistributing the consensus, forming \textit{microdescriptors}. These are aggregated into three files, \textit{cached-certs}, containing each directory authority's long-term identity RSA key, medium-term signing key chained to the identity key, and validity timeline for these keys; \textit{cached-microdescs}, containing public RSA and Curve25519\cite{bernstein2006curve25519} keys (used for TAP\cite{goldberg2006security} and NTor\cite{goldberg2013anonymity} circuit construction protocols, respectively); and \textit{cached-microdesc-consensus}, containing all microdescriptors. Although Tor provides no guarantee that the entire network has the same consensus at the same time, the consensus can be verified retrospectively, allowing the consensus to be referenced by its time of publication.
-
-%The \emph{cached-certs} document contains long-term directory identity keys and medium-term signing keys. While Eve cannot predict the public half of new signing keys in advance, the keys rotate every 3-12 months\cite{TorDirSpec} so \emph{cached-certs} is not a timely source of entropy. Nevertheless, if an attacker can predict the network status described in \emph{cached-microdesc-consensus}, the rotation timeline of the signing keys in \emph{cached-certs} places an absolute upper-bound on the duration of Quorum predictability.
-%
-%The \emph{cached-microdesc-consensus} document describes the network status and is our main source of entropy. In the header, the  \emph{vote-digest} header is the hash of a directory authority's status vote. Each directory operates independently and there are nine directory authorities, so we consider this value unpredictable. Router descriptors follow the header in the body of the document. 
-%
-%The $ r $ field in a router's descriptor contains routing information and time of last restart. Tor routers have no guarantee of availability and routers may restart for a variety of reasons. As of April 2015 Tor's network consists of approximately 7,000 routers \cite{TorMetrics} and assuming that a given router restarts every 60 days, statistically the number of unpredictable $ \emph{r} $ fields each day is given by $ \frac{7000}{60} \approx 116.66 $. Tor displays the restart time down to the second, so each restart adds approximately six bytes of entropy, for an estimated total of $ \frac{7000 * 6}{60} = 700 $ bytes of short-term entropy from the $ r $ field.
-
-%The $ s $ field contains a list of flags given to the router by the directory authorities according to qualification rules. $ s $ is thus predictable if an attacker can monitor the descriptor
-
-%The $ v $ field describes the version of Tor that the router is running. Although the versions of Tor are publicly known and the official and unofficial Linux repositories are publicly accessible, Eve cannot predict when an administrator will upgrade their router to the next available Tor version. Although new versions of Tor are not frequently released and routers are upgraded infrequently as shown in XYZ the $ v $ field still introduces a degree of medium-term entropy into the document.
-%
-%The $ w $ field contains the router's estimated bandwidth capacity as calculated by bandwidth authorities. Clients use this field during circuit construction; routers with a higher bandwidth capacity relative to the rest of the network have a higher probability of being included in a circuit. Although it is likely that a given router will have similar bandwidth measurements between consecutive consensus documents, Eve cannot predict the exact performance of a router from the perspective of the bandwidth authority. Eve's capacity to predict the performance of all routers falls outside of Tor's and OnioNS' security assumptions; Eve must therefore be a global attacker who would be capable of compromising the Tor network as a whole anyway.
+The average size of the Tor network across the seven-month period was 6,672 routers, thus together these fields contributed on average approximately 8,896.7 bits of entropy per hour across our seven-month view. The two documents contain at least this much entropy; our analysis does not comprehensively cover all the fields in \emph{cached-certs} and \emph{cached-microdesc-consensus}, so other fields may also contribute additional information. Based on this analysis, the approximately 16,000 to 28,000 entropy bits contributed hourly by routers joining or entering the Tor network, and our previous statistical calculations, we conclude that with $ L_{Q} \geq 127 $, the Quorum Formation protocol is secure under our design assumptions. Our analysis shows that the size and dynamic nature of the Tor network provides the strongest defence against Quorum-level attacks.
 
 \subsection{Outsourcing Record Generation}
 
@@ -775,7 +710,7 @@ We implemented the essential functionality for Bob, Charlie, and Alice. We used 
 	\label{fig:prototypeExample}
 \end{figure}
 
-We conducted several performance measurements for the Record Generation and Domain Query protocols. Our experiment involves two machines, A and B. Both were hosted on 1 Gbit connections on a university campus. Machine A has an Intel Core2 Quad Q9000 (Penryn archicture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively. We hosted our hidden service and TCP server on Machine B.
+We conducted several performance measurements for the Record Generation and Domain Query protocols. Our experiment involves two machines, A and B. Both were hosted on 1 Gbit connections on a university campus. Machine A has an Intel Core2 Quad Q9000 (Penryn architecture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively. We hosted our hidden service and TCP server on Machine B.
 
 \subsection{Results}
 
@@ -823,39 +758,11 @@ We have presented the Onion Name System (OnioNS), a distributed, secure, and usa
 
 In future work we will expand our implementation and pursuit integrating it into Tor. OnioNS requires a few changes to Tor, namely a new .tor pseudo-TLD and Ed25519 router keys, but we introduce no changes to Tor's hidden service protocol. Should Tor's developers introduce changes to the hidden service protocol, OnioNS can become forwards-compatible with a few changes. Additionally, our implementation currently only supports ASCII characters in domain names, so in future work we will explore implementing Punycode to provide support for international character sets. Unlike the Internet DNS, we will disallow digits zero and one (similar to base32 encoding) in order to reduce the threat of phishing attacks from spoofed domains with indistinguishable characters.
 
-
-% We use a Merkle tree for authenticated denial-of-existence. Merkle trees with sorted leaves do not support updates, insertions, or deletions without complete rebuilding. In future work we will pursuit more efficient and dynamic data structures such as the hash tables proposed by Papamanthou et el.\cite{papamanthou2008authenticated}, which are noteworthy for achieving constant query cost and sublinear update cost.
-
-
-
-
-
-
 %\section{Acknowledgements}
 %
 %We would like to thank Tor developers Roger Dingledine, Yawning Angel, and Nick Mathewson for their assistance with Tor technical support.
 
-%\subsection{Entropy of Tor Consensus Documents}
-%\subsection{Malicious Entropy Reduction}
-%\subsection{Sybil Attacks}
-%\subsection{Hidden Service Spoofing}
-%\subsection{Outsourcing Record Proof-of-Work}
-%%\subsection{False Negatives Claims}
-%%\section{Reliability}
-%%\subsubsection{Flooding}
-%\section{Objectives Assessment}
-%\subsection{Prototype Design}
-%\subsection{Performance}
-%\subsubsection{Processing Time}
-%\subsubsection{Latency}
-%\subsection{Future Work}
-
-%A hashtable bitset is a special and highly compact adaptation of a traditional hashtable. We introduce a hashtable bitset for two purposes: 1) to prove the non-existence of a domain name, and 2) to improve the efficiency of lookups for non-existent domain names from $ \mathcal{O}(\mathrm{log}(n)) $ through the AVL tree to $ \mathcal{O}(1) $ time. Instead, a trusted authority can sign a hashtable bitset once and allow Mirrors to prove non-existence for any domain name.
-%
-%As an extension of an ordinary hashtable, the hashtable bitset maps keys to buckets, but here we only track the existence of a key but not the keys themselves. Therefore each bucket in the structure is represented as a bit, creating a compact $ z * n $-length bitset, where $ z $ is a scaling factor. Let the hashtable use the $ H(m) $ function from section \ref{sec:CryptoPrim}. A Mirror constructs a hashtable bitset in $ \mathcal{O}(n) $ time by the following algorithm:
-
 %, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users.\cite{percival2009stronger}\cite{percival2012scrypt} We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
-%
 
 \bibliographystyle{abbrv}
 \bibliography{citations}
