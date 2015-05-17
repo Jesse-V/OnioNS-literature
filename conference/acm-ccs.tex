@@ -123,44 +123,44 @@ In response to this difficulty, in this work we introduce the Onion Name System 
 
 \end{abstract}
 
-% http://dl.acm.org/ccs.cfm
-% http://www.acm.org/about/class/
-% https://academia.stackexchange.com/questions/15252/is-the-new-acm-2012-taxonomy-usable-in-use
-\begin{CCSXML}
-<ccs2012>
-<concept>
-<concept_id>10002951.10003152.10003161.10003164</concept_id>
-<concept_desc>Information systems~Block / page strategies</concept_desc>
-<concept_significance>500</concept_significance>
-</concept>
-<concept>
-<concept_id>10003033.10003099.10003037</concept_id>
-<concept_desc>Networks~Naming and addressing</concept_desc>
-<concept_significance>500</concept_significance>
-</concept>
-<concept>
-<concept_id>10002978.10003006.10003013</concept_id>
-<concept_desc>Security and privacy~Distributed systems security</concept_desc>
-<concept_significance>300</concept_significance>
-</concept>
-<concept>
-<concept_id>10002978.10002979</concept_id>
-<concept_desc>Security and privacy~Cryptography</concept_desc>
-<concept_significance>100</concept_significance>
-</concept>
-<concept>
-<concept_id>10002978.10003014.10003015</concept_id>
-<concept_desc>Security and privacy~Security protocols</concept_desc>
-<concept_significance>100</concept_significance>
-</concept>
-</ccs2012>
-\end{CCSXML}
-
-\ccsdesc[500]{Information systems~Block / page strategies}
-\ccsdesc[500]{Networks~Naming and addressing}
-\ccsdesc[300]{Security and privacy~Distributed systems security}
-\ccsdesc[100]{Security and privacy~Cryptography}
-\ccsdesc[100]{Security and privacy~Security protocols}
+%% http://dl.acm.org/ccs.cfm
+%% http://www.acm.org/about/class/
+%% https://academia.stackexchange.com/questions/15252/is-the-new-acm-2012-taxonomy-usable-in-use
+%\begin{CCSXML}
+%<ccs2012>
+%<concept>
+%<concept_id>10002951.10003152.10003161.10003164</concept_id>
+%<concept_desc>Information systems~Block / page strategies</concept_desc>
+%<concept_significance>500</concept_significance>
+%</concept>
+%<concept>
+%<concept_id>10003033.10003099.10003037</concept_id>
+%<concept_desc>Networks~Naming and addressing</concept_desc>
+%<concept_significance>500</concept_significance>
+%</concept>
+%<concept>
+%<concept_id>10002978.10003006.10003013</concept_id>
+%<concept_desc>Security and privacy~Distributed systems security</concept_desc>
+%<concept_significance>300</concept_significance>
+%</concept>
+%<concept>
+%<concept_id>10002978.10002979</concept_id>
+%<concept_desc>Security and privacy~Cryptography</concept_desc>
+%<concept_significance>100</concept_significance>
+%</concept>
+%<concept>
+%<concept_id>10002978.10003014.10003015</concept_id>
+%<concept_desc>Security and privacy~Security protocols</concept_desc>
+%<concept_significance>100</concept_significance>
+%</concept>
+%</ccs2012>
+%\end{CCSXML}
+%
+%\ccsdesc[500]{Information systems~Block / page strategies}
+%\ccsdesc[500]{Networks~Naming and addressing}
+%\ccsdesc[300]{Security and privacy~Distributed systems security}
+%\ccsdesc[100]{Security and privacy~Cryptography}
+%\ccsdesc[100]{Security and privacy~Security protocols}
 
 %{Security and privacy}
 %	Cryptography
@@ -176,7 +176,12 @@ In response to this difficulty, in this work we introduce the Onion Name System 
 %	Network services
 %		Naming and addressing
 
-\printccsdesc
+%\printccsdesc
+
+\category{C.2.0}{Computer Communications Networks}{Security and protection}
+\category{C.2.4}{Computer Communications Networks}{Distributed Systems}[Client/server, Distributed databases]
+\category{E.1}{Data Structures}{Distributed data structures}[Records]
+\category{E.2}{Data Structures}{Data storage representations}[Linked representations]
 
 \keywords{Tor, onion, hidden service, anonymity, privacy, network security, petname}
 
@@ -211,9 +216,17 @@ Tor hidden service addresses are distributed and globally collision-free, but th
 
 In this paper, we present the design, analysis and implementation of the Onion Name System, (OnioNS) a distributed, secure, and usable domain name system for Tor hidden services. Any hidden service can anonymously register an association between a meaningful human-readable domain name and its .onion address and clients can query against OnioNS in a privacy-preserving and verifiable manner. OnioNS is powered by a random subset of nodes within the existing infrastructure of Tor, significantly limiting the additional attack surface. We devise a distributed DNS database using a blockchain-based data structure that are tamper-proof, self-healing, resistant to node compromise and achieves authenticated denial-of-existence. We design OnioNS as a backwards-compatible plugin to the Tor software. Our prototype implementation demonstrates the high usability and performance of OnioNS. To the best of our knowledge, this is the first alternative DNS for Tor hidden services which is distributed, secure, and usable at the same time.
 
-\section{Design Objectives}
+\textbf{Paper Organization}
 
-Tor's privacy-enhanced environment introduces a distinct set of challenges that must be met by any additional infrastructure. Here we enumerate a list of requirements that must be met by any DNS applicable to Tor hidden services. In Section \ref{sec:RelatedWorks} we analyse existing works and show how these systems do not meet these requirements and in Section \ref{sec:Solution} and \ref{sec:Analysis} we demonstrate how we overcome them with OnioNS.
+This paper is divided into four main sections. First, we define our design objectives, the challenges that we seek to overcome, and explain why existing works do not meet our goals. We also define our threat model, which closely matches Tor's model with one additional assumption. Second, we describe the system overview and define several key protocols. Last, we evaluate our implementation prototype and show that it can access a hidden service under a meaningful domain name.
+
+\section{Problem Statement}
+
+We design OnioNS as a plugin to Tor and integrate it into Tor's network. However, Tor's privacy-enhanced environment introduces a distinct set of security requirements that must be met by any additional infrastructure. We must preserve user privacy and avoid compromising other areas of the Tor network. Additionally, we seek to achieve all three properties of Zooko's Triangle (section \ref{sec:ZookosTriangle}) and providing a mechanism for authenticated denial-of-existence (section \ref{sec:authDenialIntro}).
+
+\subsection{Design Objectives}
+
+Here we enumerate a list of requirements that must be met by any DNS applicable to Tor hidden services. In Section \ref{sec:RelatedWorks} we analyse existing works and show how these systems do not meet these requirements and in Section \ref{sec:Solution} we demonstrate how we overcome them with OnioNS.
 
 \begin{enumerate}[noitemsep]
 	\item \textbf{The system must support anonymous registrations.} The system should not require any personally-identifiable or location information from the registrant. Tor hidden services publicize no more information than a public key and Introduction Points.
@@ -226,9 +239,10 @@ Tor's privacy-enhanced environment introduces a distinct set of challenges that 
 	\item \textbf{The system should be lightweight.} In most realistic environments clients have neither the bandwidth nor storage capacity to hold the system's entire database, nor the capability of meeting significant computation or memory burdens.
 \end{enumerate}
 
-\newpage
+\subsection{Challenges}
 
-\subsection{Zooko's Triangle}
+\subsubsection{Zooko's Triangle}
+\label{sec:ZookosTriangle}
 
 In 2001, Zooko Wilcox-O'Hearn described three desirable properties for any persistent naming system: distributed design, assignment of human-meaningful names, and globally unique names. In a statement now known as Zooko's Triangle,\cite{ferdous2009security}\cite{stiegler2005petname} he claimed any naming system could only achieve two of these properties. This is illustrated in Figure \ref{fig:ZookosTriangle}.
 
@@ -249,7 +263,8 @@ Some examples of naming systems that achieve only two of these properties includ
 
 % Petnames, such as Namecoin and OnioNS, are systems that achieve all three properties of Zooko's Triangle.
 
-\subsection{Authenticated Denial-of-Existence}
+\subsubsection{Authenticated Denial-of-Existence}
+\label{sec:authDenialIntro}
 
 If a naming system provides authentication, clients should be able to verify the authenticity of existing domain names and authenticate a denial-of-existence claim by their name server. On the Internet, the former is addressed by SSL certificates and a chain of trust to root Certificate Authorities, while the latter remains a possible attack vector. DNSSEC includes an extension for Hashed Authenticated Denial of Existence (NSEC3) which provides signed non-existence claims on a per-domain basis. However, DNSSEC has not seen widespread use, storing per-domain denial-of-existence records introduces significant storage requirements, and to our knowledge no alternative DNS provides mechanisms for authenticated denial-of-existence. Closing this attack vector is not easy; the na\"{i}ve solution of generating proof individually or en-masse for every non-existent domain is infeasible since the number of possible domain names is likely too large to practically enumerate.
 
@@ -343,8 +358,6 @@ We propose the Onion Name System (OnioNS) as an abstraction layer to hidden serv
 Second, Bob uses a Tor circuit to anonymously transmit his Record to an authoritative short-lived random subset of OnioNS servers, known as the \emph{Quorum}, inside the Tor network. The Quorum archive Bob's Record in a sequential public ledger known as a \emph{Pagechain}, of which each OnioNS node holds their own local copy. Bob's Record is received by all Quorum nodes and share signatures of their knowledge with each other, so they maintain a common database. Quorum nodes are not name servers, so let Charlie be a name server outside the Quorum and assume that Charlie stays synchronized with the Quorum.
 
 Third, Alice, uses a Tor client to anonymously connect to Charlie, then asks Charlie for ``example.tor''. Alice receives Bob's Record, verifies it signature and proof-of-work, and follows the association to ``example0uyw6wgve.onion''. As Bob's Record is self-signed using Bob's private key, Alice can verify the Record's authenticity. Finally, Alice uses this address and the Tor hidden service protocol to contact Bob. Note that Alice does not have to resort to using ``example0uyw6wgve.onion'', rather that Bob can be successfully referenced by ``example.tor''. We illustrate the OnioNS overview in Figure \ref{fig:basicDesign}.
-
-\newpage
 
 \subsection{Cryptographic Primitives}
 
@@ -489,7 +502,6 @@ New Quorum nodes must select a Page from the previous Quorum to reference when g
 			\item Charlie asserts that $ V_{\mathit{ed}}(h, E) $ returns true.
 		\end{enumerate}
 	\item Charlie sorts the set of Pages by the number of routers that have signed $ h $.
-	\newpage
 	\item For each Page in each $ h $,
 		\begin{enumerate}[noitemsep,nolistsep]
 			\item Charlie checks that $ \mathit{consensusHash} = H(\mathit{cd}) $.
@@ -501,12 +513,12 @@ New Quorum nodes must select a Page from the previous Quorum to reference when g
 
 \subsubsection{Domain Query}
 
-Alice needs only Bob's Record to contact Bob by his meaningful domain name. Let Alice type a domain $ d $ into the Tor Browser, and let Alice pre-fetch from Charlie, a Quorum Candidate, the Merkle tree $ T $ described in section \ref{sec:authDenial}.
+Alice needs only Bob's Record to contact Bob by his meaningful domain name. Let Alice type a domain $ d $ into the Tor Browser.
 
 \begin{enumerate}[noitemsep,nolistsep]
 	\item Alice constructs a Tor circuit to Charlie.
 	\item \label{step:ask} Alice asks Charlie for the most recent Record $ r $ containing $ d $.
-	\item Charlie finds and returns $ r $ to Alice, or an error if $ d $ cannot be found.
+	\item Charlie finds and returns $ r $ to Alice and the components of the Merkle tree $ T $ described in section \ref{sec:authDenial}.
 	\item If $ r $ is not found, Alice asserts that the second-level name of $ d $ is not found in $ T $, as otherwise Charlie is dishonest.
 	\item If $ r $ is found, Alice asserts that $ r $ is valid and contained in $ T $, as otherwise Charlie is dishonest.
 	\item If $ d $ in $ r $ points to a domain with a .tor pseudo-TLD, $ d $ becomes that destination and Alice jumps to step \ref{step:ask}.
@@ -520,8 +532,6 @@ Alice may also request additional information from Charlie, providing her with m
 \subsubsection{Onion Query}
 
 OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a hidden service address $ \mathit{addr} $ to Charlie and receives back all Records that have $ \mathit{addr} $ as a destination in their \emph{nameList}. Alice may obtain additional verification on the results by issuing Domain Queries on the source .tor domains. We do not anticipate Onion Queries to have significant practical value, but they complete the symmetry of lookups and allow OnioNS domain names to have Forward-Confirmed Reverse DNS matches. We suggest caching destination hidden service addresses in a digital tree (trie) to accelerate this lookup; a trie turns the lookup from $ \mathcal{O}(n) $ to $ \mathcal{O}(1) $, while requiring $ \mathcal{O}(n) $ time and $ \mathcal{O}(n) $ space to pre-compute the cache.
-
-\newpage
 
 \subsection{Authenticated Denial-of-Existence}
 \label{sec:authDenial}
@@ -538,18 +548,18 @@ We suggest reducing the networking costs with a Merkle tree\cite{merkle1988digit
 	\item Generate $ \mathit{sig}_{T} = S_{\mathit{ed}}(t \concat r, e) $ where $ t $ is a timestamp and $ r $ is the root hash of $ T $.
 \end{enumerate}
 
-Then during a Domain Query Alice may use $ T $ to authenticate a domain $ d $ and verify non-existence for a Record $ r $.
+As Records contain both second-level domains and their subdomains, $ T $ needs only contain $ c $ to reference all domains in $ r $, which further saves space. Then during a Domain Query Alice may use $ T $ to authenticate a domain $ d $ and verify non-existence for a Record $ r $.
 
 \begin{enumerate}[noitemsep,nolistsep]
 	\item Alice extracts the second-level name $ c $ from $ d $.
-	\item If Charlie returns $ r $, Alice finds the leaf $ l $ in $ T $ containing $ c $ and then asserts that $ H(r) \in l $.
-	\item If Charlie claims non-existence, Alice asserts that $ c $ does not exist in $ T $.
+	\item If $ r $ exists, Charlie returns the leaf node containing $ r $ and all the tree nodes from leaf $ r $ to the root and their sibling nodes, so that Alice can verify authenticity of $ r $ by recomputing the root hash and verify that the largest subset of Quorum nodes signed the same root hash.
+	\item If Charlie claims non-existence of $ c $, he returns two adjacent leaves $ a $ and $ a $ (and the nodes on their paths and siblings) such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf.
 	\item If either assertion fails, Charlie is dishonest.
 \end{enumerate}
 
-As the leaves of $ T $ are sorted, Alice may locate $ l $ in $ \mathcal{O}(\mathrm{log}(n)) $ time via a binary search; she simply needs to find two leaves $ a $ and $ a $ such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf. As Records contain both second-level domains and their subdomains, $ T $ needs only contain $ c $ to reference all domains in $ r $, which further saves space. 
+The Quorum must regenerate $ T $ every $ \Delta T $ hours to include new Records. Then Alice needs only fetch the signatures on $ T $ at least every $ \Delta T $ hours to ensure that she can authenticate new Records during the Domain Query. Thus $ \Delta T $ is the primary factor in the speed of Record propagation: Alice cannot authenticate or verify denial-of-existence claims on Records newer than $ \Delta T $. Alice must also fetch the $ L_{Q} $ signature from all Quorum nodes and assert that $ T $ is signed by the largest set of nodes maintaining the same Page, in correspondence with our last security assumption.
 
-The Quorum must regenerate $ T $ every $ \Delta T $ hours to include new Records. Then Alice needs only pre-fetch $ T $ and its $ \mathit{sig}_{T} $s at least every $ \Delta T $ hours to ensure that she can authenticate new Records during the Domain Query. Thus $ \Delta T $ is the primary factor in the speed of Record propagation: Alice cannot authenticate or verify denial-of-existence claims on Records newer than $ \Delta T $. However, the networking cost is $ \mathcal{O}(\mathrm{size}(T) \Delta T) $. Alice must also fetch the $ L_{Q} $ signature from all Quorum nodes and assert that $ T $ is signed by the largest set of nodes maintaining the same Page, in correspondence with our last security assumption.
+We note that a sorted Merkle tree does not support efficient dynamic record updates. The tree needs to be rebuilt to handle updates. To support efficient record update in $ \mathcal{O}(\mathrm{log}(n)) $ time, we can adopt the skip list data structure proposed in \cite{goodrich2001implementation}. Proof of existence and non-existence still works in a similar way.
 
 %	\item Construct a $ n $-sized sorted array list \emph{arr} of $ m $-sized elements. Let each element $ e_{1 < i < n} $ be the last $ m $ bits from $ H(d_{i}) $, where $ d_{i} $ is $ i $-th second-level domain in the Pagechain. Here $ m $ is the primary scaling factor for both space and security; a small value for $ m $ means $ T $ consumes less space, but a large $ m $ reduces the probability of hash collision.
 %	\item Construct $ T $ from \emph{arr}. Let $ T $'s leaves be the $ m $-sized elements.
@@ -564,45 +574,37 @@ The Quorum must regenerate $ T $ every $ \Delta T $ hours to include new Records
 \section{Security Analysis}
 \label{sec:Analysis}
 
+In this section, we analyse the security of the OnioNS system with regard to our security goals. First, the registrations and client queries are anonymous because they occur over a Tor circuit, which we assume provides privacy and anonymity. No identifiable information is leaked from the data contents as well. Second, registrations are authenticable, which can be reduced to the security of the Merkle hash tree and to the assumption that the largest subset of Quorum nodes are honest. We verify this assumption in section \ref{sec:QSelection} and \ref{sec:QSize}. Domain uniqueness also stems from the above assumption, relying on honesty of Quorum nodes to avoid collisions. Quorum selection is a random process assuming sufficient entropy in the Tor consensus, which we verify in section \ref{sec:entropy}. We also highlight the potential for the leakage of the .tor pseudo-TLD on the Internet DNS.
+
 \subsection{Quorum Selection}
+\label{sec:QSelection}
 
 % check math, symbols for number of Quorum Candidates
 
 In section \ref{sec:threatModel}, we assume that an attacker, Eve, controls some fixed $ f_{E} $ fraction of routers on the Tor network. Quorum selection may be considered as an $ L_{Q} $-sized random sample taken from an $ L_{T} $-sized population without replacement, where the population contains a subset of $ L_{Q} * f_{E} $ entities that we assume are compromised and colluding. If our selection includes $ L_{E} $ Eve-controlled routers, then Eve controls the Quorum if either $ > \frac{L_{Q} - L_{E}}{2} $ honest Quorum nodes disagree or if $ L_{E} > \frac{L_{Q}}{2} $. The former scenario is hard to model theoretically or in simulation, but the probability of the latter can be statistically calculated. The Quorum is short-lived and changed every $ \Delta q $ days, so we must consider the implications of selections for both $ L_{Q} $ and $ \Delta q $.
 
 \subsubsection{Quorum Size}
+\label{sec:QSize}
 
 The probability that Eve controls $ L_{E} $ Quorum nodes is given by the hypergeometric distribution, whose probability mass function (PMF) is shown in Equation \ref{eq:hypergeoPMF}.
-
-%\setlength{\belowdisplayskip}{0pt} \setlength{\belowdisplayshortskip}{0pt}
-%\setlength{\abovedisplayskip}{0pt} \setlength{\abovedisplayshortskip}{0pt}
-
-% C^i_j = {\textstyle \sum_k} A^i_k B^k_j
-%\begin{equation} \label{eq:hypergeoPMF}
-%   \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}}
-%\end{equation}
 
 Then the probability that $ L_{E} > \frac{L_{Q}}{2} $, a complete compromise of the Quorum, is given by Equation \ref{eq:compromiseProb}. Odd choices for $ L_{Q} $ prevents the network from splintering in the event that the Quorum is evenly split across two Pages. We assume that $ L_{Q} $ will be selected from a pool of 5,400 Quorum Candidates --- the number, as of May 2015, of Tor routers with the Fast and Stable flags. We provide the statistical calculations in Figure \ref{fig:quorumMajority}.
 
 \begin{align}
-	\frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}} &= \mathrm{Pr}(L_{E})
+	\mathrm{Pr}(L_{E}) &= \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}}
 	\label{eq:hypergeoPMF}
 	\\
-	\displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}} &= \mathrm{Pr}(L_{E} > \frac{L_{Q}}{2})
+	\mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) &= \displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}}
 	\label{eq:compromiseProb}
 \end{align}
 
-%\begin{equation} \label{eq:compromiseProb}
-%   \displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}}
-%\end{equation}
-
 % todo: 512 isn't in legend, make font bigger
-\begin{figure}[h]
+\begin{figure*}
 	\centering
-	\includegraphics[width=\linewidth]{../analysis/MaliciousQuorumProbability_tight.eps}
+	\includegraphics[width=0.75\linewidth]{../analysis/MaliciousQuorumProbability_tight.eps}
 	\caption{We calculate the PMF of the hypergeometric distribution for a population of 5,400, $ f_{E} \in [1,33] $, and five selections for $ L_{Q} $: 31, 63, 127, 255, and 511. $ f_{E} > 33 $ represents a complete compromise of the Tor network, so we do not consider values beyond this range.}
 	\label{fig:quorumMajority}
-\end{figure}
+\end{figure*}
 
 Figure \ref{fig:quorumMajority} shows that choices of $ L_{Q} = 31 $ and $ L_{Q} = 63 $ are suboptimal, they quickly grow for even low levels of $ f_{E} $. Small Quorums are also more susceptible to DDoS attacks. We feel it safe to discard threats that have probabilities $ \leq \frac{1}{2^{128}} \approx 10^{-38.532} $ --- the probability of Eve randomly guessing a 128-bit AES key. $ L_{Q} = 31 $ exceeds this with more than one percent collusion, $ L_{Q} = 63 $ above two percent, and $ L_{Q} = 127 $, $ L_{Q} = 255 $, and $ L_{Q} = 511 $ at $ \geq 7.7 $, $ \geq 16.1 $, and $ \geq 24.6 $ percent, respectively. Therefore we recommend setting $ L_{Q} \geq 127 $.
 
@@ -620,6 +622,7 @@ In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not
 Figure \ref{fig:cumulativeProbability} suggests that although lower values of $ \Delta q $ negatively impact security, the choice of $ L_{Q} $ is more significant. It also supports our earlier conclusion that the choices of $ L_{Q} = 31 $ and $ L_{Q} = 63 $ are suboptimal. Based on Figure \ref{fig:cumulativeProbability} we further reiterate our recommendation of $ L_{Q} \geq 127 $ and suggest $ \Delta q \geq 1 $. Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} $ and $ \Delta q $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to specific Quorum-level attacks.
 
 \subsubsection{Entropy Estimation}
+\label{sec:entropy}
 
 % todo: \emph vs \textit
 
@@ -630,9 +633,9 @@ Periodically, Tor routers upload signed \emph{descriptors} --- routing informati
 	\item \textbf{cached-microdesc-consensus} Essential information about each router, such as networking information and capabilities.
 \end{itemize}
 
-If \emph{cd} is $ \mathit{cached \mbox{--} certs} \concat \mathit{cached \mbox{--} microdesc \mbox{--} consensus} $, we initialize $ \mathit{R}(s) $ with the output of the $ H(\mathit{cd}) $. Eve may desire to find a hash $ k $ that generates a desirable Quorum, either one that includes her routers or excludes particular honest routers. As $ H(x) $ is SHA-384, SHA-384's strong resistance to preimage attack forces Eve to spend $ L_{T} * 2^{192} $ operations on average to find $ k $. Eve may also try to manipulate her router's descriptors such that $ H(\mathit{cd}_{q+1}) = k $, but SHA-384's resistance to second-preimage attacks also requires this to require $ L_{T} * 2^{192} $ operations as well. However, if \emph{cd} contains sufficient entropy, Eve is unable to predict the next Quorum or influence it to her favor. Since the dirauths publish a new consensus every hour, we must analyse the entropy rate between consecutive hours.
+If \emph{cd} is $ \mathit{cached \mbox{--} certs} \concat \mathit{cached \mbox{--} microdesc \mbox{--} consensus} $, we initialize $ \mathit{R}(s) $ with the output of the $ H(\mathit{cd}) $. Eve may desire to find a hash $ k $ that generates a desirable Quorum, either one that includes her routers or excludes particular honest routers. As $ H(x) $ is SHA-384, SHA-384's strong resistance to preimage attack forces Eve to spend $ L_{T} * 2^{383} $ operations on average to find $ k $. Eve may also try to manipulate her router's descriptors such that $ H(\mathit{cd}_{q+1}) = k $, but SHA-384's resistance to second-preimage attacks also requires this to require $ L_{T} * 2^{383} $ operations as well. However, if \emph{cd} contains sufficient entropy, Eve is unable to predict the next Quorum or influence it to her favor. Since the dirauths publish a new consensus every hour, we must analyse the entropy rate between consecutive hours.
 
-We constructed a first-order Markov model and estimated a lower bound on the entropy of the \emph{cached-microdesc-consensus} document by analysing the transitions for various fields between consecutive consensuses. We also provide analysis on the dynamics of the Tor network by counting routers that enter or leave the Tor network between consecutive consensuses in Figure \ref{fig:xorRouters}. Here we identity routers by their identity keys; just as Tor does, we consider routers that change their identity keys as two different routers; one leaving and one entering the network. Routers entering the network introduce significant amounts of information into the consensus. For example, \emph{cached-microdesc-consensus} contains the 160-bit SHA-1 hash of the router's identity key and the router's 32-bit IP addresses. Thus new routers contribute at least 192 bits of information. Figure \ref{fig:xorRouters} suggests that we may expect approximately 100 to 175 routers to leave or enter the network per hour. Thus we may expect 19,200 to 33,600 bits of entropy per hour at the minimum from this dynamic.
+We constructed a first-order Markov model and estimated the entropy of the \emph{cached-microdesc-consensus} document by analysing the transitions for various fields between consecutive consensuses. We also provide analysis on the dynamics of the Tor network by counting routers that enter or leave the Tor network between consecutive consensuses in Figure \ref{fig:xorRouters}. Here we identity routers by their identity keys; just as Tor does, we consider routers that change their identity keys as two different routers; one leaving and one entering the network. Routers entering the network introduce significant amounts of information into the consensus. For example, \emph{cached-microdesc-consensus} contains the 160-bit SHA-1 hash of the router's RSA-1024 identity key, which are generated through OpenSSL. Thus new routers contribute at least 160 bits of information. Figure \ref{fig:xorRouters} suggests that we may expect approximately 100 to 175 routers to leave or enter the network per hour. Thus we may expect approximately 16,000 to 28,000 bits of entropy per hour from this dynamic.
 
 \begin{figure}[h]
 	\centering
@@ -652,7 +655,7 @@ We obtained from \url{collector.torproject.org} 5,067 archived hourly publicatio
 	\label{fig:transitionCount}
 \end{figure}
 
-Then the entropy rate is given by equation \ref{eq:entropyRate}, where $ P_{i} $ is the probability of state $ i $ and $ P_{i}(j) $ is the probability of state $ j $ given $ i $ (the $ i $-$ j $ transition). We calculate this rate for each of the six fields and illustrate the results in Figure \ref{fig:entropyRates}.
+Then the entropy rate is given by equation \ref{eq:entropyRate}, where $ P_{i} $ is the probability of state $ i $ and $ P_{i}(j) $ is the probability of state $ j $ given $ i $ (the $ i $-$ j $ transition). We multiply the entropy rate by the total number of routers in the Tor network. This assumes that router's are independently and uniformly distributed, but this is not always the case as small sets of routers may be managed together and change as one. However, identifying these sets and analysing them separately is non-trivial to impossible; administrators may operate anonymously or try to purposely hide their management over multiple geographically-distance routers. Due to this, this assumption results in an estimation of the entropy and not an exact value. We calculate this rate estimation for each of the six fields and illustrate the results in Figure \ref{fig:entropyRates}.
 
 \begin{equation}
 \mathrm{H}(\mathcal{S}) = - L_{T} \sum_{i} P_{i} \sum_{j} P_{i}(j) \log_{2}P_{i}(j)
@@ -666,7 +669,7 @@ Then the entropy rate is given by equation \ref{eq:entropyRate}, where $ P_{i} $
 	\label{fig:entropyRates}
 \end{figure}
 
-The average size of the Tor network across the seven-month period was 6,672 routers, thus together these fields contributed on average 8,538.7 bits of entropy per hour across our seven-month view. The two documents contain at least this much entropy; our analysis does not comprehensively cover all the fields in \emph{cached-certs} and \emph{cached-microdesc-consensus}, so other fields also contribute additional information. Based on this analysis, the at least 19,200 entropy bits contributed hourly by routers joining or entering the Tor network, and our previous statistical calculations, we conclude that with $ L_{Q} \geq 127 $, the Quorum Formation protocol is secure under our design assumptions. Our analysis shows that the size and dynamic nature of the Tor network provides the strongest defence against Quorum-level attacks. 
+The average size of the Tor network across the seven-month period was 6,672 routers, thus together these fields contributed on average approximately 8,538.7 bits of entropy per hour across our seven-month view. The two documents contain at least this much entropy; our analysis does not comprehensively cover all the fields in \emph{cached-certs} and \emph{cached-microdesc-consensus}, so other fields may also contribute additional information. Based on this analysis, the approximately 16,000 to 28,000 entropy bits contributed hourly by routers joining or entering the Tor network, and our previous statistical calculations, we conclude that with $ L_{Q} \geq 127 $, the Quorum Formation protocol is secure under our design assumptions. Our analysis shows that the size and dynamic nature of the Tor network provides the strongest defence against Quorum-level attacks. 
 
 %We note that additional entropy can be added into \emph{cached-microdesc-consensus} by either dirauths or by any router that intentionally changed information in its descriptor on a regular basis. However, based on our analysis we do not consider this necessary.
 
@@ -683,8 +686,6 @@ The average size of the Tor network across the seven-month period was 6,672 rout
 %The $ v $ field describes the version of Tor that the router is running. Although the versions of Tor are publicly known and the official and unofficial Linux repositories are publicly accessible, Eve cannot predict when an administrator will upgrade their router to the next available Tor version. Although new versions of Tor are not frequently released and routers are upgraded infrequently as shown in XYZ the $ v $ field still introduces a degree of medium-term entropy into the document.
 %
 %The $ w $ field contains the router's estimated bandwidth capacity as calculated by bandwidth authorities. Clients use this field during circuit construction; routers with a higher bandwidth capacity relative to the rest of the network have a higher probability of being included in a circuit. Although it is likely that a given router will have similar bandwidth measurements between consecutive consensus documents, Eve cannot predict the exact performance of a router from the perspective of the bandwidth authority. Eve's capacity to predict the performance of all routers falls outside of Tor's and OnioNS' security assumptions; Eve must therefore be a global attacker who would be capable of compromising the Tor network as a whole anyway.
-
-\newpage
 
 \subsection{Outsourcing Record Generation}
 
@@ -717,9 +718,9 @@ However, this ensures that ensures that Craig must always compute more scrypt it
 
 Accidental leakage of .tor lookups over the Internet DNS via human mistakes or misconfigured software may compromise user privacy. This vulnerability is not limited to OnioNS and applies to pseudo-TLD; Mohaisen and Thomas observed .onion lookups on root DNS servers at a frequency that corresponded to external global events and highlighting the human factor in those leakages.\cite{thomasmeasuring} Closing this leakage is difficult; arguably the simplest approach is to introduce whitelists or blacklists into common web browsers to prevent known pseudo-TLDs from being queried over the Internet DNS. Such changes are outside the scope of this work, but we highlight the potential for this attack.
 
-\newpage
+\section{Evaluation}
 
-\section{Implementation}
+\subsection{Implementation}
 
 We have built a partial reference implementation of OnioNS in C++11, primarily the Record Generation and Domain Query protocols. Botan provides the implementation of our cryptographic operations, Boost Asio provides our networking engine, and Linux libjsoncpp-dev library provides implementations of JSON encoding and decoding. We encode all the data structures in JSON; JSON is significantly more compact than XML, but retains user readability and its support of basic primitive types is highly applicable to our needs. Our code is available under the Modified BSD License. % at \url{https://github.com/Jesse-V/OnioNS}.
 
@@ -727,16 +728,23 @@ We have built a partial reference implementation of OnioNS in C++11, primarily t
 
 We implemented the essential functionality for Bob, Charlie, and Alice. We used the Shallot\cite{KatmagicShallot} vanity key generator to find an RSA key that hashed to a hidden service address with the ``OnioNS'' prefix. Shallot found ``onions55e7yam-27n.onion''. We constructed a website and attached Tor to the nginx web server. Then we loaded the private key into OnioNS and constructed a Record containing an association between ``example.tor'' and ``onions55e7yam27n.onion''. Next, we transmit this Record to a fixed server over a Tor circuit and started a TCP server to respond to Domain Queries. Finally, we modified Tor such that when Alice types ``example.tor'' into the Tor Browser, Tor intercepts the pseudo-TLD and sends it via IPC to the OnioNS client. Then the OnioNS client performs a Domain Query to Charlie and writes ``onions55e7yam27n.onion'' back to the Tor client over IPC. Finally, Tor rewrites the original ``example.tor'' lookup to ``onions55e7yam27n.onion'' and contacts our hidden service over the traditional Tor protocol. Tor performs asynchronously here; it must place the lookup on hold, free its event loop to avoid a deadlock, and asynchronously resume the lookup once it receives the response. From the user's perspective, the content of \url{http://onions55e7yam27n.onion} loads transparently under the \url{http://example.tor} URL.
 
+%\begin{figure}[h]
+%	\centering
+%	\includegraphics[width=0.6\linewidth]{../images/LucidCharts/OnioNS_Prototype.pdf}
+%	\caption{The unresolved .tor pseudo-TLD travels (red) from the Tor Browser to the OnioNS client. The client issues a Domain Query (orange) to a remote server, who returns a Record. The client returns the .onion address to Tor, which then contacts the HS (green).}
+%	\label{fig:prototypeDiagram}
+%\end{figure}
+
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=\linewidth]{../images/example.png}
 	\caption{We load the OnioNS' hidden service, onions55e7yam27n.onion, transparently under the ``example.tor'' domain on Tor Browser 4.5.1, a fork of Firefox ESR 31.7.0.}
-	\label{fig:cumulativeProbability}
+	\label{fig:prototypeExample}
 \end{figure}
 
-\subsection{Results}
-
 We conducted several performance measurements for the Record Generation and Domain Query protocols. Our experiment involves two machines, A and B. Both were hosted on 1 Gbit connections on a university campus. Machine A has an Intel Core2 Quad Q9000 (Penryn archicture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively. We hosted our hidden service and TCP server on Machine B.
+
+\subsection{Results}
 
 \subsubsection{Performance}
 
@@ -776,7 +784,9 @@ We measure the latency introduced by the Domain Query protocol and compare again
 
 Tor's latency is primarily dominated by circuit construction and negotiation with the hidden service. This time is highly dependent on the circuit's network distance and the speed of each Tor router. Our measurements include the time to build circuits to our TCP server and the Domain Query protocol, which includes a single call to scrypt and $ V_{\mathit{RSA}}(m, E) $. We avoid additional latency costs by implementing a DNS cache in order to allow subsequent queries to be resolved locally. In future work we will reduce the latency by recycling existing circuits that Tor constructs on startup and by moving the server to the circuit's exit router, eliminating an unnecessary network hop.
 
-\section{Future Work}
+\section{Conclusions and Future Work}
+
+We have presented the Onion Name System (OnioNS), a distributed, secure, and usable alternative DNS that maps globally-unique and meaningful .tor domains to .onion hidden service addresses, and achieve all three properties of Zooko's Triangle. We enable any hidden service operator to anonymously claim a human-readable name for their server and clients to query the system in privacy-enhanced manner. We introduce a distributed self-healing blockchain-based database and mechanisms that let clients authenticate and verify denial-of-existence claims. Additionally, we utilize the existing and semi-trusted infrastructure of Tor, which significantly narrows our threat model to already well-understood attack surfaces and allows our system to be integrated into Tor with minimal effort. Our reference implementation demonstrates high usability and shows that OnioNS successfully addresses the major usability issue that has been with Tor hidden services since their introduction in 2002.
 
 In future work we will expand our implementation and pursuit integrating it into Tor. We anticipate this to be straightforward as OnioNS requires few changes to Tor, namely a new .tor pseudo-TLD and Ed25519 router keys, and we introduce no changes to Tor's hidden service protocol. Should Tor's developers introduce changes to the hidden service protocol, OnioNS can become forwards-compatible with a few changes. For example, if hidden services migrated from RSA to Ed25519, OnioNS need only change $ S_{\mathit{RSA}}(m, r) $ and $ V_{\mathit{RSA}}(m, E) $ to Ed25519.
 
@@ -784,9 +794,8 @@ In future work we will expand our implementation and pursuit integrating it into
 
 Our implementation currently only supports ASCII characters in domain names. In future work we will explore implementing Punycode to provide support for international character sets. However, unlike the Internet DNS, we will disallow digits zero and one (similar to base32 encoding) in order to reduce the threat of phishing attacks from spoofed domains with indistinguishable characters.
 
-\section{Conclusion}
 
-We have presented the Onion Name System (OnioNS), a distributed, secure, and usable alternative DNS that maps globally-unique and meaningful .tor domains to .onion hidden service addresses, and achieve all three properties of Zooko's Triangle. We enable any hidden service operator to anonymously claim a human-readable name for their server and clients to query the system in privacy-enhanced manner. We introduce a distributed self-healing blockchain-based database and mechanisms that let clients authenticate and verify denial-of-existence claims. Additionally, we utilize the existing and semi-trusted infrastructure of Tor, which significantly narrows our threat model to already well-understood attack surfaces and allows our system to be integrated into Tor with minimal effort. Our reference implementation demonstrates high usability and shows that OnioNS successfully addresses the major usability issue that has been with Tor hidden services since their introduction in 2002.
+
 
 %\section{Acknowledgements}
 %
