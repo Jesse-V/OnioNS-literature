@@ -546,7 +546,7 @@ As Records contain both second-level domains and their subdomains, $ T $ needs o
 \begin{enumerate}[noitemsep,nolistsep]
 	\item Alice extracts the second-level name $ c $ from $ d $.
 	\item If $ r $ exists, Charlie returns the leaf node containing $ r $ and all the tree nodes from leaf $ r $ to the root and their sibling nodes, so that Alice can verify authenticity of $ r $ by recomputing the root hash and verify that the largest subset of Quorum nodes signed the same root hash.
-	\item If Charlie claims non-existence of $ c $, he returns two adjacent leaves $ a $ and $ a $ (and the nodes on their paths and siblings) such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf.
+	\item If Charlie claims non-existence of $ c $, he returns two adjacent leaves $ a $ and $ b $ (and the nodes on their paths and siblings) such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf.
 	\item If either assertion fails, Charlie is dishonest.
 \end{enumerate}
 

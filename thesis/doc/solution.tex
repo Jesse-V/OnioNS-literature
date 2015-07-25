@@ -4,31 +4,25 @@
 
 \section{Overview}
 
-We propose the Onion Name System (OnioNS) a Tor-powered distributed naming system that maps .tor domain names to .onion addresses. The system has three main aspects: the generation of self-signed claims on domain names by hidden service operators, the processing of domain information within the OnioNS servers, and the receiving and authentication of domain names by a Tor client.
+We propose the Onion Name System (OnioNS) as an abstraction layer to hidden service addresses and introduce ``.tor'' as a new pseudo-TLD for this purpose. The system has three main aspects: the generation of self-signed claims on domain names by hidden service operators, the processing of domain information within the OnioNS servers, and the receiving and authentication of domain names by a Tor client.
 
-First, a hidden service operator, Bob, generates an association claim between a meaningful domain name and a .onion address. Without loss of generality, let this be example.tor $ \rightarrow $ example0uyw6wgve.onion. For security reasons we do not introduce a central repository and authority from which Bob can purchase domain names; however, domains must not be trivially obtainable and Bob must expend effort to claim and maintain ownership of example.tor. We achieve this through a proof-of-work scheme. Proof-of-work systems are noteworthy for their asymmetry: they require the issuer to spend effort to find an answer to a moderately hard computational problem, but once solved can be easily verified correct by any recipient. The requirement of proof-of-work fulfils three main purposes:
+First, a hidden service operator, Bob, generates an association between a meaningful second-level domain name and his .onion address. Without loss of generality, let this be ``example.tor $ \rightarrow $ onions55e7yam27n.onion''. We introduce a proof-of-work scheme that requires Bob to expend computational and memory resources to claim ``example.tor'', a more privacy-enhanced alternative to financial compensation to a central authority. Proof-of-work systems are noteworthy for their asymmetry: they require the issuer to spend effort to find an answer to a moderately hard computational problem, but once solved can be easily verified correct by any recipient. The requirement of proof-of-work fulfils three main purposes:
 
 \begin{enumerate}
-	\item Significantly reduces the threat of record flooding.
+	\item Significantly reduces the threat of DoS flood attack.
 	\item Introduces a barrier-of-entry that encourages the utilization of domain names and the availability of the underlying hidden services.
-	\item Increases the difficulty of domain squatting, a denial-of-service attack where a third-party claims one or more valuable domain names for the purpose of denying or selling them en masse to others. In Tor's anonymous environment, this vector is particularly prone to Sybil attacks.
+	\item Increases the difficulty of domain squatting, a denial-of-service attack where a third-party claims one or more valuable domain names for the purpose of denying or selling them en masse to others.
 \end{enumerate}
 
-Bob then digitally signs his association and the proof-of-work with his service's private key.
+Second, Bob uses a Tor circuit to anonymously transmit his Record to an authoritative short-lived random subset of OnioNS servers, known as the \emph{Quorum}, inside the Tor network. The Quorum archive Bob's Record in a sequential public ledger known as a \emph{Pagechain}, of which each OnioNS node holds their own local copy. Bob's Record is received by all Quorum nodes and share signatures of their knowledge with each other, so they maintain a common database.
 
-Second, Bob uses a Tor circuit to anonymously transmit his association, proof-of-work, digital signature, and public key to OnioNS nodes, a subset of Tor routers. This set is deterministically derived from the volatile Tor consensus documents and is rotated periodically. The OnioNS nodes receive Bob's information, distribute it amongst themselves, and later archive it in a sequential transaction database, of which each OnioNS node holds their own copy. The nodes also digitally sign this database and distribute their signatures to the other nodes. Thus the OnioNS Tor nodes maintain a common database and have each vouched for its authenticity.
-
-Third, a Tor client, Alice, uses a Tor client to anonymously connect to one of these OnioNS nodes and request a domain name. Without loss of generality, let this request be example.tor. Alice receives Bob's ``example.tor $ \rightarrow $ example0uyw6wgve.onion'' association, his proof-of-work, his digital signature, and his public key. Alice then verifies the proof-of-work and Bob's signature against his public key, and hashes his key to confirm the accuracy of example0uyw6wgve.onion. Alice then looks up example0uyw6wgve.onion in Tor's distributed hashtable, finds Bob's introduction point, and confirms that its knowledge of Bob's public key matches the key she received from the OnioNS nodes. Finally, she finishes the Tor hidden service protocol and begins communication with Bob. In this way, Alice can contact Bob through his chosen domain name without resorting to use lower-level hidden service addresses. The uniqueness and authenticity of the Bob's domain name is maintained by the subset of Tor nodes.
-
-\newpage
+Third, Alice, uses a Tor client to anonymously connect to a name server outside the Quorum but mirroring their database, then ask for ``example.tor''. Alice receives Bob's Record, verifies it signature and proof-of-work, and follows the association to ``onions55e7yam27n.onion''. As Bob's Record is self-signed using Bob's private key, Alice can verify the Record's authenticity. Finally, Alice uses this address and the Tor hidden service protocol to contact Bob. In this way, Alice can contact Bob through his chosen domain name without resorting to use lower-level hidden service addresses. The uniqueness and authenticity of the Bob's domain name is maintained by the subset of Tor nodes.
 
 \section{Definitions}
 
 To discuss OnioNS precisely we must first define some central terms that we will use throughout the rest of this document. We detail their exact contents in section \ref{sec:DataStructures} and how they are used throughout sections \ref{sec:BasicDesign} and \ref{sec:Protocols}.
 
-\begin{description}
-	\item[domain name] \hfill \\
-		A \emph{domain name} is a case-insensitive identification string claimed by a hidden service operator. The syntax of OnioNS domain names mirrors the Internet DNS; we use a sequence of name-delimiter pairs with a .tor pseudo top-level domain (TLD) that is not used on the Internet DNS. The TLD is a name at depth one and is preceded by names at sequentially increasing depth. The term ``domain name'' refers to the identiciation string as a whole, while ``second-level domain'' refers to the central name that is immediately followed by the TLD, as illustrated in Figure \ref{fig:sampleDomain}. Domain names point to \emph{destinations} -- other domain names with either the .tor or .onion TLD.
+\textbf{domain name} is a case-insensitive identification string claimed by a hidden service operator. The syntax of OnioNS domain names mirrors the Internet DNS; we use a sequence of name-delimiter pairs with a .tor pseudo top-level domain (TLD) that is not used on the Internet DNS. The TLD is a name at depth one and is preceded by names at sequentially increasing depth. The term ``domain name'' refers to the identification string as a whole, while ``second-level domain'' refers to the central name that is immediately followed by the TLD, as illustrated in Figure \ref{fig:sampleDomain}. Domain names point to \emph{destinations} -- other domain names with either the .tor or .onion TLD.
 
 		\begin{figure}[htbp]
 			\centering
@@ -37,32 +31,17 @@ To discuss OnioNS precisely we must first define some central terms that we will
 			\label{fig:sampleDomain}
 		\end{figure}
 
-	The Internet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim second-level names and then control all names of greater depth under that second-level name.
+	The Internet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim a second-level name and then control all names of greater depth under that second-level name.
 
-	\item[Record] \hfill \\
-		A \emph{Record} is a small textual data structure that contains one or more domain-destination pairs, proof-of-work, a digital signature, and a public key. Records are issued by hidden service operators and sent to OnioNS servers. Every Record is self-signed with the hidden service's key. In section \ref{sec:Record} we describe the five different types of Records: Create, Modify, Move, Renew, and Delete. A Create Record represents a registration on an unclaimed second-level domain name, Modify, Move, and Renew are operations on that domain name or its subdomains, and a Delete Record relinquishes ownership over the second-level domain name and all its subdomains.
+A \textbf{Record} is a small textual data structure that contains a single second-level domain name, a mapping of subdomains to .tor or .onion pseudo-TLD destinations, proof-of-work, a digital signature, a public key, and an optional PGP fingerprint. Records are issued by hidden service operators and sent to OnioNS servers. Every Record is self-signed with the hidden service's key. In section \ref{sec:Record} we describe the five different types of Records: Create, Modify, Move, Renew, and Delete.
 
-	\item[broadcast] \hfill \\
-		The term for the protocol described in section \ref{sec:ProtoHiddenServices} that describes the uploading of new Records to OnioNS servers through Tor circuits and then the subsequent confirmation that the Record has been received.
+A \textbf{Page} is textual database designed to archive one or more Records in long-term storage. Pages are held and digitally signed by OnioNS nodes and are writable only for fixed periods of time before they are read-only. Each Page contains a link to a previous Page, forming an append-only public ledger known as an \emph{Pagechain}. This forms a two dimensional distributed data structure: the chain of Pages grows over time and there are multiple redundant copies of each Page spread out across the network at any given time.
+		
+A \textbf{Mirror} is any machine (inside or outside of the Tor network) that has performed a synchronization (section \ref{sec:Synchronization}) against the OnioNS network and now holds a complete copy of the Pagechain. Mirrors do not actively participate in the OnioNS network and do not have the power to manipulate the main page-chain.
 
-	\item[Snapshot] \hfill \\
-		A \emph{Snapshot} is textual database designed to hold collections of Records in a short-term volatile cache. They are also used to transmit sets of Records between OnioNS servers.
+A \textbf{Quorum Candidates} are \emph{Mirrors} inside the Tor network that have also fulfilled two additional requirements: 1) they must demonstrate that they are an up-to-date Mirror, and 2) that they have sufficient CPU and bandwidth capabilities to handle powering OnioNS in addition to their regular Tor duties. In other words, they are qualified and capable to power OnioNS, but have not yet been chosen to do so.
 
-	\item[Page] \hfill \\
-		A \emph{Page} is textual database designed to archive one or more Records in long-term storage. Pages are held and digitally signed by OnioNS nodes and are writable only for fixed periods of time before they are read-only. Each Page contains a link to a previous Page, forming an append-only public ledger known as an \emph{Pagechain}. This forms a two dimensional distributed data structure: the chain of Pages grows over time and there are multiple redundant copies of each Page spread out across the network at any given time.
-
-	\item[Mirror] \hfill \\
-		A \emph{Mirror} is any machine (inside or outside of the Tor network) that has performed a synchronization (section \ref{sec:Synchronization}) against the OnioNS network and now holds a complete copy of the Pagechain. Mirrors do not actively participate in the OnioNS network and do not have the power to manipulate the main page-chain.
-
-	\item[Quorum Candidate] \hfill \\
-		A \emph{Quorum Candidates} are \emph{Mirrors} inside the Tor network that have also fulfilled two additional requirements: 1) they must demonstrate that they are an up-to-date Mirror, and 2) that they have sufficient CPU and bandwidth capabilities to handle powering OnioNS in addition to their regular Tor duties. In other words, they are qualified and capable to power OnioNS, but have not yet been chosen to do so.
-
-	\item[Quorum] \hfill \\
-		A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master OnioNS Pagechain. Each Quorum node actively its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates as described in section \ref{sec:ProtoTorClients}.
-
-	\item[flood] \hfill \\
-		The periodic burst of communication that occurs between Quorum nodes wherein Snapshots are exchanged and each Quorum node obtains the state and digital signature of the current Page maintained by all other Quorum nodes. This communication is described in section \ref{sec:ProtoOnioNServers}.
-\end{description}
+The \textbf{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master OnioNS Pagechain. Each Quorum node actively its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates as described in section \ref{sec:ProtoTorClients}.
 
 \begin{figure}[htbp]
 	\centering
@@ -70,26 +49,10 @@ To discuss OnioNS precisely we must first define some central terms that we will
 	\caption{The relationship between Mirrors, Quorum Candidates, and the Quorum. A Mirror is any machine that holds the OnioNS Pagechain, Quorum Candidates are both up-to-date Mirrors and reliable Tor nodes, and the Quorum is randomly selected from the pool of Quorum Candidates.}
 \end{figure}
 
-Throughout the rest of this document, let Alice be a Tor client, and Bob be the operator of a hidden service. Assume that neither Alice nor Bob run Tor relays themselves, but that they only use Tor. Therefore Alice and Bob can obtain and fully verify any past or current set of the three consensus documents described in section \ref{sec:ConsensusDocs}. Bob has access to his hidden service private RSA key and may or may not have a PGP key with a subkey for email encryption.
-
-\newpage
+Throughout the rest of this document, let Alice be a Tor client, and Bob be the operator of a hidden service with access to his private HS RSA key. As both Alice and Bob are Tor users, they can obtain and fully verify any past or current set of the three consensus documents described in section \ref{sec:ConsensusDocs}.
 
 \section{Basic Design}
 \label{sec:BasicDesign}
-
-OnioNS is build on a fundamental sequence of operations, as illustrated in Figure \ref{fig:basicDesign}:
-
-\begin{enumerate}
-	\item Bob generates a valid Record.
-	\item Bob broadcasts the Record to the Quorum.
-	\item The Record is flooded across the Quorum.
-	\item Each Quorum node stores the Record into its current Page at the head of its local Pagechain.
-	\item Alice queries the system for a domain name.
-	\item Alice receives back the Record matching that domain name and confirms its validity.
-	\item Alice connects to Bob via the hidden service protocol.
-\end{enumerate}
-
-These steps describe the propagation of any Record throughout the entire network. The protocols for each party are described in sections \ref{sec:ProtoHiddenServices}, \ref{sec:ProtoOnioNServers}, and \ref{sec:ProtoTorClients}, respectively. It should be noted that the activities of Alice, Bob, and the Quorum occur asynchronously: hidden service operator may be transmitting Records to the Quorum at the same time that clients are querying for other domain names.
 
 \begin{figure}[htbp]
 	\centering
@@ -134,17 +97,17 @@ These steps describe the propagation of any Record throughout the entire network
 			\draw[thick, blue, ->, postaction={decorate, decoration={text along path, text align=center, text={Confirmation}, raise=-10pt}}] (10) to [bend left=30] (12){};
 
 		\end{tikzpicture}
-	\caption{Bob uses a Tor circuit (guard, middle, and exit Tor routers) to anonymously broadcast a record to OnioNS. Alice uses her own Tor circuit to query the system for a domain name, and she is given Bob's record in response. Then Alice connects to Bob by Tor's hidden service protocol (section \ref{sec:HiddenServices}).}
+	\caption{Bob uses a Tor circuit to anonymously upload a Record to OnioNS. Alice uses her own Tor circuit to query the system for a domain name, and she is given Bob's Record in response. Then Alice connects to Bob by Tor's hidden service protocol.}
 	\label{fig:basicDesign}
 \end{figure}
 
-\subsection{Domain Name Operations}
+\subsection{Claim on a Domain Name}
 
-Bob first generates a valid Record which he transmits over a Tor circuit to a randomly-selected Quorum node, who confirms acceptance or returns an error message otherwise. Bob's Record is broadcasted to the rest of Quorum via the flood protocol. Bob can confirm that the rest of the Quorum received his Record by constructing another circuit to a different randomly-selected Quorum node and asking it for his Record. This process is illustrated in Figure \ref{fig:recordBroadcast}.
+To claim a domain name for his hidden service, Bob first generates a valid Record and transmits it over a Tor circuit to a randomly-selected Quorum node. Bob receives a response indicating whether the Record was accepted or not and can confirm that it was re-transmitted by immediately querying another Quorum node for that Record. Mirrors can subscribe to network events from other Mirrors in a peer-to-peer fashion, thus allowing Records and other information to quickly propagate the network, as illustrated in Figure \ref{fig:recordBroadcast}.
 
 \begin{figure}[htbp]
 	\centering
-	\begin{tikzpicture}[->, node distance=2.4cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries}]
+	\begin{tikzpicture}[->, node distance=2.2cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries}]
 
 			\node[main node] (1) {$ Q_{1} $};
 			\node[main node] (2) [right of=1] {$ Q_{2} $};
@@ -189,52 +152,49 @@ Bob first generates a valid Record which he transmits over a Tor circuit to a ra
 			% draw upper right propegation
 			\tikzstyle{EdgeStyle}=[bend left=20, ->, blue]
 			\Edge[](6)(12)
-			\draw[thick, blue, postaction={decorate, decoration={text along path, text align=center, text={Snapshot}, raise=3pt}}] (6) to [bend right=18] (4){};
+			\draw[thick, blue] (6) to [bend right=18] (4){};
 
 		\end{tikzpicture}
-	\caption{Bob uses his existing circuit (green) to inform Quorum node $ Q_{4} $ of the new record. $ Q_{4} $ then floods it via Snapshots to all other Quorum nodes. Each node stores it in their own Page for long-term storage. Bob confirms from another Quorum node $ Q_{5} $ that his Record has been received.}
+	\caption{Bob uses his existing circuit (green) to inform Quorum node $ Q_{4} $ of the new Record. $ Q_{4} $ then sends his Record to all other Quorum nodes. Each node stores it in their own Page for long-term storage. Bob confirms from another Quorum node $ Q_{5} $ that his Record has been received.}
 	\label{fig:recordBroadcast}
 \end{figure}
 
 \subsection{Pagechain Maintenance}
 
-The Pagechain is OnioNS' fundamental data structure. It is a distributed append-only transactional database of a fixed maximum length. The Pagechain is designed as a public and fully confirmable data structure -- that is, any Mirror can check the integrity of each Page and the Records contained within them, the uniqueness of domain names, and the validity of the digital signatures on each Page from all Quorum nodes. The head of the chain (the latest Page) is maintained and digitally signed by each member of the current Quorum. When a Quorum Candidate is chosen as a Quorum node, it generates a new Page and adds that Page onto the front of its Pagechain. As the Quorum receives new Records, Mirror synchronize against them and hold a copy of their latest Page.
-
-Each Quorum node shares the Records that it receives with other Quorum nodes. Assuming that the entire Quorum is honest and maintains perfect communication, all Quorum nodes would be maintaining an identical Page. However, a Quorum node may miss the flood, may act maliciously, or may deviate from the rest of the Quorum for other reasons. Therefore, disagreements may inevitably form within the Quorum. In Section \ref{sec:Assumptions} we assumed that the largest set of agreeing Quorum nodes is also honest, therefore all Mirrors follow this rule to select the master Pagechain. This assumption is also made when creating a new Page, as described in section \ref{sec:ProtoOnioNServers}. Thus the Pagechain is at least partially self-healing. We illustrate this in Figure \ref{fig:sidechains}.
+We introduce the Pagechain, a fundamental data structure in OnioNS, in order to keep all participating nodes in synchronization and to save Records in long-term storage. It is a distributed append-only transactional database of a fixed maximum length and is held locally by all Mirrors. Like a blockchain, the Pagechain is designed as a public and fully confirmable data structure -- anyone can confirm the integrity, uniqueness, and validity of all data structures contained within. The head of the chain (the latest Page) is maintained by members of the current Quorum. Assuming that the entire Quorum is honest and maintains perfect communication, all Quorum nodes would be maintaining an identical Page. However, due to malicious modifications or missed communication, disagreements may inevitably form within the Quorum. To avoid these disagreements from misleading the network, we let the network follow the Page maintained by the largest number of Quorum nodes, thus allowing the structure to be partially self-healing as illustrated in Figure \ref{fig:sidechains}.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.65\textwidth]{images/LucidCharts/Page-chain.pdf}
-	\caption{An example Pagechain across four Quorums with three side-chains. $ \mathrm{Quorum}_{1} $ is honest and maintains reliable flooding communication, and thus has identical Pages. $ \mathrm{Quorum}_{2} $'s largest cluster is likewise in agreement, but there are three nodes which are acting maliciously together and have changed their Pages. Node 5 in $ \mathrm{Quorum}_{3} $ references an old page in attempt to bypass $ \mathrm{Quorum}_{2} $'s records, and nodes 6-7 are colluding with nodes 5-7 from $ \mathrm{Quorum}_{2} $. Finally, $ \mathrm{Quorum}_{4} $ has two nodes that acted honestly but did not record new records, so their Pagechains differ from the others. However, across all four days the largest clusters are honest nodes and thus integrity remains in the master Pagechain.}
+	\includegraphics[width=0.55\textwidth]{images/LucidCharts/Page-chain2.pdf}
+	\caption{An example Pagechain across four Quorums with three side-chains. $ \mathrm{Quorum}_{1} $ is honest and maintains reliable flooding communication, and thus has identical Pages. Here, red nodes are colluding maliciously, orange missed some communication, and green nodes are acting honestly. Despite the disagreements, across all four days the largest clusters are honest nodes and thus integrity remains in the master Pagechain.}
 	\label{fig:sidechains}
 \end{figure}
 
 \subsection{Client Request}
 \label{sec:ClientRequest}
 
-Let Bob and Dave be two hidden services, and assume that OnioNS knows a Record from Bob containing an ``example.tor $ \rightarrow $ example0uyw6wgve.onion'' association, and a Record from Dave containing ``example2.tor $ \rightarrow $ example5chqt7to6.onion, sub.example2.tor $ \rightarrow $ example.tor''. Now let Alice request ``sub.example2.tor''.
+Typically, Alice will look up a domain name, performing a \emph{domain query}. These are relatively straightforward. Let us assume that Bob, who owns ``onions55e7yam27n.onion,'' has uploaded a Record containing ``example.tor'' and that another party Dave has a Record which claims ``example2.tor'' and that contains ``sub.example2.tor'' $ \rightarrow $ ``example.tor.'' Then Alice can query for ``sub.example2.tor.''
 
-Since the .tor TLD is not used by the Internet DNS, Alice's client software must direct the request through a Tor circuit to some OnioNS resolver, $ O_{r} $. By default, $ O_{r} $ belongs to the set of Quorum Candidate nodes although Alice may override this and choose some Mirror if she wishes. For security and load reasons, Quorum nodes refuse to respond to queries, so Alice cannot ask them. Following Alice's request, $ O_{r} $ searches its local Pagechain for ``example2.tor'' and finds Dave's Record, which it then sends to Alice. Alice sees the ``sub.example2.tor $ \rightarrow $ example.tor'' association and now queries $ O_{r} $ for ``example.tor''. $ O_{r} $ then locates and sends Bob's Record to Alice. Alice sees that ``example.tor'' has a destination of ``example0uyw6wgve.onion'', and because it has a .onion address she does not need to issue any more queries. Instead, Alice connects to Bob's example0uyw6wgve.onion service via the Tor hidden service protocol and sends her original request (``sub.example2.tor'') to Bob. As is the case with the Internet, Bob's web server may provide specific content to Alice based on this request, but his configuration is outside our scope.
+Alice's client-side software recognizes the .tor pseudo-TLD and distinguishes requests containing it from normal Internet lookups. Her software directs the request through a Tor circuit to some Mirror, $ O_{r} $. For security and load reasons, Quorum nodes refuse to respond to queries, so Alice cannot ask them. $ O_{r} $ finds ``sub.example2.tor'' and returns Dave's Record. Alice sees the ``sub.example2.tor $ \rightarrow $ example.tor'' association and now queries $ O_{r} $ for ``example.tor'' since that domain is not in Dave's Record. $ O_{r} $ returns Bob's Record and Alice sees that ``example.tor'' is claimed by Bob and can connect to ``onions55e7yam27n.onion'' via the Tor hidden service protocol. She can send her original request of ``sub.example2.tor'' to Bob, allowing Bob's web server to provide specific content based on that hostname.
 
-In this way, Alice can query an OnioNS resolver for some Dave-selected domain name and recursively resolve it to a .onion address transparently. The number of resolutions Alice makes is fixed to a maximal length (section \ref{sec:Record}) so this algorithm always completes. We discuss minor optimizations and security enhancements to this procedure in section \ref{sec:ProtoTorClients}.
+In this way, Alice can query a name server and load a hidden service by a meaningful name. We suggest optimizations and security enhancements to this protocol in Section \ref{sec:optimizations}.
 
 \section{Primitives}
 
 \subsection{Cryptographic}
 \label{sec:CryptoPrim}
 
-OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of-work, and a pseudorandom number generator. We require that Tor routers generate an Ed25519 keypair and distribute the public key via the consensus document.
+OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of-work, and a pseudorandom number generator. We require that Tor routers generate an Ed25519\cite{bernstein2011high} keypair and distribute the public key via the consensus document. We note that while we can theoretically use existing NTor keys for digital signatures as it is possible to convert Curve25519 to Ed25519 in constant time, we refrain from this because it is likely not a cryptographically secure operation. Therefore we require Tor to introduce Ed25519 keys to all Tor routers. If this is infeasible, Ed25519 can be substituted with RSA in all instances.
 
 \begin{itemize}
-	\item Let $ H(x) $ be a cryptographic hash function. In our reference implementation we define $ H(x) $ as SHA-384, a truncated and slight modificated derivative of SHA-512. Currently the best preimage attack of SHA-512 breaks 57 out of 80 rounds in $ 2^{511} $ time.\cite{li2012converting} SHA-384 is included in the National Security Agency's Suite B Cryptography for protecting information classified up to Top Secret.
-	\item Let $ S_{d}(m, r) $ be a deterministic RSA digital signature function that accepts a message $ m $ and a private RSA key $ r $ and returns an RSA digital signature. Let $ S_{d}(m, r) $ use $ H(x) $ as a digest function on $ m $ in all use cases. In our reference implementation we define $ S_{d}(m, r) $ as EMSA-PSS, (EMSA4) a probabilistic signature scheme defined by PKCS1 v2.1 and republished in 2003's RFC 3447.
-	\item Let $ S_{\mathit{ed}}(m, e) $ be an Ed25519 digital signature function that accepts a message $ m $ and a private key $ e $ and returns a 64-byte digital signature. Ed25519 is digital signature scheme designed with high performance, strong implementation security, and minimal keypair and signature sizes objectives in mind. The Ed25519 elliptic curve is birationally equivalent to Curve25519.\cite{bernstein2011high} Let $ S_{\mathit{ed}}(m, e) $ use $ H(x) $ as a digest function on $ m $ in all use cases.
-	\item Let $ V_{\mathit{ed}}(m, E) $ validate an Ed25519 digital signature by accepting a message $ m $ and a public key $ E $, and return true if the signature is valid. Let $ V_{\mathit{ed}}(m, E) $ use $ H(x) $ as a digest function on $ m $ in all use cases.
-	\item Let $ \mathrm{PoW}(i) $ be a proof-of-work scheme such as a strong key derivation function that accepts an input key $ k $ and returns a derived key. Our reference implementation uses a fixed salt and scrypt, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users.\cite{percival2009stronger}\cite{percival2012scrypt} We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
-	\item Let $ \mathit{R}(s) $ be a pseudorandom number generator that accepts an initial seed $ s $ and returns a list of numerical pseudorandom numbers. We suggest MT19937, commonly known as the Mersenne Twister. This generator is widely used throughout most programming languages and is well known for its speed, long period, and the high quality of its pseudorandom output, although it is not cryptographically secure.\cite{matsumoto1998mersenne}
+	\item Let $ H(x) $ be a cryptographic hash function. In our reference implementation we define $ H(x) $ as SHA-384.
+	\item Let $ S_{\mathit{RSA}}(m, r) $ be a deterministic RSA digital signature function that accepts a message $ m $ and a private RSA key $ r $ and returns an RSA digital signature. Let $ S_{\mathit{RSA}}(m, r) $ use $ H(x) $ as a digest function on $ m $ in all use cases. In our reference implementation we define $ S_{\mathit{RSA}}(m, r) $ as EMSA PKCS1 1.5.
+	\item Let $ V_{\mathit{RSA}}(m, E) $ validate an RSA digital signature by accepting a message $ m $ and a public key $ R $, and return true if and only if the signature is valid.
+	\item Let $ S_{\mathit{ed}}(m, e) $ be an Ed25519 digital signature function that accepts a message $ m $ and a private key $ e $ and returns a 64-byte digital signature. Let $ S_{\mathit{ed}}(m, e) $ use $ H(x) $ as a digest function on $ m $ in all use cases.
+	\item Let $ V_{\mathit{ed}}(m, E) $ validate an Ed25519 digital signature by accepting a message $ m $ and a public key $ E $, and return true if and only if the signature is valid.
+	\item Let $ \mathrm{PoW}(i) $ be a one-way collision-free function that accepts an input key $ k $ and returns a deterministic output. Our reference implementation uses a fixed salt and scrypt, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users\cite{percival2009stronger}\cite{percival2012scrypt}. We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
+	\item Let $ \mathit{R}(s) $ be a pseudorandom number generator that accepts an initial seed $ s $ and returns a list of numerical pseudorandom numbers. We suggest MT19937, commonly known as the Mersenne Twister, which is widely used throughout most programming languages and is well known for its speed, long period, and the high quality of its pseudorandom output\cite{matsumoto1998mersenne}.
 \end{itemize}
-
-\newpage
 
 \subsection{Symbols}
 
@@ -244,8 +204,6 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 	\item Let $ L_{P} $ represent the maximum number of Pages in the Pagechain.
 	\item Let $ q $ be an Quorum iteration counter.
 	\item Let $ \Delta q $ be the lifetime of a Quorum in days: every $ \Delta q $ days $ q $ is incremented by one and a new Quorum is chosen.
-	\item Let $ s $ be a Snapshot iteration counter.
-	\item Let $ \Delta s $ be the lifetime of a Snapshot in days: every $ \Delta s $ minutes $ s $ is incremented by one, a flood happens, and a fresh Snapshot is used.
 \end{itemize}
 
 All textual databases are encoded in JSON. JSON is significantly more compact than XML, but retains readability. Its support of basic primitive types is highly applicable to our needs. Additionally, we consider the JSON format safer than byte-level encoding.
@@ -260,7 +218,7 @@ There are five different types of Records: Create, Modify, Move, Renew, and Dele
 
 \subsubsection{Create}
 
-A Create Record consists of nine components: \emph{type}, \emph{nameList}, \emph{contact}, \emph{timestamp}, \emph{consensusHash}, \emph{nonce}, \emph{pow}, \emph{recordSig}, and \emph{pubHSKey}. Fields that are optional are blank unless specified, and all fields are encoded in base64, except for \emph{nameList} and \emph{timestamp}, which are encoded in standard UTF-8.
+A Create Record consists of nine components. Fields that are optional are blank unless specified, and all fields are encoded in base64, except for \emph{nameList} and \emph{timestamp}, which are encoded in standard UTF-8.
 
 \renewcommand{\arraystretch}{1.75} % increase spacing between columns
 \begin{center}
@@ -268,73 +226,52 @@ A Create Record consists of nine components: \emph{type}, \emph{nameList}, \emph
     \hline
     \textbf{Field} & \textbf{Required?} & \textbf{Description} \\
     type & Yes & A textual label containing the type of Record. In this case, \emph{type} is set to ``Create''. \\
-    nameList & Yes & An array list of domain names and their destinations. The list includes one or more second-level domain names, while the remainder of the list contains zero or more subdomains (names at level $ < 2 $) under the second-level domains. In this way, records can be referenced by their unique second-level domain names. Destinations use either .tor or .onion TLDs. \\
+    name & Yes & The second-level domain name for this hidden service. \\
+    nameList & Yes & An array list of zero or more .tor subdomains and their destinations. Destinations use either .tor or .onion TLDs. \\
     contact & No & Bob's PGP key fingerprint if he has one. Client can use this to contact Bob over encrypted email. \\
-    timestamp & Yes & The UNIX timestamp of when the Record was created. \\
     consensusHash & Yes & The hash of the consensus document that generated $ \mathit{Quorum}_{q} $ \\
     nonce & Yes & Four random bytes. \\
    	pow & Yes & 16 bytes that store the output of $ \mathrm{PoW}(i) $. \\
    	recordSig & Yes & The output of $ S_{d}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key. \\
    	pubHSKey & Yes & Bob's public RSA key. \\
     \hline
-    \caption{A Create record, which contains fields common to all records. Every record is self-signed and must have verifiable proof-of-work before it is considered valid.}
     \end{longtabu}
 \end{center}
 
 \subsubsection{Modify}
 
-A Modify Record allows an owner to update his registration with updated information. The owner corrects the fields, updates \emph{timestamp} and \emph{consensusHash}, revalidates the proof-of-work, and transmits the record. Modify Records have a difficulty of $ \frac{\textrm{difficulty}_{\textrm{Create}}}{4} $. Modify Records can be used to add and remove domain names but cannot be used to claim additional second-level domains.
+A Modify Record allows an owner to update his registration with updated information. The owner corrects the fields, updates \emph{consensusHash}, revalidates the proof-of-work, and transmits the record. Modify Records have a difficulty of $ \frac{\textrm{difficulty}_{\textrm{Create}}}{4} $. Modify Records also act as Renew Records. 
 
 \subsubsection{Move}
 
-A Move Record is used to transfer one or more second-level domain names and all associated subdomains from one owner to another. Move Records have two additional fields: \emph{target}, a list of domain-destination pairs, and \emph{destPubKey}, the public key of the new owner. Domain names and their destinations contained in \emph{target} cannot be modified; they must match the latest Create, Renew, or Modify record that defined them. Move records also have a difficulty of $ \frac{\textrm{difficulty}_{\textrm{Create}}}{4} $.
+A Move Record is used to transfer ownership of the second-level domain name and all associated subdomains from one hidden service key to another. Move Records must not contain modifications and must contain one additional field: \emph{destPubKey}, the public key of the new owner. In this way, transfers are similar to Namecoin. Move records also have a difficulty of $ \frac{\textrm{difficulty}_{\textrm{Create}}}{4} $.
 
 \subsubsection{Renew}
 
-Second-level domain names (and their associated domain names) expire every $ L_{P}\Delta q $ days because the Pagechain has a maximum length of $ L_{P} $ Pages. Renew Records must be reissued periodically at least every $ L_{P}\Delta q $ days to ensure continued ownership of domain names. No modifications to existing domain names can be made in Renew records, and the domain names contained within must already exist in the page-chain. Similar to the Modify and Move records, Renew records have a difficulty of $ \frac{\textrm{difficulty}_{\textrm{Create}}}{4} $.
+Second-level domain names (and all associated subdomains) expire every $ L_{P}\Delta q $ days because the Pagechain has a maximum length of $ L_{P} $ Pages. Renew Records must be reissued periodically at least every $ L_{P}\Delta q $ days to ensure continued ownership of the domains contained within them. No modifications to existing domain names can be made in Renew records, and the domain names contained within must already exist in the Pagechain. Similar to the Modify and Move records, Renew records have a difficulty of $ \frac{\textrm{difficulty}_{\textrm{Create}}}{4} $.
 
 \subsubsection{Delete}
 
-A Delete Record is used to relinquish ownership rights over all domain names under the service's RSA key. This is useful if the operator feels that his private key has been compromised or if he has no further user for his domain. This issuance of this Record immediately triggers a purging of the domain name in the system, making it almost immediately available for others. There is no difficulty associated with Delete records, so they can be issued instantly.
-
-\subsection{Snapshot}
-
-Snapshots contain four fields: \emph{originTime}, \emph{recentRecords}, \emph{fingerprint}, and \emph{snapshotSig}.
-
-\begin{description}
-	\item[originTime] \hfill \\
-		Unix time when the snapshot was first created.
-	\item[recentRecords] \hfill \\
-		A array list of records in reverse chronological order by receive time.
-	\item[fingerprint] \hfill \\
-		The hash of the public key of the machine maintaining this snapshot. This is the Tor fingerprint, a unique identification string widely used throughout Tor infrastructure and third-party tools to refer to specific Tor nodes.
-	\item[snapshotSig] \hfill \\
-		The output of $ S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}], e) $ where $ e $ is the router's private Ed25519 key.
-\end{description}
+A Delete Record is used to relinquish ownership rights over a second-level domain name. This is useful if the operator feels that his private key has been compromised or if he has no further user for his domain. This issuance of this Record immediately triggers a purging of the domain name in the system, making it almost immediately available for others. There is no difficulty associated with Delete records, so they can be issued instantly.
 
 \subsection{Page}
 
-Each page contains five fields, \emph{prevHash}, \emph{recordList}, \emph{consensusDocHash}, \emph{fingerprint}, and \emph{pageSig}.
+Each page contains five fields.
 
-\begin{description}
-	\item[prevHash] \hfill \\
-		The SHA-384 hash of \emph{prevHash}, \emph{recordList}, and \emph{consensusDocHash} of a previous page.
-	\item[recordList] \hfill \\
-		An array list of records, sorted in a deterministic manner.
-	\item[consensusDocHash] \hfill \\
-		The SHA-384 of $ cd $.
-	\item[fingerprint] \hfill \\
-		The hash of the public key of the machine maintaining this page, the Tor fingerprint.
-	\item[pageSig] \hfill \\
-		The output of $ S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash})], e) $ where $ e $ is the router's private Ed25519 key.
-\end{description}
+\textbf{prevHash} $ H(\emph{prevHash} \concat  \emph{recordList} \concat \emph{consensusDocHash}) $ of a previous page.
+
+\textbf{recordList} An array list of Records, sorted in a deterministic manner.
+
+\textbf{consensusDocHash} $ H(\mathit{cd}) $.
+
+\textbf{fingerprint} The Tor fingerprint of the relay maintaining this Page.
+
+\textbf{pageSig} The output of $ S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash})], e) $ where $ e $ is the router's private Ed25519 key.
 
 \section{Protocols}
 \label{sec:Protocols}
 
-In section \ref{sec:ConsensusDocs} we described the three consensus documents that Tor routers and clients have: \emph{cached-certs}, \emph{cached-microdesc-consensus}, and \emph{cached-microdescs}. Throughout this section, let ``consensus documents at time $ X $ and day $ Y $'' specifically refer to these three documents when \emph{valid-after} is set to $ X $ and $ Y $. For protocols that specify a hashing of the consensus documents, let the hash only cover \emph{cached-certs} and \emph{cached-microdesc-consensus}; although a router's descriptor is split between \emph{cached-microdesc-consensus} and \emph{cached-microdescs}, the microdescriptors in \emph{cached-microdesc-consensus} include the SHA-256 hash of the entire descriptor. All parties can obtain these consensus documents from any sources because \emph{cached-certs} contains the signing keys that validate \emph{cached-microdesc-consensus}. In practice, it is often efficient to compress these documents en-masse before transmission: they achieve very high compression ratios under Lempel–Ziv–Markov chain algorithm (LZMA).
-
-\newpage
+In section \ref{sec:ConsensusDocs} we described the three consensus documents that Tor routers and clients have: \emph{cached-certs}, \emph{cached-microdesc-consensus}, and \emph{cached-microdescs}. Throughout this section, let ``consensus documents at time $ X $ and day $ Y $'' specifically refer to these three documents when \emph{valid-after} is set to $ X $ and $ Y $. For protocols that specify a hashing of the consensus documents, let the hash only cover \emph{cached-certs} and \emph{cached-microdesc-consensus}; although a router's descriptor is split between \emph{cached-microdesc-consensus} and \emph{cached-microdescs}, the microdescriptors in \emph{cached-microdesc-consensus} include the SHA-256 hash of the entire descriptor. All parties can obtain these consensus documents from any sources because \emph{cached-certs} contains the signing keys that validate \emph{cached-microdesc-consensus}. In practice, it is often efficient to compress these documents en-masse before transmission: they achieve very high compression ratios under Lempel-Ziv-Markov chain algorithm (LZMA).
 
 \subsection{Hidden Services}
 \label{sec:ProtoHiddenServices}
@@ -345,32 +282,30 @@ As invalid Records will be rejected by the network, Bob must generate a valid Re
 
 \begin{enumerate}
 	\item Bob selects the value for \emph{type} based on the desired operation.
-	\item Bob constructs the \emph{nameList} domain-destination associations.
+	\item Bob selects a second-level domain name for his hidden service and assigns it to \emph{name}.
+	\item Bob defines subdomains and their destinations, constructing \emph{nameList}.
 	\item Bob provides his PGP key fingerprint in \emph{contact} or leaves it blank if he doesn't have a PGP key or if he chooses not to disclose it. Bob can derive his PGP fingerprint with the ``gpg --fingerprint'' Unix command.
-	\item Bob records the number of seconds since the Unix epoch in \emph{timestamp}.
 	\item Bob sets \emph{consensusHash} to the output of $ H(x) $, where $ x $ is the consensus documents published at 00:00 GMT on day $ \floor[\big]{\frac{q}{\Delta q}} $.
 	\item Bob initially defines \emph{nonce} as four zeros.
-	\item Let $ \mathit{central} $ be $\mathit{type} \concat \mathit{nameList} \concat \mathit{contact} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} $.
-	\item Bob sets \emph{pow} as $ \mathrm{PoW}(\mathit{central}) $.
+	\item Let $ \mathit{central} $ be $\mathit{type} \concat \mathit{nameList} \concat \mathit{contact} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} $. Bob sets \emph{pow} as $ \mathrm{PoW}(\mathit{central}) $.
 	\item Bob sets \emph{recordSig} as the output of $ S_{d}(m, r) $ where $ m = \mathit{central} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
 	\item Bob saves the PKCS.1 DER encoding of his RSA public key in \emph{pubHSKey}.
 \end{enumerate}
 
-Bob then must increment \emph{nonce} and reset \emph{pow} and \emph{recordSig} until $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{difficulty} * \mathit{count}} $ where \emph{difficulty} is a fixed constant that specifies the work difficulty and \emph{count} is the number of second-level domain names claimed in the Record. An example of a completed and valid record is shown in Figure \ref{fig:sampleRecord}.
+Bob then must increment \emph{nonce} and reset \emph{pow} and \emph{recordSig} until $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{difficulty}} $ where \emph{difficulty} is a fixed constant that specifies the work difficulty. An example of a completed and valid record is shown in Figure \ref{fig:sampleRecord}.
 
 \begin{figure}
-	\begin{lstlisting}
+\begin{lstlisting}
 	{
-		"names": {
-			"example.tor": "exampleruyw6wgve.onion"
-		}
+		"type": "Create",
+		"name": "example.tor",
+		"subd": {"sub": "onions55e7yam27n.onion"},
 		"contact": "AD97364FC20BEC80",
-		"timestamp": 1424045024,
 		"consensusHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
 		"nonce": "AAAABw==",
-		"pow": "4I4dzaBwi4AIZW8s2m0hQQ==",
-		"recordSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ=",
-		"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
+		"pow":"iOuFHz+eBoxsxDDuX/torg==",
+		"recordSig": "bQCtRgJKvkG1Me1Nb0jB1cjN945vHyunFYesi7ildOrYeeZAZLWhf9 azi7YhgL+V/9edPxlGX8+8AMTmrJp6DMWeBVZegANNDzTxkc//x72w88uenQcff JgEKZ1CyBFT3QxtIJvtsd/Te8Hwd60mnAxDR/42rD1QwhJ6PPoOCtc=",		
+		"pubHSKey": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDaXlifPm7dQkw0b F7tOeEdMT9QGM2xoKRZGkNtI8+qeaqx6eiqynVPuS4DYTbr3NppqG7cykteOJlY jBqcDPeaNIytos8q6qYyNEd3VuV6Mm46SL66BL/fIKMxmPNXLp8LfnY UzcUxtdMetxv64Q1Nh46NX6Z8579AXVue3TuKKwIDAQAB"
 	}
 	\end{lstlisting}
 	\caption{A sample registration record. The textual fields are in UTF-8, while the binary fields are in base64. The structure is encoded in JSON.}
@@ -382,15 +317,12 @@ Bob then must increment \emph{nonce} and reset \emph{pow} and \emph{recordSig} u
 Let Carol be a Tor client or a Mirror that receives a Record from another Mirror.
 
 \begin{enumerate}
-	\item Carol checks that the Record contains valid JSON.
-	\item Carol checks that \emph{type} is either ``Create'', ``Modify'', ``Move'', ``Renew'', or ``Delete''.
+	\item Carol checks that the Record contains valid JSON and that \emph{type} is either ``Create'', ``Modify'', ``Move'', ``Renew'', or ``Delete''.
 	\item Carol checks that \emph{nameList} is has a length $ \in [1,24] $, contains at least one second-level domain name, and that all subdomains have a second-level domain name within \emph{nameList}. Additionally, Carol checks that there is no domain name nor destination that uses more than 16 names, that is longer than 32 characters, or whose total length is more than 128 characters.
 	\item Carol checks that \emph{contact} is either 0, 16, 24, or 32 characters in length, and that \emph{contact} is valid hexadecimal.
-	\item Carol checks that \emph{timestamp} is not in the future nor more than 48 hours old relative to her system clock.
-	\item Carol checks that \emph{pubHSKey} is a valid PKCS.1 DER-encoded public 1024-bit RSA key, and that when converted to a .onion address that address appears at least once in \emph{nameList}.
-	\item Carol checks the validity of \emph{recordSig} deterministic signature against \emph{pubHSKey} and $ \mathit{central} \concat \mathit{pow} $.
+	\item Carol checks the validity of \emph{recordSig} against \emph{pubHSKey} and $ \mathit{central} \concat \mathit{pow} $.
 	\item Carol obtains the $ \floor[\big]{\frac{q}{\Delta q}} $ 00:00 GMT consensus documents and checks $ H(x) $ on it against \emph{consensusHash}. She also confirms that the consensus documents are no older than $ \mathrm{min}(48, 12 * \Delta q) $.
-	\item Carol checks that $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{difficulty} * \mathit{count}} $
+	\item Carol checks that $ H(\mathit{central} \concat \mathit{pow} \concat \mathit{recordSig}) \leq 2^{\mathit{difficulty}} $
 	\item Carol calculates $ \mathrm{pow}(\mathit{central}) $ and confirms that the output matches \emph{nonce}.
 \end{enumerate}
 
@@ -399,35 +331,25 @@ If at any step an assertion fails, the Record is not valid and Carol does not ac
 \subsubsection{Record Broadcast}
 
 \begin{enumerate}
-	\item Bob derives the current Quorum by the Quorum Derivation protocol described in section \ref{sec:ProtoTorClients}.
+	\item Bob derives the current Quorum by the Quorum Derivation protocol.
 	\item Bob constructs a circuit, $ c_{1} $, to a Mirror node $ m_{1} $.
 	\item Bob asks for and receives from $ c_{1} $ the $ h_{j} = H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}) $ hash and \emph{pageSig} (the Ed25519 signature on that hash) from each Quorum node.
 	\item Bob confirms that $ V_{\mathit{ed}}(h_{j}, E) $ returns true for each $ h_{j} $ and defines $ U $ as the largest set of Quorum nodes that have the same hash.
 	\item Bob randomly chooses a node $ n_{1} $ from $ U $ and builds a circuit to it, $ c_{2} $.
 	\item Bob uploads his Record through $ c_{2} $ to $ n_{1} $.
-	\item Bob waits up to $ \Delta s $ minutes for the next $ s $ flood iteration.
-	\item Bob uses $ c_{1} $ to ask $ m_{1} $ for any second-level domain name contained in his Record.
+	\item Bob uses $ c_{1} $ to ask $ m_{1} $ for his second-level domain name.
 	\item Bob has confirmation that his Record was accepted and processed by the Quorum if $ m_{1} $ returns the Record he uploaded.
-	\item If $ m_{1} $ does not return Bob's Record, he can either query another Mirror or repeat this procedure and broadcast to a different Quorum node.
 \end{enumerate}
 
 \subsection{OnioNS Servers}
 \label{sec:ProtoOnioNServers}
 
-Let Charlie be the name of an OnioNS Mirror.
+Let Charlie be the name of an OnioNS Mirror. Charlie listens for incoming Records or signatures from one or more other Mirrors.
 
 \subsubsection{Database Initialization}
 
 \begin{enumerate}
-	\item Charlie creates a empty Snapshot.
-	\item Charlie sets \emph{originTime} to the number of seconds since the Unix epoch.
-	\item Charlie sets \emph{recentRecords} to an empty array.
-	\item Charlie sets \emph{fingerprint} to his Tor fingerprint.
-	\item Charlie sets $ \mathit{snapshotSig} = S_{\mathit{ed}}(\mathit{originTime} \concat \mathit{recentRecords} \concat \mathit{fingerprint}, e) $ where $ e $ is Charlie's private Ed25519 key.
-	\item Charlie begins listening for incoming Records.
-	\item Charlie creates an initial Page $ P_{\mathit{curr}} $.
-	\item Charlie selects a previous Page $ P_{\mathit{prev}} $ to back-reference via the Page Selection protocol.
-	\item Charlie sets $ \mathit{prevHash} = H(P_{\mathit{prev}}(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}) $.
+	\item Charlie creates an initial Page $ P_{\mathit{curr}} $ and sets the $ P_{\mathit{prevHash}} $ back-reference based on the Page Selection protocol.
 	\item Charlie sets \emph{recordList} to an empty array.
 	\item Charlie downloads from some remote source the consensus document $ \mathit{cd} $ issued on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 GMT and authenticates it against the Tor authority public keys.
 	\item Charlie sets $ \mathit{consensusDocHash} = H(\mathit{cd}) $.
@@ -442,36 +364,20 @@ Let Charlie be the name of an OnioNS Mirror.
 		"recordList": [],
 		"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
 		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
+		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjo Fs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7 fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
 	}
 	\end{lstlisting}
 	\caption{A sample empty Page.}
 	\label{fig:emptyPage}
 \end{figure}
 
-\begin{figure}
-	\begin{lstlisting}
-	{
-		"originTime": 1426507551,
-		"recentRecords": [],
-		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-		"snapshotSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-	}
-	\end{lstlisting}
-	\caption{A sample empty Snapshot.}
-	\label{fig:emptySnapshot}
-\end{figure}
-
-\newpage
-
 \subsubsection{Page Selection}
 
 The Page Selection protocol relies on our security assumption that the largest set of Quorum nodes with agreeing and valid Pages are acting honestly. In this protocol, Charlie chooses the Page $ P_{c} $ maintained by that set.
 
 \begin{enumerate}
+	\item Charlie calculates the Quorum via the Quorum Derivation protocol.
 	\item Charlie obtains the set of Pages maintained by $ \mathit{Quorum}_{q} $.
-	\item Charlie obtains the consensus documents $ \mathit{cd} $ issued on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 GMT and authenticates them.
-	\item Charlie uses $ \mathit{cd} $ to calculate the Quorum via the Quorum Derivation protocol.
 	\item For each Page,
 		\begin{enumerate}
 			\item Charlie checks that \emph{prevHash} references some page from the previous Quorum.
@@ -506,24 +412,23 @@ Assume that Charlie has obtained a complete Pagechain. Let $ P_{c} $ be an initi
 \label{sec:Synchronization}
 
 \begin{enumerate}
-	\item Charlie randomly selects a Quorum Candidate, $ R_{j} $.
+	\item Charlie randomly selects a Mirror relay, $ R_{j} $.
 	\item Charlie downloads $ R_{j} $'s Pagechain and the Pages used by each Quorum member for each Quorum, obtaining a 2D data structure at most $ L_{P} $ Pages long and $ L_{Q} $ Pages wide.
-	\item Charlie checks the downloaded Pagechain via the Pagechain Validation protocol. If it does not validate, Charlie picks another Quorum Candidate $ R_{k} $, $ k /ne j $, and downloads the invalid Pages from $ R_{k} $.
-	\item Charlie randomly selects a Quorum node $ Q_{c} $.
-	\item Charlie periodically polls $ Q_{c} $ for the Pages of all other Quorum nodes.
+	\item Charlie checks the downloaded Pagechain via the Pagechain Validation protocol. If it does not validate, Charlie picks another Mirror $ R_{k} $, $ k /ne j $, and downloads the invalid Pages from $ R_{k} $.
+	\item Charlie randomly selects a Quorum node $ Q_{c} $ and subscribes to Record and signature networking events from it.
 	\item When a set of Pages is available from $ Q_{c} $, Charlie follows the Page Selection protocol to choose a Page that becomes the new Pagechain head.
 \end{enumerate}
 
 \subsubsection{Quorum Qualification}
 
-The Quorum is the OnioNS most trusted set of authoritative nodes. They have responsibility over the master Pagechain, are responsible for handling incoming Records from hidden service operators, and Mirrors poll them for their most recent Page. As such, the Quorum must be derived from the most reliable, capable, and trusted Tor nodes and more importantly Quorum nodes must be up-to-date Mirrors. These two requirements are crucial to ensuring the reliability and security of the Quorum.
+The Quorum is the OnioNS most trusted set of authoritative nodes. They have responsibility over the master Pagechain and are responsible for handling incoming Records from hidden service operators. As such, the Quorum must be derived from the most reliable, capable, and trusted Tor nodes and more importantly Quorum nodes must be up-to-date Mirrors. These two requirements are crucial to ensuring the reliability and security of the Quorum.
 
-The first criteria requires Tor nodes to demonstrate that they sufficient capabilities to handle the increase in communication and processing from with OnioNS protocols. Fortunately, Tor's infrastructure already provides a mechanism that can be utilized to demonstrate this requirement; Tor authority nodes assign flags to Tor routers to classify their capabilities, speed, or uptime history: these flags are used for circuit generation and hidden service infrastructure. Let Tor nodes meet the first qualification requirement if they have the Fast, Stable, Running, and Valid flags. As of February 2015, out of the $ \approx $ 7,000 nodes participating in the Tor network, $ \approx $ 5,400 of these node have these flags and complete the second requirement.\cite{TorMetrics}
+The first criteria requires Tor nodes to demonstrate that they sufficient capabilities to handle the increase in communication and processing from with OnioNS protocols. Fortunately, Tor's infrastructure already provides a mechanism that can be utilized to demonstrate this requirement; Tor authority nodes assign flags to Tor routers to classify their capabilities, speed, or uptime history: these flags are used for circuit generation and hidden service infrastructure. Let Tor nodes meet the first qualification requirement if they have the Fast, Stable, Running, and Valid flags. As of February 2015, out of the $ \approx $ 7,000 nodes participating in the Tor network, $ \approx $ 5,400 of these node have these flags and complete the second requirement\cite{TorMetrics}.
 
 To demonstrate the second criteria, the na\"{i}ve solution is to simply ask nodes meeting the first criteria for their Page, and then compare the recency of its latest Page against the Pages from the other nodes. However, this solution does not scale well; Tor has $ \approx $ 2.25 million daily users\cite{TorMetrics}: it is infeasible for any single node to handle queries from all of them. Instead, let each Mirror that meets the first criteria perform the following:
 
 \begin{enumerate}
-	\item Charlie calculates $ t = H(\mathit{pc} \concat \floor[\big]{\frac{m - 15}{30}}) $ where \emph{pc} is Charlie's Pagechain and $ m $ is the minute component of the time of day in GMT. Tor's consensus documents are published at the top of each hour; we manipulate $ m $ such that $ t $ is consistent at the top of each hour even with at most a 15-minute clock-skew.
+	\item Charlie calculates $ t = H(\mathit{pc} \concat \floor[\big]{\frac{m - 15}{30}}) $ where \emph{pc} is Charlie's Pagechain and $ m $ is the number of minutes elapsed in that day. Tor's consensus documents are published at the top of each hour; we manipulate $ m $ such that $ t $ is consistent at the top of each hour even with at most a 15-minute clock-skew.
 	\item Let Charlie convert $ t $ to base64 and truncate to 8 bytes.
 	\item Let Charlie include this new $ t $ in the Contact field in his relay descriptor sent to Tor authority nodes.
 \end{enumerate}
@@ -535,101 +440,23 @@ We suggest placing $ t $ inside a new field within the router descriptor in futu
 A Quorum node $ Q_{j} $ listens for new Records from hidden service operators. When a Record $ r $ is received, $ Q_{j} $
 
 \begin{enumerate}
-	\item $ Q_{j} $ rejects $ r $ if it does not validate according to the Record Validation protocol.
+	\item $ Q_{j} $ rejects $ r $ if the Record is not valid.
 	\item $ Q_{j} $ rejects $ r $ if no such hidden service descriptor exists in Tor's distributed hashtable.
 	\item $ Q_{j} $ rejects $ r $ if $ Q_{j} $'s Pagechain contains $ \ge 2 $ Create Records containing $ r $'s \emph{pubHSkey}.
-	\item If $ r $ is a Create record, $ Q_{j} $ rejects $ r $ if any of its second-level domains already exist in $ Q_{j} $'s Pagechain.
+	\item If $ r $ is a Create record, $ Q_{j} $ rejects $ r $ if its second-level domain already exists in $ Q_{j} $'s Pagechain.
 	\item If $ r $ is a Modify, Move, Renew or Delete Record, $ Q_{j} $ rejects $ r $ if either of the following are true:
 		\begin{enumerate}
 			\item $ r $'s Create Record was not found in the Pagechain.
-			\item $ r $'s \emph{pubHSKey} does not match the latest Record found in the Pagechain under its second-level domain names.
+			\item $ r $'s \emph{pubHSKey} does not match the latest Record found in the Pagechain under its second-level domain name.
 		\end{enumerate}
 	\item If $ Q_{j} $ has rejected $ r $, $ Q_{j} $ informs Bob of this outcome and its reason.
-	\item If $ Q_{j} $ has not rejected $ r $,
-		\begin{enumerate}
-			\item $ Q_{j} $ informs Bob that $ r $ was accepted.
-			\item $ Q_{j} $ merges $ r $ into its current Snapshot as shown in Figure \ref{fig:recordInSS}.
-			\item $ Q_{j} $ regenerates \emph{snapshotSig}.
-		\end{enumerate}
+	\item If $ Q_{j} $ has not rejected $ r $, $ Q_{j} $ informs Bob that $ r $ was accepted and $ Q_{j} $ merges the Record into its Page.
 \end{enumerate}
-
-\begin{figure}
-	\begin{lstlisting}
-	{
-		"originTime": 1426507551,
-		"recentRecords": [{
-			"names": {
-				"example.tor": "exampleruyw6wgve.onion"
-			}
-			"contact": "AD97364FC20BEC80",
-			"timestamp": 1424045024,
-			"consensusHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-			"nonce": "AAAABw==",
-			"pow": "4I4dzaBwi4AIZW8s2m0hQQ==",
-			"recordSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ=",
-			"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
-		}],
-		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-		"snapshotSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-	}
-	\end{lstlisting}
-	\caption{A sample Create Record has been merged into an initially-blank Snapshot.}
-	\label{fig:recordInSS}
-\end{figure}
-
-\subsubsection{Flooding}
-
-% an adversary could cause a denial of service by creating a Page with many false PoWs, causing Quorum nodes to perform a lot of PoW checks
-% pass H(page, fingerprint) to each other before exchanging page signatures? This slows collusion. Ask for this hash. analysis on this
-% Functionality could be added so that Quorum could expire domain if HS is unavailable after a grace period
-
-Every $ \Delta s $ minutes, a burst of communication occurs between Quorum nodes wherein Snapshots and Page signatures are flooded between them. This allows Quorum nodes to hear new Records and to know the status of the Pages maintained by their brethren. The exact timing of this protocol is dependent on the local system clock of each Quorum node. Let $ Q_{j} $ be a Quorum node with current Snapshot $ s_{s} $, and at the $ \Delta s $ mark,
-
-\begin{enumerate}
-	\item $ Q_{j} $ generates a new Snapshot, $ s_{s+1} $ via the Database Initialization protocol.
-	\item $ Q_{j} $ sets $ s_{s+1} $ to be the current Snapshot, used to collect new Records.
-	\item $ Q_{j} $ sets $ p_{\mathit{old}} $ to the current Page.
-	\item For every $ Q_{k} $ Quorum node, $ k \ne j $,
-		\begin{enumerate}
-			\item $ Q_{j} $ asks $ Q_{k} $ for his snapshot.
-			\item $ Q_{j} $ merges the Records within $ Q_{k} $'s \emph{recentRecords} into $ Q_{j} $'s current Page, as shown in Figure \ref{fig:pageMerge}.
-			\item $ Q_{j} $ asks $ Q_{k} $ for its Page and sets the response as $ s_{k} $.
-			\item $ Q_{j} $ calculates $ s_{k} $'s $ h $ value (see the Page Selection protocol) and if it matches a Page $ g $ already known to $ Q_{j} $, $ Q_{j} $ archives an association between $ Q_{k} $ and $ g $. In this case $ s_{k} $'s \emph{pageSig} will validate $ g $'s $ h $, allowing the width of the Pagechain to be grouped efficiently. Otherwise, $ Q_{j} $ archives $ s_{k} $.
-		\end{enumerate}
-	\item $ Q_{j} $ regenerates \emph{pageSig}.
-	\item $ Q_{j} $ sends $ s_{s} $ when another Quorum node requests his Snapshot.
-	\item $ Q_{j} $ sends $ p_{\mathit{old}} $ when a Mirror or a Quorum node asks for his Page.
-\end{enumerate}
-
-\begin{figure}
-	\begin{lstlisting}
-	{
-		"prevHash": "4I4dzaBwi4AIZW8s2m0hQQ==",
-		"recordList": [{
-			"names": {
-				"example.tor": "exampleruyw6wgve.onion"
-			}
-			"contact": "AD97364FC20BEC80",
-			"timestamp": 1424045024,
-			"consensusHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-			"nonce": "AAAABw==",
-			"pow": "4I4dzaBwi4AIZW8s2m0hQQ==",
-			"recordSig": 	"KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ=",
-			"pubHSKey": "MIGhMA0GCSqGSIb3DQEBAQUAA4GPADCBiwKBgQDE7CP/kgwtJhTTc4JpuPkvA7Ln9wgc+fgTKgkyUp1zusxgUAn1c1MGx4YhO42KPB7dyZOf3pcRk94XsYFY1ULkF2+tf9KdNe7GFzJyMFCQENnUcVXbcwLH4vAeiGK7R/nScbCbyc9LT+VE1fbKchTL1QzLVBLqJTxhR+9YPi8x+QIFAdZ8BJs="
-		}],
-		"consensusDocHash": "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
-		"fingerprint": "2FC06226AE152FBAB7620BB107CDEF0E70876A7B",
-		"pageSig": "KSaOfzrXIZclHFcYxI+3jBwLs943wxVv3npI5ccY/kBEpyXRSopzjoFs746n0tJqUpdY4Kbe6DBwERaN7ELmSSK9Pu6q8QeKzNAh+QOnKl0fKBN7fqowjkQ3ktFkR0Vuox9WrrbNTMa4+up0Np52hlbKA3zSRz4fbR9NVlh6uuQ="
-	}
-	\end{lstlisting}
-	\caption{A Page containing an example Record. This Page is the result of the Snapshot in Figure \ref{fig:recordInSS} into an empty Page.}
-	\label{fig:pageMerge}
-\end{figure}
 
 \subsection{Tor Clients}
 \label{sec:ProtoTorClients}
 
-Let Alice be a Tor client. We assume now that Alice has chosen Charlie as her domain resolver and that Charlie is not a member of the current Quorum.
+Let Alice be a Tor client. We assume now that Alice has chosen Charlie as her domain resolver and that Charlie is not a member of the current Quorum, since Quorum nodes don't answer queries.
 
 \subsubsection{Quorum Derivation}
 
@@ -643,90 +470,72 @@ Let Alice be a Tor client. We assume now that Alice has chosen Charlie as her do
 
 \subsubsection{Domain Query}
 
-There are three verification levels in a Domain Query, each providing progressively more verification to Alice that the Record she receives is authentic, unique, and trustworthy. At verification 0, the default:
+The basic design of the Domain Query is relatively straightforward. 
 
 \begin{enumerate}
 	\item Alice constructs a Tor circuit to Charlie.
 	\item Alice provides a .tor domain name $ d $ into the Tor Browser, which is treated as a special case by her client software.
 	\item \label{step:trim} If $ d $'s highest-level name is ``www'', Alice's software transparently removes that name.
-	\item \label{step:level} Alice asks Charlie for the most recent Record $ r $ containing $ d $ at level 0.
+	\item \label{step:level} Alice asks Charlie for the most recent Record $ r $ containing $ d $.
 	\item Charlie reviews his Pagechain reverse-chronological order until he finds a Record containing $ d $, which he returns to Alice.
-	\item Alice validates $ r $ via the Record Validation protocol. If it does not validate, she changes to another resolver and repeats this protocol.
+	\item Alice validates $ r $ via the Record Validation protocol. If it does not validate, Alice throws an assertion error.
 	\item If the destination for $ d $ in $ r $ uses a .tor TLD, $ d $ becomes that destination and Alice jumps back to step \ref{step:trim}.
 	\item Otherwise, the destination must have a .onion TLD, which Alice looks up by the Tor hidden service protocol.
 	\item Alice checks that $ r $'s \emph{pubHSKey} matches $ r $'s key in Tor's distributed hash table.
 	\item Alice sends the original $ d $ to the hidden service.
 \end{enumerate}
 
-At verification level 1, Charlie returns returns the Page $ p $ containing $ r $ in step 5. Then Alice can check the integrity of $ p $ via the Page Selection protocol and can verify its authenticity via checking that $ V_{\mathit{ed}}(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusDocHash}, E) $ returns true.
+We supplement this protocol with an additional data structure in section \ref{sec:MerkleTree} as a defence against Record forgeries. It is also possible for Alice to request and the Page $ p $ containing $ r $ and all digital signatures from each Quorum node, allowing Alice to perform width verification as she can see that a large percentage of Quorum nodes maintained $ p $.
 
-At Verification level 2, Alice sends ``level 2'' to Charlie in step \ref{step:level} and Charlie returns $ p $ from level 1 and all digital signatures on $ h $ from all Quorum nodes that agreed on $ p $. Then Alice can perform width verification: she can see that a large percentage of Quorum nodes maintained $ p $, thus increasing the trustworthiness of both Charlie, $ p $, and $ r $.
-
-Of course, Alice can be certain that the Record $ r $ she receives is authentic and that $ d $ is unique by performing a full Synchronization and obtaining Charlie's Pagechain for herself, but this is impractical in most environments. It cannot be safely assumed that Alice has storage capacity to hold all the Pages in the Pagechain. Additionally, Tor's median circuit speed is often less than 1 MiB/s,\cite{TorMetrics} so for convenience data transfer must be minimized. Therefore Alice can simply fetch minimal information and rely on her trust of Charlie and the Quorum.
+Of course, Alice can be certain that the Record $ r $ she receives is authentic and that $ d $ is unique by performing a full Synchronization and obtaining Charlie's Pagechain for herself, but this is impractical in most environments. It cannot be safely assumed that Alice has storage capacity to hold all the Pages in the Pagechain. Additionally, Tor's median circuit speed is often less than 1 MiBs\cite{TorMetrics}, so for convenience data transfer must be minimized. Therefore Alice can simply fetch minimal information and rely on her trust of Charlie and the Quorum.
 
 \subsubsection{Onion Query}
 
-Alice may also issue a reverse-hostname lookup to Charlie to find second-level domains that resolve to a given .onion address. This request is known as an Onion Query. Charlie performs a reverse-chronological search in the Pagechain for Records that .onion as a destination and returns the results corresponding to the verification level. Onion Queries have a high likelihood of failure as not every .onion name has a corresponding .tor domain name, but all OnioNS domain names will have Forward-Confirmed Reverse DNS match.
+Alice may also issue a reverse-hostname lookup to Charlie to find second-level domains that resolve to a given .onion address. This request is known as an Onion Query. Charlie performs a reverse-chronological search in the Pagechain for Records whose \emph{pubHSKey} hash to Alice's address. We note that all OnioNS domain names will have Forward-Confirmed Reverse DNS match.
 
 \section{Optimizations}
+\label{sec:optimizations}
 
-There are several improvements that be made upon the basic design protocols that significantly enhance the performance of Mirrors when responding to Domain or Onion Requests. We also introduce the Hashtable Bitset data structure, which improves security on the client end.
+There are several improvements that be made upon the basic design protocols that significantly enhance the performance of Mirrors when responding to Domain or Onion Requests. We also introduce a Merkle Tree to prevent Mirrors from forging Records or falsely claiming non-existence, thus preventing them from being actively malicious in all significant cases.
 
 \subsection{AVL Tree}
 
-An AVL tree is a self-balancing binary search tree with $ \mathcal{O}(\mathrm{log}(n)) $ time for search, insertion, and deletion operations. We suggest that OnioNS mirrors cache all the Records in its local Pagechain in an AVL tree. After the Pagechain is validated, the Mirror iterates through the Pagechain in chronological order and constructs a list of associations between a second-level domain name and the location in the Pagechain of the Record containing that domain. The Mirror then inserts that list into the AVL tree, where sorting occurs by alphabetical comparison of domain names. The Mirror should then update the AVL tree when it receives new Records that were recently sent to Quorum nodes. Create Records trigger an insert operation, Delete Records cause a deletion, and all other Records update a location pointer to the more recent Record.
-
-This effectively transforms the lookup time of Records for Domain Queries from $ \mathcal{O}(n) $ to $ \mathcal{O}(\mathrm{log}(n)) $ in the average and worst cases.
+An AVL tree is a self-balancing binary search tree with $ \mathcal{O}(\mathrm{log}(n)) $ time for search, insertion, and deletion operations. We suggest that OnioNS mirrors cache all the Records in its local Pagechain in an AVL tree. After the Pagechain is validated, the Mirror iterates through the Pagechain in chronological order and builds an AVL tree. The leaves of the tree are the location of each Record in the Pagechain, while the keys are the Record's \emph{name} field. The Mirror should then update the AVL tree when it receives new Records that were recently sent to Quorum nodes. Create Records trigger an insert operation, Delete Records cause a deletion, and all other Records update a location pointer to the more recent Record. This approach effectively transforms the lookup time of Records for Domain Queries from $ \mathcal{O}(n) $ to $ \mathcal{O}(\mathrm{log}(n)) $ in the average and worst cases.
 
 \subsection{Trie}
 
-We also suggest utilizing a trie (a digital tree) for efficiently structuring .onion addresses and optimizing Onion Query lookups. If each node in the trie is a character in the .onion address, the trie has a branching factor of 58 and a maximum depth of 16. Let the leaves of the trie be the location of the most recent Record in the Pagechain that has that address as a destination. Like the AVL tree, Mirrors must take care to update the trie cache when processing new Records, but this is efficient as trie search, insertion, and deletion all occur in $ \mathcal{O}(1) $.
+We also suggest utilizing a trie (a digital tree) for efficiently structuring .onion addresses and optimizing Onion Query lookups. If each node in the trie is a character in the .onion address, the trie has a branching factor of 32 and a maximum depth of 16. Let the leaves of the trie be the location of the most recent Record in the Pagechain that has that address as a destination. Like the AVL tree, Mirrors must take care to update the trie cache when processing new Records, but this is efficient as trie search, insertion, and deletion all occur in $ \mathcal{O}(1) $.
 
-\subsection{Hashtable Bitset}
-\label{sec:HashtableBitset}
+\subsection{MerkleTree}
+\label{sec:MerkleTree}
 
-A hashtable bitset is a special and highly compact adaptation of a traditional hashtable. We introduce a hashtable bitset for two purposes: 1) to prove the non-existence of a domain name, and 2) to improve the efficiency of lookups for non-existent domain names from $ \mathcal{O}(\mathrm{log}(n)) $ through the AVL tree to $ \mathcal{O}(1) $ time. This first property is a challenge often overlooked in other domain name systems: even if domain names can be authenticated by a client (e.g. OnioNS Records or SSL certificates) a DNS resolver may lie about the non-existence and claim a false negative. In OnioNS, Alice can download the entire Pagechain and confirm for herself, but as we stated earlier this is not practical. Alice could also query another trusted source such as Quorum Candidates, but this approach does not scale well. Instead, a trusted authority can sign a hashtable bitset once and allow Mirrors to prove non-existence for any domain name.
+A Merkle tree is a hash tree, a special type of binary tree wherein each non-leaf node is the hash of node's children. We introduce the Merkle tree for two purposes: 1) to prove the non-existence of a domain name, and 2) to prove the authenticity of an existing domain name. This first property is a challenge often overlooked in other domain name systems: even if domain names can be authenticated by a client (e.g. OnioNS Records or SSL certificates) a DNS resolver may lie about the non-existence and claim a false negative. In OnioNS, Alice can download the entire Pagechain and confirm for herself, but as we stated earlier this is not practical. Alice could also query another trusted source such as Quorum Candidates, but this approach does not scale well. Instead, a trusted authority (the Quorum) can sign the Merkle tree once.
 
-As an extension of an ordinary hashtable, the hashtable bitset maps keys to buckets, but here we only track the existence of a key but not the keys themselves. Therefore each bucket in the structure is represented as a bit, creating a compact $ z * n $-length bitset, where $ z $ is a scaling factor. Let the hashtable use the $ H(m) $ function from section \ref{sec:CryptoPrim}. A Mirror constructs a hashtable bitset in $ \mathcal{O}(n) $ time by the following algorithm:
-
-\begin{enumerate}
-	\item Construct the hashtable bitset \emph{hb} with all bits set to zero.
-	\item Construct an empty AVL tree $ t $.
-	\item For each domain name $ d $ in each Record $ r $ in the Pagechain,
-		\begin{enumerate}
-			\item If $ \mathit{hb}(H(d)) $ is 1, add $ H(d) \rightarrow r $ to \emph{hb}.
-			\item If $ \mathit{hb}(H(d)) $ is 0, set $ \mathit{hb}(H(d)) $ to 1.
-		\end{enumerate}
-	\item Divide \emph{hb} into $ k $ equally-sized section and digitally sign each section with $ S_{\mathit{ed}}(m, e) $.
-	\item Digitally sign \emph{t} with $ S_{\mathit{ed}}(m, e) $.
-	\item Make \emph{hb}, $ t $, and their signatures for download.
-\end{enumerate}
-
-A Mirror, Charlie, then obtains the signatures from a Quorum node. When Alice requests a domain name $ d $ that does not exist,
+Merkle trees also allow anyone to verify that a leaf node is part of a given hash tree in $ \mathcal{O}(\mathrm{log}(n)) $ and without requiring knowledge of the entire tree. We utilize these two properties to allow clients to authenticate Records with minimal networking costs in a single query to an untrusted Mirror name server. To our knowledge this represents the first alternative DNS to authenticate denial-of-existence claims on domains en-masse. To achieve this, let each Quorum node
 
 \begin{enumerate}
-	\item Charlie returns back a 404 message, the relevant section of \emph{hb}, and the signature on that section.
-	\item Alice verifies the signature on the \emph{hb} section.
-	\item Alice checks that $ \mathit{hb}(H(d)) $ is a 0. If it is, she knows the domain name does not exist.
-	\item If $ \mathit{hb}(H(d)) $ is a 1, Alice asks Charlie for $ t $.
-	\item Charlie returns $ t $ and the signature on $ t $.
-	\item Alice verifies the signature on $ t $.
-	\item Alice confirms that $ H(d) $ does not exist within $ t $, demonstrating that the domain does not exist.
+	\item Construct an array list \emph{arr}.
+	\item For each Record $ r $ in the Pagechain, add $ r_{\mathit{name}} \concat H(r) $ to \emph{arr}.
+	\item Sort \emph{arr}.
+	\item Construct a Merkle tree $ T $ from \emph{arr}.
+	\item Generate $ \mathit{sig}_{T} = S_{\mathit{ed}}(t \concat r, e) $ where $ t $ is a timestamp and $ r $ is the root hash of $ T $.
 \end{enumerate}
 
-Note that a Bloom filter with $ k $ hash functions could be used instead of a compact hashtable, but a Bloom filter would require sending up to $ k $ sections of buckets to the client. Therefore, we use a simple hashtable scheme, which is effectively a Bloom filter with $ k = 1 $.
+As Records contains all subdomains under a single second-level domains, $ T $ needs only contain $ r_{\mathit{name}} $ to reference all domains in $ r $, which further saves space. Then during a Domain Query Alice may use $ T $ to authenticate a domain $ d $ and verify non-existence for a Record $ r $.
 
+\begin{enumerate}
+	\item Alice extracts the second-level name $ c $ from $ d $.
+	\item If $ r $ exists, Charlie returns the leaf node containing $ r $ and all the tree nodes from leaf $ r $ to the root and their sibling nodes, so that Alice can verify authenticity of $ r $ by recomputing the root hash and verify that the largest subset of Quorum nodes signed the same root hash.
+	\item If Charlie claims non-existence of $ c $, he returns two adjacent leaves $ a $ and $ b $ (and the nodes on their paths and siblings) such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf.
+	\item If either assertion fails, Charlie is dishonest.
+\end{enumerate}
 
+The Quorum must regenerate $ T $ every $ \Delta T $ hours to include new Records. Then Alice needs only fetch the signatures on $ T $ at least every $ \Delta T $ hours to ensure that she can authenticate new Records during the Domain Query. Although new Records can traverse the network nearly instantaneously, Alice cannot authenticate or verify denial-of-existence claims on Records newer than $ \Delta T $. Alice must also fetch the $ L_{Q} $ signature from all Quorum nodes and assert that $ T $ is signed by the largest set of nodes maintaining the same Page so as to agree with our last security assumption.
 
 
 
 
 % END OF DOCUMENT, THE BELOW IS SUPPLEMENTAL NOTES AND OLD WRITINGS
-
-% Additionally, after signing, the Bloom filter would require $ \mathcal{O}(C * n * k * Q * M) $ space, rather than $ \mathcal{O}(C * n * Q * M) $
-
-% merkle tree: leafs contain <domain name, recordHash>?
-
 
 % this really could be a Merkle tree, then the top root could be published in the consensus doc
 
