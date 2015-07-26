@@ -3,33 +3,32 @@
 
 \section{Reference Implementation}
 
-Alongside this publication, we provide a reference implementation of OnioNS. We utilize C++11, the Botan cryptographic library, the Standard Template Library's (STL) implementation of Mersenne Twister, and the libjsoncpp-dev library for JSON encoding. We develop in Linux Mint and compile for Ubuntu Vivid, Utopic, Trusty, and their derivatives. Our software is built on Canonical's Launchpad online build system and is available online at \url{https://github.com/Jesse-V/OnioNS}. 
+Alongside this publication, we provide a reference implementation of OnioNS. We utilize C++11, the Botan cryptographic library, the Standard Template Library's (STL) implementation of Mersenne Twister, and the libjsoncpp-dev library for JSON encoding. We develop in Linux Mint and compile for Ubuntu Vivid, Utopic, Trusty, and their derivatives. Our software is built on Canonical's Launchpad online build system and is available online on Github.
 
 \section{Prototype Design}
 
-We have developed an OnioNS prototype that implements the Domain Query protocol. In this initial prototype, we use a static server, a single fixed Create Record, and a hidden service that we deployed at onions55e7yam27n.onion. Although our implementation is primarily a separate software package, we made necessary modifications to the Tor client software to intercept the .tor pseudo-TLD, pass the domain to the OnioNS client over inter-process communication (IPC), and receive and lookup the returned hidden service address. We diagram the relationships between our prototype's components in Figure \ref{fig:prototypeDiagram}.
-
-Our prototype's works as follows:
+We have developed an OnioNS prototype that implements the Record Generation and Domain Query protocols. In this initial prototype, we use a static server and a hidden service that we deployed at onions55e7yam27n.onion. We constructed a Record containing an association between ``example.tor'' and ``onions55e7yam27n.onion''. Next, we transmit this Record to the server over a Tor circuit. Finally, we modified Tor such that the following procedures occur client-side as illustrated in Figure \ref{fig:prototypeDiagram}:
 
 \begin{enumerate}
 	\item The user enters in ``example.tor'' into the Tor Browser.
 	\item The Tor Browser sends ``example.tor'' to Tor's SOCKS port for resolution.
 	\item The Tor client intercepts ``*.tor'', places the lookup in a wait state, and sends ``example.tor'' to the OnioNS client over a named pipe.
-	\item The OnioNS client communicates with Tor's SOCKS port and negotiates a connection to the static OnioNS server.
-	\item The OnioNS client performs a level 0 Domain Query to the server.
+	\item The OnioNS client connects to the static OnioNS server over a Tor circuit and performs a Domain Query.
 	\item The server responds with the Create Record containing ``example.tor''.
 	\item The client writes ``onions55e7yam27n.onion'' to the Tor client over another named pipe.
-	\item The Tor client resumes the lookup and overrides the original ``example.tor'' lookup with ``onions55e7yam27n.onion''.
+	\item The Tor client resumes the lookup and rewrites the original ``example.tor'' lookup with ``onions55e7yam27n.onion''.
 	\item The Tor client contacts the OnioNS hidden service and passes the webpage to the Tor Browser.
 	\item The Tor Browser displays the website contents and preserves the ``example.tor'' domain name.
 \end{enumerate}
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.75\textwidth]{images/LucidCharts/OnioNS_Prototype.pdf}
-	\caption{Our OnioNS prototype involves five components: the Tor Browser, a modified Tor client, a OnioNS client, a OnioNS server, and the destination hidden service. The Tor Browser passes an unknown .tor domain to the OnioNS through the Tor software (shown in red) which resolves the domain anonymously over a Tor circuit (orange) to remote resolver. Finally, the Tor software contacts the destination server via the normal hidden service protocol (green). The Tor Browser communicates to the Tor client over its SOCKS port, while the OnioNS client communicates over named pipes (red) and Tor's SOCKS port (orange).}
+	\includegraphics[width=0.6\textwidth]{images/LucidCharts/OnioNS_Prototype.pdf}
+	\caption{The overview of our OnioNS prototype. The Tor Browser passes an unknown .tor domain to the OnioNS through the Tor software (red) which resolves the domain anonymously over a Tor circuit (orange) to a remote resolver. Finally, the Tor software contacts the hidden service in the traditional way. (green) The Tor Browser communicates to the Tor client over its SOCKS port, while the OnioNS client communicates over named pipes (red) and Tor's SOCKS port (orange).}
 	\label{fig:prototypeDiagram}
 \end{figure}
+
+Tor performs asynchronously here; it must place the lookup on hold, free its event loop to avoid a deadlock, and asynchronously resume the lookup once it receives the response. From the user's perspective, the content of \url{http://onions55e7yam27n.onion} loads transparently under the \url{http://example.tor} URL.
 
 \subsection{Challenges}
 
@@ -41,9 +40,9 @@ Our second challenge was telling Tor to place the resolution of the domain on ho
 
 \subsection{Performance}
 
-We created a rudimentary form of the Record Generation and Client Verification protocols and conducted performance measurements on two different machines. We tested these protocols on Machine A, which has an Intel Core2 Quad Q9000 @ 2.00 GHz; and machine B, which has an Intel i7-2600K @ 4.3 GHz. We chose machines with this hardware in order to more accurately determine the performance with out target audience; Machines A and B represent low-end and medium-end consumer-grade computers, respectively. To minimize latency on our end, both machines were hosted on 1 Gbits connections at Utah State University. As the Record Generation protocol requires a hidden service private key, we created a hidden service and hosted it on Machine B, using Shallot, a vanity key generator, to generate a recognizable hidden service address, \url{http://onions55e7yam27n.onion}. Then on Machine A, we measured the time required to connect to our hidden service over OnioNS and over the more direct hidden service protocol.
+We conducted several performance measurements for the Record Generation and Domain Query protocols. Our experiment involves two machines, A and B. Machine A has an Intel Core2 Quad Q9000 (Penryn architecture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011. We chose machines with this hardware in order to represent low-end and medium-end consumer-grade computers, respectively. To minimize latency on our end, both machines were hosted on 1 Gbits connections at Utah State University. We hosted our hidden service and TCP server on Machine B. Then on Machine A, we measured the time required to connect to our hidden service over OnioNS and over the more direct hidden service protocol.
 
-We selected the parameters of scrypt such that it consumed 128 MB of RAM during operation. This is an affordable amount of RAM by even low-end consumer-grade machines. This RAM consumption scales linearly with the number of scrypt instances executed in parallel. We used all eight cores on Machine B to generate a Record for our hidden service and observed approximately 1 GB of RAM consumption, matching our expectations. We set the difficulty of the Create Record such that the Record Generation protocol took only a few minutes on average to conduct, but in the future we may change it so that the protocol takes several hours instead.
+We selected the parameters of scrypt such that it consumed 128 MB of RAM during operation. We consider this an affordable amount of RAM for low-end consumer-grade computers. We created a multi-threaded implementation of the Record Generation protocol and used all eight virtual CPU cores on Machine B to generate our Record. As expected, our RAM consumption scaled linearly with the number of scrypt instances executed in parallel; we observed approximately 1 GB of RAM consumption during Record Generation. We set the difficulty of the Create Record such that the Record Generation protocol took only a few minutes on average to conduct, but in the future we may change it so that the protocol takes several hours instead.
 
 \subsubsection{Processing Time}
 
@@ -81,40 +80,3 @@ We compared the load latency between an OnioNS domain name with a traditional hi
 \end{center}
 
 The latency is circuit-dependent and heavily depends on the speed of each Tor router and the distance between them. To avoid the latency cost whenever possible, we implemented a DNS cache into the OnioNS client-side software to allow subsequent queries to be resolved locally, avoiding unnecessary remote lookups.
-
-\subsection{Future Work}
-
-We have several plans for future work. First, we will port the OnioNS client to Windows and migrate the Tor-OnioNS IPC from Unix named pipes to TCP sockets. Although named pipes work reliably in Unix-like operating systems, they are not easily compatible in the Windows family of operating systems. Second, we will find more optimal parameters for scrypt to increase performance and work to reduce the latency. Finally, we will expand our implementation and collaborate with Tor developers to merge it into Tor's repositories when it is complete.
-
-
-%\section{Experimentation}
-%
-%
-%\emph{Todo: I will carry out experiments in test deployments of the Tor network and see what the demand is. I anticipate it being relatively lightweight. The proof-of-work will almost certainly be the computational bottleneck.}
-%
-%\emph{Bandwidth, CPU, RAM, latency for clients to be determined...}
-
-%demand on participating nodes to be determined...
-
-%Unlike Namecoin, OnionNS' \emph{page}-chain is of $ L $ days in maximal length. This serves two purposes:
-
-%\begin{enumerate}
-%	\item Causes domain names to expire, which reduced the threat of name squatting.
-%	\item Prevents the data structure from growing to an unmanageable size.
-%\end{enumerate}
-
-%\subsection{Proof-of-work}
-%
-%\emph{What are the optimal parameters for scrypt? What are the implications of setting it too high or too low?}
-%
-%\emph{How much bandwidth and time does this take?}
-%
-%\emph{How does the bandwidth and CPU load scale in response to a larger Quorum? Assuming reasonable clockskew, how off will the exchanges be? Are there any race conditions that need to be resolved?}
-%
-%\emph{Queres: How long does this take, and how can we improve efficiency? Can clients on even low-end hardware calculate the proof-of-work?}
-%
-%
-%\section{Results}
-%
-%
-%\emph{This will be expanded/rewritten once I finish implementation and deploy it in test/prototyping networks. I plan on using Chutney.}

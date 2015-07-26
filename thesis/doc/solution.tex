@@ -318,7 +318,7 @@ Let Carol be a Tor client or a Mirror that receives a Record from another Mirror
 
 \begin{enumerate}
 	\item Carol checks that the Record contains valid JSON and that \emph{type} is either ``Create'', ``Modify'', ``Move'', ``Renew'', or ``Delete''.
-	\item Carol checks that \emph{nameList} is has a length $ \in [1,24] $, contains at least one second-level domain name, and that all subdomains have a second-level domain name within \emph{nameList}. Additionally, Carol checks that there is no domain name nor destination that uses more than 16 names, that is longer than 32 characters, or whose total length is more than 128 characters.
+	\item Carol checks that \emph{nameList} is has a length $ \in [1,24] $ and that all subdomains have a second-level domain name of the \emph{name} field. Additionally, Carol checks that there is no domain name nor destination that uses more than 16 names, that is longer than 32 characters, or whose total length is more than 128 characters.
 	\item Carol checks that \emph{contact} is either 0, 16, 24, or 32 characters in length, and that \emph{contact} is valid hexadecimal.
 	\item Carol checks the validity of \emph{recordSig} against \emph{pubHSKey} and $ \mathit{central} \concat \mathit{pow} $.
 	\item Carol obtains the $ \floor[\big]{\frac{q}{\Delta q}} $ 00:00 GMT consensus documents and checks $ H(x) $ on it against \emph{consensusHash}. She also confirms that the consensus documents are no older than $ \mathrm{min}(48, 12 * \Delta q) $.
@@ -414,7 +414,7 @@ Assume that Charlie has obtained a complete Pagechain. Let $ P_{c} $ be an initi
 \begin{enumerate}
 	\item Charlie randomly selects a Mirror relay, $ R_{j} $.
 	\item Charlie downloads $ R_{j} $'s Pagechain and the Pages used by each Quorum member for each Quorum, obtaining a 2D data structure at most $ L_{P} $ Pages long and $ L_{Q} $ Pages wide.
-	\item Charlie checks the downloaded Pagechain via the Pagechain Validation protocol. If it does not validate, Charlie picks another Mirror $ R_{k} $, $ k /ne j $, and downloads the invalid Pages from $ R_{k} $.
+	\item Charlie checks the downloaded Pagechain via the Pagechain Validation protocol. If it does not validate, Charlie picks another Mirror $ R_{k} $, $ k \ne j $, and downloads the invalid Pages from $ R_{k} $.
 	\item Charlie randomly selects a Quorum node $ Q_{c} $ and subscribes to Record and signature networking events from it.
 	\item When a set of Pages is available from $ Q_{c} $, Charlie follows the Page Selection protocol to choose a Page that becomes the new Pagechain head.
 \end{enumerate}
@@ -506,7 +506,7 @@ An AVL tree is a self-balancing binary search tree with $ \mathcal{O}(\mathrm{lo
 
 We also suggest utilizing a trie (a digital tree) for efficiently structuring .onion addresses and optimizing Onion Query lookups. If each node in the trie is a character in the .onion address, the trie has a branching factor of 32 and a maximum depth of 16. Let the leaves of the trie be the location of the most recent Record in the Pagechain that has that address as a destination. Like the AVL tree, Mirrors must take care to update the trie cache when processing new Records, but this is efficient as trie search, insertion, and deletion all occur in $ \mathcal{O}(1) $.
 
-\subsection{MerkleTree}
+\subsection{Merkle Tree}
 \label{sec:MerkleTree}
 
 A Merkle tree is a hash tree, a special type of binary tree wherein each non-leaf node is the hash of node's children. We introduce the Merkle tree for two purposes: 1) to prove the non-existence of a domain name, and 2) to prove the authenticity of an existing domain name. This first property is a challenge often overlooked in other domain name systems: even if domain names can be authenticated by a client (e.g. OnioNS Records or SSL certificates) a DNS resolver may lie about the non-existence and claim a false negative. In OnioNS, Alice can download the entire Pagechain and confirm for herself, but as we stated earlier this is not practical. Alice could also query another trusted source such as Quorum Candidates, but this approach does not scale well. Instead, a trusted authority (the Quorum) can sign the Merkle tree once.

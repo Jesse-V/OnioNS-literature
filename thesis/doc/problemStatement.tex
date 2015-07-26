@@ -23,7 +23,7 @@ OnioNS' basic design and protocols rely on several assumptions and expected thre
 Here we enumerate a list of requirements that must be met by any DNS applicable to Tor hidden services. In Chapter \ref{ch:ExistingWorks} we analyse several existing prominent naming systems and show how these systems do not meet these requirements. In Chapters \ref{ch:Solution} and \ref{ch:Analysis} we demonstrate how we overcome them with OnioNS.
 
 \begin{enumerate}
-	\item \textbf{The system must support privacy-enhanced queries.} Clients should be anonymous, indistinguishable, and unable to be tracked by name servers.
+	\item \textbf{The system must support anonymous registrations.} The system should not require any personally-identifiable or location information from the registrant.
 	\item \textbf{The system must support privacy-enhanced queries.} Clients should be anonymous, indistinguishable, and unable to be tracked by name servers.
 	\item \textbf{Registrations must be authenticable.} Clients must be able to verify that the domain-address pairing that they receive from name servers is authentic relative to the authenticity of the hidden service. % todo: OnionNS should show the resolved .onion to confirm this
 	\item \textbf{Domain names must be globally unique.} Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack.
