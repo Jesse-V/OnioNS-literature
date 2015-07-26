@@ -232,7 +232,7 @@ A Create Record consists of nine components. Fields that are optional are blank 
     consensusHash & Yes & The hash of the consensus document that generated $ \mathit{Quorum}_{q} $ \\
     nonce & Yes & Four random bytes. \\
    	pow & Yes & 16 bytes that store the output of $ \mathrm{PoW}(i) $. \\
-   	recordSig & Yes & The output of $ S_{d}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key. \\
+   	recordSig & Yes & The output of $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{nameList} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is the hidden service's private RSA key. \\
    	pubHSKey & Yes & Bob's public RSA key. \\
     \hline
     \end{longtabu}
@@ -288,7 +288,7 @@ As invalid Records will be rejected by the network, Bob must generate a valid Re
 	\item Bob sets \emph{consensusHash} to the output of $ H(x) $, where $ x $ is the consensus documents published at 00:00 GMT on day $ \floor[\big]{\frac{q}{\Delta q}} $.
 	\item Bob initially defines \emph{nonce} as four zeros.
 	\item Let $ \mathit{central} $ be $\mathit{type} \concat \mathit{nameList} \concat \mathit{contact} \concat \mathit{timestamp} \concat \mathit{consensusHash} \concat \mathit{nonce} $. Bob sets \emph{pow} as $ \mathrm{PoW}(\mathit{central}) $.
-	\item Bob sets \emph{recordSig} as the output of $ S_{d}(m, r) $ where $ m = \mathit{central} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
+	\item Bob sets \emph{recordSig} as the output of $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{central} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
 	\item Bob saves the PKCS.1 DER encoding of his RSA public key in \emph{pubHSKey}.
 \end{enumerate}
 
