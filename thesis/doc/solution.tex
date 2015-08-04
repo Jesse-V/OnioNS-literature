@@ -16,7 +16,7 @@ First, a hidden service operator, Bob, generates an association between a meanin
 
 Second, Bob uses a Tor circuit to anonymously transmit his Record to an authoritative short-lived random subset of OnioNS servers, known as the \emph{Quorum}, inside the Tor network. The Quorum archive Bob's Record in a sequential public ledger known as a \emph{Pagechain}, of which each OnioNS node holds their own local copy. Bob's Record is received by all Quorum nodes and share signatures of their knowledge with each other, so they maintain a common database.
 
-Third, Alice, uses a Tor client to anonymously connect to a name server outside the Quorum but mirroring their database, then ask for ``example.tor''. Alice receives Bob's Record, verifies it signature and proof-of-work, and follows the association to ``onions55e7yam27n.onion''. As Bob's Record is self-signed using Bob's private key, Alice can verify the Record's authenticity. Finally, Alice uses this address and the Tor hidden service protocol to contact Bob. In this way, Alice can contact Bob through his chosen domain name without resorting to use lower-level hidden service addresses. The uniqueness and authenticity of the Bob's domain name is maintained by the subset of Tor nodes.
+Third, Alice, uses a Tor client to anonymously connect to a name server outside the Quorum but mirroring their database, then ask for ``example.tor''. Alice receives Bob's Record, verifies it signature and proof-of-work, and follows the association to \\ ``onions55e7yam27n.onion''. As Bob's Record is self-signed using Bob's private key, Alice can verify the Record's authenticity. Finally, Alice uses this address and the Tor hidden service protocol to contact Bob. In this way, Alice can contact Bob through his chosen domain name without resorting to use lower-level hidden service addresses. The uniqueness and authenticity of the Bob's domain name is maintained by the subset of Tor nodes.
 
 \section{Definitions}
 
@@ -501,6 +501,8 @@ There are several improvements that be made upon the basic design protocols that
 \subsection{AVL Tree}
 
 An AVL tree is a self-balancing binary search tree with $ \mathcal{O}(\mathrm{log}(n)) $ time for search, insertion, and deletion operations. We suggest that OnioNS mirrors cache all the Records in its local Pagechain in an AVL tree. After the Pagechain is validated, the Mirror iterates through the Pagechain in chronological order and builds an AVL tree. The leaves of the tree are the location of each Record in the Pagechain, while the keys are the Record's \emph{name} field. The Mirror should then update the AVL tree when it receives new Records that were recently sent to Quorum nodes. Create Records trigger an insert operation, Delete Records cause a deletion, and all other Records update a location pointer to the more recent Record. This approach effectively transforms the lookup time of Records for Domain Queries from $ \mathcal{O}(n) $ to $ \mathcal{O}(\mathrm{log}(n)) $ in the average and worst cases.
+
+\newpage
 
 \subsection{Trie}
 

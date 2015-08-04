@@ -425,7 +425,7 @@
 
 \renewcommand*{\tableofcontents}{
     % USU requires the word "CONTENTS" to appear on the toc page
-    \chapter*{\Large \begin{center} CONTENTS\\[5ex]\end{center}}
+    \chapter*{\begin{center} CONTENTS\\[5ex]\end{center}}
     \noindent
     \hfill Page\\
     \vspace{-\baselineskip}
@@ -437,7 +437,7 @@
 % LoT should be single-spaced within entries and double-spaced between entries
 \renewcommand*{\listoftables}{
     \vskip0pt
-    \chapter*{\Large \begin{center} LIST OF TABLES  \end{center}}
+    \chapter*{\begin{center} LIST OF TABLES  \end{center}}
     \addcontentsline{toc}{chapter}{LIST OF TABLES}
     \addvspace{10pt}
     \typeout{!! List of Tables...!!}
@@ -460,7 +460,7 @@
 % LoL should be single-spaced within entries and double-spaced between entries
 \renewcommand*{\lstlistoflistings}{
     \vskip0pt
-    \chapter*{\Large \begin{center} LIST OF LISTINGS  \end{center}}
+    \chapter*{\begin{center} LIST OF LISTINGS  \end{center}}
     \addcontentsline{toc}{chapter}{LIST OF LISTINGS}
     \addvspace{10pt}
     \typeout{!! List of Listings...!!}
@@ -481,7 +481,7 @@
 % LoF should be single-spaced within entries and double-spaced between entries 
 \renewcommand*{\listoffigures}{
     \vskip0pt
-    \chapter*{\Large \begin{center} LIST OF FIGURES \end{center}}
+    \chapter*{\begin{center} LIST OF FIGURES \end{center}}
     \addcontentsline{toc}{chapter}{LIST OF FIGURES}
     \addtocontents{toc}{\vspace{.5\baselineskip} \noindent CHAPTER}
     \addvspace{10pt} 
@@ -502,7 +502,7 @@
 %{{{ List of Algorithms
 \newcommand*{\listofalgs}{
     \vskip0pt
-    \chapter*{\Large \begin{center} List of Algorithms \end{center}}
+    \chapter*{\begin{center} List of Algorithms \end{center}}
     \addcontentsline{toc}{chapter}{List of Algorithms}
     \addvspace{10pt} 
     \typeout{!! List of Algorithms...!!}
@@ -532,7 +532,7 @@
     \newenvironment{#1}
     % beginning definition
     {
-        \chapter*{\Large \begin{center} #2 \end{center}}
+        \chapter*{\begin{center} #2 \end{center}}
         \addcontentsline{toc}{chapter}{#2}
         \vskip 00pt\par
         % set the line spacing 
@@ -605,7 +605,7 @@
     \null \vskip 26pt  
     \addcontentsline{toc}{chapter}{ABSTRACT}
     \begin{center}
-        {\Large \textbf{ABSTRACT}}\\
+        {ABSTRACT}\\
         % empty line creates required triple space 
         % between 'Abstract' and title
         \ \\
@@ -820,7 +820,7 @@
 
 %{{{ BibTeX references - first parameter is .bib, second is bibstyle
 \newcommand{\@@bibname}{REFERENCES}
-\renewcommand\bibname{\Large\bf \@@bibname \\}
+\renewcommand\bibname{\@@bibname \\}
 \newcommand{\references}[2]
 {
     \clearpage
@@ -944,12 +944,12 @@
     \vspace*{25pt}                          % Space at top of text page.
     { 
         \parindent 0pt \leftskip=0pt plus 1filll \rightskip=\leftskip
-        \bf \Large \@chapapp{} \thechapter  % 'Chapter' and number.
+        \@chapapp{} \thechapter  % 'Chapter' and number.
         \par
-        \bf                                 % Title.
-        \Large #1\par
+                                        % Title.
+        #1\par
         \nobreak                            % TeX penalty to prevent page break.
-        \vskip 0.27\baselineskip            % Space between title and text.
+        \vskip 0.5\baselineskip            % Space between title and text.
     } 
 }
 %}}}
@@ -958,7 +958,7 @@
     \vspace*{10pt}                         % Space at top of page.
     { 
         \parindent 0pt \leftskip=0pt plus 1filll \rightskip=\leftskip
-        \bf                                % Title.
+                                        % Title.
         #1\par
         \nobreak                           % TeX penalty to prevent page break.
         \vskip 0.1pt plus 0pt minus 0pt    % Space between title and text.
