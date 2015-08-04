@@ -5,7 +5,7 @@
 
 In future work we will expand our implementation of OnioNS and develop the remaining protocols. While our implementation functions with a fixed resolver, we will deploy our implementation onto larger and more realistic simulation environments such as Chutney and PlanetLab. When we have completed dynamic functionality and the remaining protocols, we will pursuit integrating our implementation into Tor. We expect this to be straightforward as OnioNS is designed as a plugin for Tor, introduces no changes to Tor's hidden service protocol, and requires very few changes to Tor's software. In future developments, Tor's developers may also make significant changes to Tor's hidden services, but OnioNS' design enables our system to become forwards-compatible after a few minor changes.
 
-Additionally, several questions need to answered in future studies:
+Additionally, several questions need to be answered in future studies:
 
 \begin{itemize}
 	\item Should the Quorum expire registrations that point to non-existent hidden services, and if so, how can this be done securely?

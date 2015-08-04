@@ -485,7 +485,7 @@ The basic design of the Domain Query is relatively straightforward.
 	\item Alice sends the original $ d $ to the hidden service.
 \end{enumerate}
 
-We supplement this protocol with an additional data structure in section \ref{sec:MerkleTree} as a defence against Record forgeries. It is also possible for Alice to request and the Page $ p $ containing $ r $ and all digital signatures from each Quorum node, allowing Alice to perform width verification as she can see that a large percentage of Quorum nodes maintained $ p $.
+We supplement this protocol with an additional data structure in section \ref{sec:MerkleTree} as a defense against Record forgeries. It is also possible for Alice to request and the Page $ p $ containing $ r $ and all digital signatures from each Quorum node, allowing Alice to perform width verification as she can see that a large percentage of Quorum nodes maintained $ p $.
 
 Of course, Alice can be certain that the Record $ r $ she receives is authentic and that $ d $ is unique by performing a full Synchronization and obtaining Charlie's Pagechain for herself, but this is impractical in most environments. It cannot be safely assumed that Alice has storage capacity to hold all the Pages in the Pagechain. Additionally, Tor's median circuit speed is often less than 1 MiBs\cite{TorMetrics}, so for convenience data transfer must be minimized. Therefore Alice can simply fetch minimal information and rely on her trust of Charlie and the Quorum.
 
