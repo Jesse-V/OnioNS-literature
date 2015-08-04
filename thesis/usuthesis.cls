@@ -1004,6 +1004,7 @@
         \leavevmode #1\mydotfill \hbox to\@pnumwidth{\hss #2}
         \par
     \endgroup
+    \vskip .75em plus 1pt \@tempdima 1.5em 
 }
 
 %{{{ Adjust the spacing between entries in the tables of contents
