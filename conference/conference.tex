@@ -14,7 +14,7 @@
 %       2) The Conference (location) Info information
 %       3) The Copyright Line with ACM data
 %       4) NO page numbers
-%
+%`
 % as against the acm_proc_article-sp.cls file which
 % DOES NOT produce 1) thru' 3) above.
 %
@@ -190,7 +190,7 @@ As the prevalence of the Internet and other communication has grown, so too has 
 
 Tor\cite{dingledine2004tor} is a third-generation onion routing system and is the most popular low-latency anonymous communication network in use today. In Tor, users construct a layered encrypted communications circuit over three onion routers in order to mask their identity and location. As messages travel through the circuit, each onion router in turn decrypts their encryption layer, exposing their respective routing information. This provides end-to-end communication confidentiality of the sender.
 
-Tor users interact with the Internet and other systems over Tor via the Tor Browser, a security-enhanced fork of Firefox ESR. This achieves a level of usability but also security: Tor achieves most of its application-level sanitization via privacy filters in the Tor Browser; unlike its predecessors, Tor performs little sanitization itself. Tor's threat model assumes that the capabilities of adversaries are limited to traffic analysis attacks on a restricted scale; they may observe or manipulate portions of Tor traffic, that they may run onion routers themselves, and that they may compromise a fraction of other existing routers. Tor's design centers around usability and defence against these types of attacks.
+Tor users interact with the Internet and other systems over Tor via the Tor Browser, a security-enhanced fork of Firefox ESR. This achieves a level of usability but also security: Tor achieves most of its application-level sanitization via privacy filters in the Tor Browser; unlike its predecessors, Tor performs little sanitization itself. Tor's threat model assumes that the capabilities of adversaries are limited to traffic analysis attacks on a restricted scale; they may observe or manipulate portions of Tor traffic, that they may run onion routers themselves, and that they may compromise a fraction of other existing routers. Tor's design centers around usability and defense against these types of attacks.
 
 \subsection{Motivation}
 
@@ -198,15 +198,15 @@ Tor also supports \emph{hidden services} -- anonymous servers that intentionally
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\linewidth]{../images/LucidCharts/Hidden_Services.pdf}
+	\includegraphics[width=0.9\linewidth]{../assets/images/LucidCharts/Hidden_Services.pdf}
 	\caption{A Tor client, Alice, and a hidden service, Bob, first mate two Tor circuits (purple and red) at one of Bob's long-term \emph{introduction points} (IP). They then renegotiate and communicate over another pair of Tor circuits (blue and green) at an ephemeral \emph{rendezvous point} (RP). This achieves communication with bi-directional anonymity.\cite{overlier2006locating}}
 \end{figure}
 
-Tor hidden service addresses are distributed and globally collision-free, but there is a strong discontinuity between the address and the service's purpose. For example, a visitor cannot determine that \url{3g2upl4pq6kufc4m.onion} is the DuckDuckGo search engine without visiting the hidden service. Generally speaking, it is currently impossible to categorize or fully label hidden services in advance. Over time, third-party directories -- both on the Clearnet and Darknet -- have appeared in attempt to counteract this issue, but these directories must be constantly maintained and the approach is neither convenient nor does it scale well. Given the approximetly 25,000 hidden services on the Tor network,  (Figure \ref{fig:OnionCount}) this suggests the strong need for a more complete solution to solve the usability issue. 
+Tor hidden service addresses are distributed and globally collision-free, but there is a strong discontinuity between the address and the service's purpose. For example, a visitor cannot determine that \url{3g2upl4pq6kufc4m.onion} is the DuckDuckGo search engine without visiting the hidden service. Generally speaking, it is currently impossible to categorize or fully label hidden services in advance. Over time, third-party directories -- both on the Clearnet and Darknet -- have appeared in attempt to counteract this issue, but these directories must be constantly maintained and the approach is neither convenient nor does it scale well. Given the approximetly 25,000 hidden services on the Tor network,  (Figure \ref{fig:OnionCount}) this suggests the strong need for a more complete solution to solve the usability issue.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.95\linewidth]{../images/Tor/onion_2014-10_2015-05.pdf}
+	\includegraphics[width=0.95\linewidth]{../assets/images/Tor/onion_2014-10_2015-05.pdf}
 	\caption{The number of unique .onion addresses seen in the Tor network between December 2014 and May 2015.\cite{kadianakis2015extrapolating}\cite{TorMetrics}}
 	\label{fig:OnionCount}
 \end{figure}
@@ -251,7 +251,7 @@ In 2001, Zooko Wilcox-O'Hearn described three desirable properties for any persi
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.3\textwidth]{../images/Zooko.eps}
+	\includegraphics[width=0.3\textwidth]{../assets/images/Zooko.eps}
 	\caption{Zooko's Triangle.}
 	\label{fig:ZookosTriangle}
 \end{figure}
@@ -289,7 +289,7 @@ Namecoin\cite{NamecoinHome} is an early fork of Bitcoin\cite{nakamoto2008bitcoin
 
 We assume that Tor provides privacy and anonymity; if Alice constructs a three-hop Tor circuit to Bob with modern Tor cryptographic protocols and sends a message $ m $ to Bob, we assume that Bob can learn no more about Alice than the contents of $ m $. This implies that if $ m $ does not contain identifiable information, Alice is anonymous from Bob's perspective, regardless of if $ m $ is exposed to an attacker, Eve. Identifiable information in $ m $ is outside of Tor's scope, but we do not introduce any protocols that cause this scenario.
 
-We assume secure cryptographic primitives; namely that Eve cannot break standard cryptographic primitives such as AES, SHA-2, RSA, Curve25519, Ed25519, the scrypt key derivation function. We assume that Eve maintains no backdoors or knows secret software breaks in the Botan or the OpenSSL implementations of these primitives.
+We assume secure cryptographic primitives; namely that Eve cannot break standard cryptographic primitives such as AES, SHA-2, RSA, Curve25519, Ed25519, and the scrypt key derivation function. We assume that Eve maintains no backdoors or knows secret software breaks in the Botan or the OpenSSL implementations of these primitives.
 
 % deterministic in there for a reason
 
@@ -398,7 +398,7 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.7\linewidth]{../images/LucidCharts/Page-chain2.pdf}
+	\includegraphics[width=0.7\linewidth]{../assets/images/LucidCharts/Page-chain2.pdf}
 	\caption{An example Pagechain across four Quorums with three side-chains. The valid master Pagechain from honest Quorum nodes (green) resists corruption from maliciously-colluding nodes (red) and malfunctioning nodes (orange).}
 	\label{fig:sideChains}
 \end{figure}
@@ -406,7 +406,7 @@ OnionNS makes use of cryptographic hash algorithms, digital signatures, proof-of
 %\setlength{\belowcaptionskip}{-10pt}
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=0.9\linewidth]{../images/LucidCharts/Data-Structure-Overview.pdf}
+	\includegraphics[width=0.9\linewidth]{../assets/images/LucidCharts/Data-Structure-Overview.pdf}
 	\caption{The master Pagechain is one-dimensional but spans across the network as each Mirror holds a copy. Each Page is maintained by a respective Quorum.}
 \end{figure}
 
@@ -441,7 +441,7 @@ Quorum Candidate Tor routers can determine in  $ \mathcal{O}(L_{T}) $ time if th
 
 \begin{enumerate}[noitemsep,nolistsep]
 	\item Charlie obtains the consensus documents, $ cd $, published on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 UTC.
-	\item Charlie scans $ cd $ and constructs a list \emph{qc} of Quorum Candidates that have the Fast, Stable, Running, and Valid flags and that are in the largest set of Tor routers that publish an identical time-based hash. 
+	\item Charlie scans $ cd $ and constructs a list \emph{qc} of Quorum Candidates that have the Fast, Stable, Running, and Valid flags and that are in the largest set of Tor routers that publish an identical time-based hash.
 	\item Alice constructs $ f = \mathit{R}(H(\mathit{cd})) $.
 	\item Alice uses \emph{f} to randomly scramble \emph{qc}.
 	\item The first $ \mathrm{min}(\mathrm{size}(\mathit{qc}), L_{Q}) $ routers are the Quorum.
@@ -546,7 +546,7 @@ As Records contain both second-level domains and their subdomains, $ T $ needs o
 \begin{enumerate}[noitemsep,nolistsep]
 	\item Alice extracts the second-level name $ c $ from $ d $.
 	\item If $ r $ exists, Charlie returns the leaf node containing $ r $ and all the tree nodes from leaf $ r $ to the root and their sibling nodes, so that Alice can verify authenticity of $ r $ by recomputing the root hash and verify that the largest subset of Quorum nodes signed the same root hash.
-	\item If Charlie claims non-existence of $ c $, he returns two adjacent leaves $ a $ and $ a $ (and the nodes on their paths and siblings) such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf.
+	\item If Charlie claims non-existence of $ c $, he returns two adjacent leaves $ a $ and $ b $ (and the nodes on their paths and siblings) such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf.
 	\item If either assertion fails, Charlie is dishonest.
 \end{enumerate}
 
@@ -584,7 +584,7 @@ Then the probability that $ L_{E} > \frac{L_{Q}}{2} $, a complete compromise of 
 % todo: 512 isn't in legend
 \begin{figure*}
 	\centering
-	\includegraphics[width=0.75\linewidth]{../analysis/MaliciousQuorumProbability_tight.eps}
+	\includegraphics[width=0.75\linewidth]{../assets/analysis/MaliciousQuorumProbability_tight.eps}
 	\caption{We calculate the PMF of the hypergeometric distribution for a population of 5,400, $ f_{E} \in [1,33] $, and five selections for $ L_{Q} $: 31, 63, 127, 255, and 511. $ f_{E} > 33 $ represents a complete compromise of the Tor network, so we do not consider values beyond this range.}
 	\label{fig:quorumMajority}
 \end{figure*}
@@ -593,11 +593,11 @@ Figure \ref{fig:quorumMajority} shows that choices of $ L_{Q} = 31 $ and $ L_{Q}
 
 \subsubsection{Quorum Rotation}
 
-In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not increase in response to the inclusion of OnioNS on the Tor network. If we also assume that $ L_{T} $ is fixed, then we can examine the impact of choices for $ \Delta q $ and calculate the probability of Eve compromising \emph{any} Quorum over a long period of time $ t $. Smaller values for $ \Delta q $ implies that we select more Quorums over that time period and thus increase our cumulative chances of compromise, but it also reduces the disruption timeline for a malicious Quorum. Eve's cumulative chances of compromising any Quorum is given by $ 1 - (1 - \frac{f_{E}}{L_{T}})^t $. We estimate this over 10 years in Figure \ref{fig:cumulativeProbability}. 
+In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not increase in response to the inclusion of OnioNS on the Tor network. If we also assume that $ L_{T} $ is fixed, then we can examine the impact of choices for $ \Delta q $ and calculate the probability of Eve compromising \emph{any} Quorum over a long period of time $ t $. Smaller values for $ \Delta q $ implies that we select more Quorums over that time period and thus increase our cumulative chances of compromise, but it also reduces the disruption timeline for a malicious Quorum. Eve's cumulative chances of compromising any Quorum is given by $ 1 - (1 - \frac{f_{E}}{L_{T}})^t $. We estimate this over 10 years in Figure \ref{fig:cumulativeProbability}.
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../analysis/CumulativeMaliciousQuorum_tight.eps}
+	\includegraphics[width=\linewidth]{../assets/analysis/CumulativeMaliciousQuorum_tight.eps}
 	\caption{The cumulative probability that Eve controls any Quorum at different rotation rates over 10 years at $ f_{E} = 10 $. We do not consider $ L_{Q} = 255 $ or $ L_{Q} = 511 $ as they produce values less than $ 10^{-58} $ and $ 10^{-134} $, respectively, far below our $ 10^{-38.532} $ threshold.}
 	\label{fig:cumulativeProbability}
 \end{figure}
@@ -622,7 +622,7 @@ We constructed a first-order Markov model and estimated the entropy of the \emph
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../analysis/LeaveJoinFrequency.eps}
+	\includegraphics[width=\linewidth]{../assets/analysis/LeaveJoinFrequency.eps}
 	\caption{A histogram of the number of routers entering or leaving the network between consecutive consensuses across the seven-month period.}
 	\label{fig:xorRouters}
 \end{figure}
@@ -633,7 +633,7 @@ We obtained from \url{collector.torproject.org} 5,067 archived hourly publicatio
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../analysis/MarkovTransitionDistribution.eps}
+	\includegraphics[width=\linewidth]{../assets/analysis/MarkovTransitionDistribution.eps}
 	\caption{The number of observed transitions for \emph{nickname}, \emph{publication}, \emph{IP address}, \emph{ORPort}, \emph{version}, and \emph{bandwidth} between consecutive consensuses across the seven-month period.}
 	\label{fig:transitionCount}
 \end{figure}
@@ -647,7 +647,7 @@ Then the entropy rate is given by equation \ref{eq:entropyRate}, where $ P_{i} $
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../analysis/EntropyDistribution.eps}
+	\includegraphics[width=\linewidth]{../assets/analysis/EntropyDistribution.eps}
 	\caption{The entropy rate distribution for each of the six fields in \emph{cached-microdesc-consensus}, scaled by the average size of the Tor network.}
 	\label{fig:entropyRates}
 \end{figure}
@@ -705,7 +705,7 @@ We implemented the essential functionality for Bob, Charlie, and Alice. We used 
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.9\linewidth]{../images/example.png}
+	\includegraphics[width=0.9\linewidth]{../assets/images/example.png}
 	\caption{We load the OnioNS' hidden service, onions55e7yam27n.onion, transparently under the ``example.tor'' domain on Tor Browser 4.5.1, a fork of Firefox ESR 31.7.0.}
 	\label{fig:prototypeExample}
 \end{figure}

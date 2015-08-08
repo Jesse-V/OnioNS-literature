@@ -1,4 +1,0 @@
-change .onion addresses to OnioNS address
-fix HS diagram - some node labels are wrong
-a Record contains one domain name, not multiple
-Penryn architecture
