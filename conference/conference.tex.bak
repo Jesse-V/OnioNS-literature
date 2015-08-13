@@ -452,7 +452,7 @@ Quorum Candidates and Tor clients can derive a Quorum in $ \mathcal{O}(L_{T}) $ 
 	\item Alice uses $ \mathit{R}(g) $ to select $ \mathrm{min}(\mathrm{size}(\mathit{qc}), L_{Q}) $ Quorum nodes from $ l $ with selection probability $ P (Q_{i}) = \frac{Q_{j}(w)}{s} $.
 \end{enumerate}
 
-This procedure may be performed on any $ cd $ in the past because Tor consensus documents contain timestamps and digital signatures from Tor directory authorities and thus may be retroactively verified regardless of where they are archived.
+This procedure may be performed on any $ cd $ in the past because Tor consensus documents contain digital signatures from Tor directory authorities and thus may be retroactively verified regardless of where they are archived.
 
 \subsubsection{Record Generation}
 \label{sec:RecordGeneration}
@@ -511,7 +511,7 @@ New Quorum nodes must select a Page from the previous Quorum to reference when g
 		\begin{enumerate}[noitemsep,nolistsep]
 			\item Charlie asserts that $ \mathit{fingerprint} \in \mathit{Quorum}_{q} $.
 			\item Charlie asserts that \emph{prevHash} references $ \mathrm{Page}_{q-1} $ found by this protocol.
-			\item Charlie calculates $ h = H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{rand}) $.
+			\item Charlie calculates $ h = H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{consensusHash}) $.
 			\item Charlie asserts that $ V_{\mathit{ed}}(h, E) $ returns true.
 		\end{enumerate}
 	\item Charlie sorts the set of Pages by the number of routers that have signed $ h $.
@@ -544,7 +544,7 @@ The Merkle tree also prevents phishing attacks from Charlie. While the Quorum pr
 
 \subsubsection{Onion Query}
 
-OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a hidden service address \emph{addr} to Charlie and receives back all Records that have \emph{addr} as either the owner or as a destination in their \emph{subdomain}. Alice may obtain additional verification on the results by issuing Domain Queries on the source .tor domains. We do not anticipate Onion Queries to have significant practical value, but they complete the symmetry of lookups and allow OnioNS domain names to have Forward-Confirmed Reverse DNS matches. We suggest caching destination hidden service addresses in a digital tree (trie) to accelerate this lookup; a trie turns the lookup from $ \mathcal{O}(n) $ to $ \mathcal{O}(1) $, while requiring $ \mathcal{O}(n) $ time and $ \mathcal{O}(n) $ space to pre-compute the cache.
+OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a hidden service address $ \mathit{addr} $ to Charlie and receives back all Records that have $ \mathit{addr} $ as a destination in their \emph{nameList}. Alice may obtain additional verification on the results by issuing Domain Queries on the source .tor domains. We do not anticipate Onion Queries to have significant practical value, but they complete the symmetry of lookups and allow OnioNS domain names to have Forward-Confirmed Reverse DNS matches. We suggest caching destination hidden service addresses in a digital tree (trie) to accelerate this lookup; a trie turns the lookup from $ \mathcal{O}(n) $ to $ \mathcal{O}(1) $, while requiring $ \mathcal{O}(n) $ time and $ \mathcal{O}(n) $ space to pre-compute the cache.
 
 \subsection{Authenticated Denial-of-Existence}
 \label{sec:authDenial}
@@ -671,14 +671,14 @@ In the Record Generation protocol, we intentionally included the scrypt calculat
 	\item For each Record $ C_{0 \le j \le K} $ Bob computes
 		\begin{enumerate}[noitemsep,nolistsep]
 			\item Bob sets \emph{pubHSKey} to his public RSA key.
-			\item Bob sets \emph{signature} to $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{c} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
-			\item Bob has found a valid Record if $ H(\mathit{c} \concat \mathit{nonce} \concat \mathit{pow} \concat \mathit{signature}) \leq d $ where $ d $ is the difficult level.
+			\item Bob sets \emph{recordSig} to $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{c} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
+			\item Bob has found a valid Record if $ H(\mathit{c} \concat \mathit{nonce} \concat \mathit{pow} \concat \mathit{recordSig}) \leq d $ where $ d $ is the difficult level.
 		\end{enumerate}
 \end{enumerate}
 
 % todo: calculate chances of Craig computing a correct record
 
-However, this ensures that Craig will with high probability compute more scrypt iterations than necessary; Craig cannot generate \emph{signature} and thus cannot compute if the hash is below the threshold. Moreover, the scrypt work incurs a cost onto Craig that must be compensated financially by Bob. Thus the Record Generation protocol always places a cost on Bob.
+However, this ensures that Craig will with high probability compute more scrypt iterations than necessary; Craig cannot generate \emph{recordSig} and thus cannot compute if the hash is below the threshold. Moreover, the scrypt work incurs a cost onto Craig that must be compensated financially by Bob. Thus the Record Generation protocol always places a cost on Bob.
 
 \subsection{DNS Leakage}
 
@@ -750,7 +750,7 @@ Although Tor is a low-latency network, as Domain Queries occur over a Tor circui
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../assets/images/torperf_50kb_2015-02_2015-08.eps}
+	\includegraphics[width=\linewidth]{../assets/images/torperf_50kb_2015-02_2015-08_2.eps}
 	\caption{The average performance to download 50 KB files over Tor circuits, as measured by Tor bandwidth authorities. The first and third quartiles are shown with the median time shown in orange\cite{TorMetrics}.}
 	\label{fig:latencyGraph}
 \end{figure}
