@@ -1,57 +1,233 @@
-% This is "sig-alternate.tex" V2.1 April 2013
-% This file should be compiled with V2.5 of "sig-alternate.cls" May 2012
-%
-% This example file demonstrates the use of the 'sig-alternate.cls'
-% V2.5 LaTeX2e document class file. It is for those submitting
-% articles to ACM Conference Proceedings WHO DO NOT WISH TO
-% STRICTLY ADHERE TO THE SIGS (PUBS-BOARD-ENDORSED) STYLE.
-% The 'sig-alternate.cls' file will produce a similar-looking,
-% albeit, 'tighter' paper resulting in, invariably, fewer pages.
-%
-% ----------------------------------------------------------------------------------------------------------------
-% This .tex file (and associated .cls V2.5) produces:
-%       1) The Permission Statement
-%       2) The Conference (location) Info information
-%       3) The Copyright Line with ACM data
-%       4) NO page numbers
-%`
-% as against the acm_proc_article-sp.cls file which
-% DOES NOT produce 1) thru' 3) above.
-%
-% Using 'sig-alternate.cls' you have control, however, from within
-% the source .tex file, over both the CopyrightYear
-% (defaulted to 200X) and the ACM Copyright Data
-% (defaulted to X-XXXXX-XX-X/XX/XX).
-% e.g.
-% \CopyrightYear{2007} will cause 2007 to appear in the copyright line.
-% \crdata{0-12345-67-8/90/12} will cause 0-12345-67-8/90/12 to appear in the copyright line.
-%
-% ---------------------------------------------------------------------------------------------------------------
-% This .tex source is an example which *does* use
-% the .bib file (from which the .bbl file % is produced).
-% REMEMBER HOWEVER: After having produced the .bbl file,
-% and prior to final submission, you *NEED* to 'insert'
-% your .bbl file into your source .tex file so as to provide
-% ONE 'self-contained' source file.
-%
-% ================= IF YOU HAVE QUESTIONS =======================
-% Questions regarding the SIGS styles, SIGS policies and
-% procedures, Conferences etc. should be sent to
-% Adrienne Griscti (griscti@acm.org)
-%
-% Technical questions _only_ to
-% Gerald Murray (murray@hq.acm.org)
-% ===============================================================
+%% Modified for NDSS 2015 on 2014/08/07
 
-\documentclass{sig-alternate}
+\documentclass[conference]{IEEEtran}
+
+\pagestyle{plain}
+
+
+% *** CITATION PACKAGES ***
+%
+%\usepackage{cite}
+% cite.sty was written by Donald Arseneau
+% V1.6 and later of IEEEtran pre-defines the format of the cite.sty package
+% \cite{} output to follow that of IEEE. Loading the cite package will
+% result in citation numbers being automatically sorted and properly
+% "compressed/ranged". e.g., [1], [9], [2], [7], [5], [6] without using
+% cite.sty will become [1], [2], [5]--[7], [9] using cite.sty. cite.sty's
+% \cite will automatically add leading space, if needed. Use cite.sty's
+% noadjust option (cite.sty V3.8 and later) if you want to turn this off.
+% cite.sty is already installed on most LaTeX systems. Be sure and use
+% version 4.0 (2003-05-27) and later if using hyperref.sty. cite.sty does
+% not currently provide for hyperlinked citations.
+% The latest version can be obtained at:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/cite/
+% The documentation is contained in the cite.sty file itself.
+
+% ----------------------------------------------------------------------------------------
+
+% *** GRAPHICS RELATED PACKAGES ***
+%
+\ifCLASSINFOpdf
+  % \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../pdf/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+  % will default to the driver specified in the system graphics.cfg if no
+  % driver is specified.
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+% graphicx was written by David Carlisle and Sebastian Rahtz. It is
+% required if you want graphics, photos, etc. graphicx.sty is already
+% installed on most LaTeX systems. The latest version and documentation can
+% be obtained at: 
+% http://www.ctan.org/tex-archive/macros/latex/required/graphics/
+% Another good source of documentation is "Using Imported Graphics in
+% LaTeX2e" by Keith Reckdahl which can be found as epslatex.ps or
+% epslatex.pdf at: http://www.ctan.org/tex-archive/info/
+%
+% latex, and pdflatex in dvi mode, support graphics in encapsulated
+% postscript (.eps) format. pdflatex in pdf mode supports graphics
+% in .pdf, .jpeg, .png and .mps (metapost) formats. Users should ensure
+% that all non-photo figures use a vector format (.eps, .pdf, .mps) and
+% not a bitmapped formats (.jpeg, .png). IEEE frowns on bitmapped formats
+% which can result in "jaggedy"/blurry rendering of lines and letters as
+% well as large increases in file sizes.
+%
+% You can find documentation about the pdfTeX application at:
+% http://www.tug.org/applications/pdftex
+
+% ----------------------------------------------------------------------------------------
+
+% *** MATH PACKAGES ***
+%
+%\usepackage[cmex10]{amsmath}
+% A popular package from the American Mathematical Society that provides
+% many useful and powerful commands for dealing with mathematics. If using
+% it, be sure to load this package with the cmex10 option to ensure that
+% only type 1 fonts will utilized at all point sizes. Without this option,
+% it is possible that some math symbols, particularly those within
+% footnotes, will be rendered in bitmap form which will result in a
+% document that can not be IEEE Xplore compliant!
+%
+% Also, note that the amsmath package sets \interdisplaylinepenalty to 10000
+% thus preventing page breaks from occurring within multiline equations. Use:
+%\interdisplaylinepenalty=2500
+% after loading amsmath to restore such page breaks as IEEEtran.cls normally
+% does. amsmath.sty is already installed on most LaTeX systems. The latest
+% version and documentation can be obtained at:
+% http://www.ctan.org/tex-archive/macros/latex/required/amslatex/math/
+
+% ----------------------------------------------------------------------------------------
+
+% *** SPECIALIZED LIST PACKAGES ***
+%
+%\usepackage{algorithmic}
+% algorithmic.sty was written by Peter Williams and Rogerio Brito.
+% This package provides an algorithmic environment fo describing algorithms.
+% You can use the algorithmic environment in-text or within a figure
+% environment to provide for a floating algorithm. Do NOT use the algorithm
+% floating environment provided by algorithm.sty (by the same authors) or
+% algorithm2e.sty (by Christophe Fiorio) as IEEE does not use dedicated
+% algorithm float types and packages that provide these will not provide
+% correct IEEE style captions. The latest version and documentation of
+% algorithmic.sty can be obtained at:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/algorithms/
+% There is also a support site at:
+% http://algorithms.berlios.de/index.html
+% Also of interest may be the (relatively newer and more customizable)
+% algorithmicx.sty package by Szasz Janos:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/algorithmicx/
+
+% ----------------------------------------------------------------------------------------
+
+% *** ALIGNMENT PACKAGES ***
+%
+%\usepackage{array}
+% Frank Mittelbach's and David Carlisle's array.sty patches and improves
+% the standard LaTeX2e array and tabular environments to provide better
+% appearance and additional user controls. As the default LaTeX2e table
+% generation code is lacking to the point of almost being broken with
+% respect to the quality of the end results, all users are strongly
+% advised to use an enhanced (at the very least that provided by array.sty)
+% set of table tools. array.sty is already installed on most systems. The
+% latest version and documentation can be obtained at:
+% http://www.ctan.org/tex-archive/macros/latex/required/tools/
+
+
+%\usepackage{mdwmath}
+%\usepackage{mdwtab}
+% Also highly recommended is Mark Wooding's extremely powerful MDW tools,
+% especially mdwmath.sty and mdwtab.sty which are used to format equations
+% and tables, respectively. The MDWtools set is already installed on most
+% LaTeX systems. The lastest version and documentation is available at:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/mdwtools/
+
+% IEEEtran contains the IEEEeqnarray family of commands that can be used to
+% generate multiline equations as well as matrices, tables, etc., of high
+% quality.
+
+
+%\usepackage{eqparbox}
+% Also of notable interest is Scott Pakin's eqparbox package for creating
+% (automatically sized) equal width boxes - aka "natural width parboxes".
+% Available at:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/eqparbox/
+
+
+% *** SUBFIGURE PACKAGES ***
+%\usepackage[tight,footnotesize]{subfigure}
+% subfigure.sty was written by Steven Douglas Cochran. This package makes it
+% easy to put subfigures in your figures. e.g., "Figure 1a and 1b". For IEEE
+% work, it is a good idea to load it with the tight package option to reduce
+% the amount of white space around the subfigures. subfigure.sty is already
+% installed on most LaTeX systems. The latest version and documentation can
+% be obtained at:
+% http://www.ctan.org/tex-archive/obsolete/macros/latex/contrib/subfigure/
+% subfigure.sty has been superceeded by subfig.sty.
+
+
+%\usepackage[caption=false]{caption}
+%\usepackage[font=footnotesize]{subfig}
+% subfig.sty, also written by Steven Douglas Cochran, is the modern
+% replacement for subfigure.sty. However, subfig.sty requires and
+% automatically loads Axel Sommerfeldt's caption.sty which will override
+% IEEEtran.cls handling of captions and this will result in nonIEEE style
+% figure/table captions. To prevent this problem, be sure and preload
+% caption.sty with its "caption=false" package option. This is will preserve
+% IEEEtran.cls handing of captions. Version 1.3 (2005/06/28) and later 
+% (recommended due to many improvements over 1.2) of subfig.sty supports
+% the caption=false option directly:
+%\usepackage[caption=false,font=footnotesize]{subfig}
+%
+% The latest version and documentation can be obtained at:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/subfig/
+% The latest version and documentation of caption.sty can be obtained at:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/caption/
+
+
+% *** FLOAT PACKAGES ***
+%
+%\usepackage{fixltx2e}
+% fixltx2e, the successor to the earlier fix2col.sty, was written by
+% Frank Mittelbach and David Carlisle. This package corrects a few problems
+% in the LaTeX2e kernel, the most notable of which is that in current
+% LaTeX2e releases, the ordering of single and double column floats is not
+% guaranteed to be preserved. Thus, an unpatched LaTeX2e can allow a
+% single column figure to be placed prior to an earlier double column
+% figure. The latest version and documentation can be found at:
+% http://www.ctan.org/tex-archive/macros/latex/base/
+
+
+%\usepackage{stfloats}
+% stfloats.sty was written by Sigitas Tolusis. This package gives LaTeX2e
+% the ability to do double column floats at the bottom of the page as well
+% as the top. (e.g., "\begin{figure*}[!b]" is not normally possible in
+% LaTeX2e). It also provides a command:
+%\fnbelowfloat
+% to enable the placement of footnotes below bottom floats (the standard
+% LaTeX2e kernel puts them above bottom floats). This is an invasive package
+% which rewrites many portions of the LaTeX2e float routines. It may not work
+% with other packages that modify the LaTeX2e float routines. The latest
+% version and documentation can be obtained at:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/sttools/
+% Documentation is contained in the stfloats.sty comments as well as in the
+% presfull.pdf file. Do not use the stfloats baselinefloat ability as IEEE
+% does not allow \baselineskip to stretch. Authors submitting work to the
+% IEEE should note that IEEE rarely uses double column equations and
+% that authors should try to avoid such use. Do not be tempted to use the
+% cuted.sty or midfloat.sty packages (also by Sigitas Tolusis) as IEEE does
+% not format its papers in such ways.
+
+
+% *** PDF, URL AND HYPERLINK PACKAGES ***
+%
+%\usepackage{url}
+% url.sty was written by Donald Arseneau. It provides better support for
+% handling and breaking URLs. url.sty is already installed on most LaTeX
+% systems. The latest version can be obtained at:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/misc/
+% Read the url.sty source comments for usage information. Basically,
+% \url{my_url_here}.
+
+% ----------------------------------------------------------------------------------------
 
 \usepackage{mathtools}
 \usepackage[urlbordercolor={1 1 1},citebordercolor={1 1 1},linkbordercolor={1 1 1}]{hyperref}
-\usepackage{enumitem}
+%\usepackage{enumitem}
 \usepackage{tikz}
 \usetikzlibrary{decorations.text}
 \usepackage{tkz-berge}
 \usepackage{amsmath}
+\usepackage{tabularx}
 
 % https://tex.stackexchange.com/questions/42271/floor-and-ceiling-functions
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
@@ -59,60 +235,51 @@
 
 \newcommand*\concat{\mathbin{\|}}
 
+% *** Do not adjust lengths that control margins, column widths, etc. ***
+% *** Do not use packages that alter fonts (such as pslatex).         ***
+% There should be no need to do such things with IEEEtran.cls V1.6 and later.
+% (Unless specifically asked to do so by the journal or conference you plan
+% to submit to, of course. )
+
 \begin{document}
 
-% Copyright
-\setcopyright{acmcopyright}
-%\setcopyright{acmlicensed}
-%\setcopyright{rightsretained}
-%\setcopyright{usgov}
-%\setcopyright{usgovmixed}
-%\setcopyright{cagov}
-%\setcopyright{cagovmixed}
+\title{The Onion Name System: \\ \huge Tor-powered Distributed DNS for Tor Hidden Services}
 
-% DOI
-\doi{10.475/123_4}
-
-% ISBN
-\isbn{123-4567-24-567/08/06}
-
-%Conference
-\conferenceinfo{ACM CCS '15}{October 12-16, 2015, Denver, Colorado, USA}
-
-\acmPrice{\$15.00}
-
-% --- Author Metadata here ---
-%\conferenceinfo{WOODSTOCK}{'97 El Paso, Texas USA}
-\CopyrightYear{2015} % Allows default copyright year (20XX) to be over-ridden - IF NEED BE.
-%\crdata{0-12345-67-8/90/01}  % Allows default copyright data (0-89791-88-6/97/05) to be over-ridden - IF NEED BE.
-% --- End of Author Metadata ---
-
-\title{The Onion Name System}
-\subtitle{Tor-powered Distributed DNS for Tor Hidden Services}
-
-\numberofauthors{3}
+% author names and affiliations
+% use a multiple column layout for up to three different
+% affiliations
 \author{
-	[anonymous submission]
-%% 1st. author
-%\alignauthor
-%Jesse Victors \\
-%       \affaddr{7449 S. Babcock Blvd.}\\
-%       \affaddr{Wasilla, AK 99623}\\
-%       \email{jvictors@jessevictors.com}
-%% 2nd. author
-%\alignauthor
-%Ming Li\\
-%       \affaddr{Utah State University}\\
-%       \affaddr{Logan, UT 84321}\\
-%       \email{ming.li@usu.edu}
-%% 3rd. author
-%\alignauthor
-%Xinwen Fu\\
-%       \affaddr{University of Massachusetts Lowell}\\
-%       \affaddr{Lowell, MA 01854 }\\
-%       \email{xinwenfu@cs.uml.edu}
+	\IEEEauthorblockN{[Anonymous submission]}
+	\IEEEauthorblockA{}
 }
+	
+%	\IEEEauthorblockN{Jesse Victors}
+%	\IEEEauthorblockA{Utah State University \\ jvictors@jessevictors.com}
+%	\and
+%	\IEEEauthorblockN{Ming Li}
+%	\IEEEauthorblockA{University of Arizona \\ lim@email.arizona.edu}
+%	\and
+%	\IEEEauthorblockN{Xinwen Fu}
+%	\IEEEauthorblockA{University of Massachusetts Lowell \\ xinwenfu@cs.uml.edu}
 
+\IEEEoverridecommandlockouts
+\makeatletter\def\@IEEEpubidpullup{9\baselineskip}\makeatother
+\IEEEpubid{\parbox{\columnwidth}{Permission to freely reproduce all or part
+    of this paper for noncommercial purposes is granted provided that
+    copies bear this notice and the full citation on the first
+    page. Reproduction for commercial purposes is strictly prohibited
+    without the prior written consent of the Internet Society, the
+    first-named author (for reproduction of an entire paper only), and
+    the author's employer if the paper was prepared within the scope
+    of employment.  \\
+    NDSS '15, 8-11 February 2015, San Diego, CA, USA\\
+    Copyright 2015 Internet Society, ISBN <TBD>\\
+    http://dx.doi.org/10.14722/ndss.2015.23xxx
+}
+\hspace{\columnsep}\makebox[\columnwidth]{}}
+
+
+% make the title area
 \maketitle
 
 \begin{abstract}
@@ -123,66 +290,24 @@ In response to this difficulty, in this work we introduce the Onion Name System 
 
 \end{abstract}
 
-%% http://dl.acm.org/ccs.cfm
-%% http://www.acm.org/about/class/
-%% https://academia.stackexchange.com/questions/15252/is-the-new-acm-2012-taxonomy-usable-in-use
-%\begin{CCSXML}
-%<ccs2012>
-%<concept>
-%<concept_id>10002951.10003152.10003161.10003164</concept_id>
-%<concept_desc>Information systems~Block / page strategies</concept_desc>
-%<concept_significance>500</concept_significance>
-%</concept>
-%<concept>
-%<concept_id>10003033.10003099.10003037</concept_id>
-%<concept_desc>Networks~Naming and addressing</concept_desc>
-%<concept_significance>500</concept_significance>
-%</concept>
-%<concept>
-%<concept_id>10002978.10003006.10003013</concept_id>
-%<concept_desc>Security and privacy~Distributed systems security</concept_desc>
-%<concept_significance>300</concept_significance>
-%</concept>
-%<concept>
-%<concept_id>10002978.10002979</concept_id>
-%<concept_desc>Security and privacy~Cryptography</concept_desc>
-%<concept_significance>100</concept_significance>
-%</concept>
-%<concept>
-%<concept_id>10002978.10003014.10003015</concept_id>
-%<concept_desc>Security and privacy~Security protocols</concept_desc>
-%<concept_significance>100</concept_significance>
-%</concept>
-%</ccs2012>
-%\end{CCSXML}
+% IEEEtran.cls defaults to using nonbold math in the Abstract.
+% This preserves the distinction between vectors and scalars. However,
+% if the conference you are submitting to favors bold math in the abstract,
+% then you can use LaTeX's standard command \boldmath at the very start
+% of the abstract to achieve this. Many IEEE journals/conferences frown on
+% math in the abstract anyway.
+
+% no keywords
+
+% For peer review papers, you can put extra information on the cover
+% page as needed:
+% \ifCLASSOPTIONpeerreview
+% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+% \fi
 %
-%\ccsdesc[500]{Information systems~Block / page strategies}
-%\ccsdesc[500]{Networks~Naming and addressing}
-%\ccsdesc[300]{Security and privacy~Distributed systems security}
-%\ccsdesc[100]{Security and privacy~Cryptography}
-%\ccsdesc[100]{Security and privacy~Security protocols}
-
-%{Security and privacy}
-%	Cryptography
-%	Systems security
-%		Distributed systems security
-%	 Network security
-%	 	Security protocols
-%{Information systems}
-%	{Information storage systems}
-%		Record storage systems
-%			Block / page strategies
-%{Networks}
-%	Network services
-%		Naming and addressing
-
-%\printccsdesc
-
-\category{C.2.0}{Computer Communications Networks}{Security and protection}
-\category{C.2.4}{Computer Communications Networks}{Distributed Systems}[Client/server, Distributed databases]
-\category{E.1}{Data Structures}{Distributed data structures}[Records]
-
-\keywords{Tor, onion, hidden service, anonymity, privacy, network security, petname}
+% For peerreview papers, this IEEEtran command inserts a page break and
+% creates the second title. It will be ignored for other modes.
+%%\IEEEpeerreviewmaketitle
 
 \section{Introduction}
 
@@ -202,12 +327,12 @@ Tor also supports \emph{hidden services} -- anonymous servers that intentionally
 	\caption{A Tor client, Alice, and a hidden service, Bob, first mate two Tor circuits (purple and red) at one of Bob's long-term \emph{introduction points} (IP). They then renegotiate and communicate over another pair of Tor circuits (blue and green) at an ephemeral \emph{rendezvous point} (RP). This achieves communication with bi-directional anonymity\cite{overlier2006locating}.}
 \end{figure}
 
-Tor hidden service addresses are distributed and globally collision-free, but there is a strong discontinuity between the address and the service's purpose. For example, a visitor cannot determine that \url{3g2upl4pq6kufc4m.onion} is the DuckDuckGo search engine without visiting the hidden service. Generally speaking, it is currently impossible to categorize or fully label hidden services in advance. Over time, third-party directories -- both on the Clearnet and Darknet -- have appeared in attempt to counteract this issue, but these directories must be constantly maintained and the approach is neither convenient nor does it scale well. Given the approximetly 25,000 hidden services on the Tor network,  (Figure \ref{fig:OnionCount}) this suggests the strong need for a more complete solution to solve the usability issue.
+Tor hidden service addresses are distributed and globally collision-free, but there is a strong discontinuity between the address and the service's purpose. For example, a visitor cannot determine that \url{3g2upl4pq6kufc4m.onion} is the DuckDuckGo search engine without visiting the hidden service. Generally speaking, it is currently impossible to categorize or fully label hidden services in advance. Over time, third-party directories -- both on the Clearnet and Darknet -- have appeared in attempt to counteract this issue, but these directories must be constantly maintained and the approach is neither convenient nor does it scale well. Given the approximately 27,000 hidden services on the Tor network,  (Figure \ref{fig:OnionCount}) this suggests the strong need for a more complete solution to solve the usability issue.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.95\linewidth]{../assets/images/Tor/onion_2014-10_2015-05.pdf}
-	\caption{The number of unique .onion addresses seen in the Tor network between December 2014 and May 2015\cite{kadianakis2015extrapolating}\cite{TorMetrics}.}
+	\includegraphics[width=\linewidth]{../assets/images/Tor/onion_2015-02_2015-07.eps}
+	\caption{The number of unique .onion addresses seen in the Tor network between February 2015 and July 2015\cite{kadianakis2015extrapolating}\cite{TorMetrics}.}
 	\label{fig:OnionCount}
 \end{figure}
 
@@ -256,9 +381,11 @@ In 2001, Zooko Wilcox-O'Hearn described three desirable properties for any persi
 	\label{fig:ZookosTriangle}
 \end{figure}
 
+\newpage
+
 Some examples of naming systems that achieve only two of these properties include:
 
-\begin{itemize}[noitemsep]
+\begin{itemize}
 	\item \textbf{Securely unique and human-meaningful} \\ --- Internet domain names and GNS.
 	\item \textbf{Decentralized and human-meaningful} \\ --- Human names and nicknames.
 	\item \textbf{Securely unique and decentralized} \\ --- Tor hidden service .onion addresses.
@@ -276,7 +403,7 @@ If a naming system provides authentication, clients should be able to verify the
 
 Vanity key generators (e.g. Shallot\cite{KatmagicShallot}) attempt to find by brute-force an RSA key that generates a partially-desirable hash. Vanity key generators are commonly used by hidden service operators to improve the recognition of their hidden service, particularly for higher-profile services\cite{syversongenuine}. For example, a hidden service operator may wish to start his service's address with a meaningful noun so that others may more easily recognize it. However, these generators are only partially successful at enhancing readability because the size of the domain key-space is too large to be fully brute-forced in any reasonable length of time. If the address key-space was reduced to allow a full brute-force, the system would fail to be guaranteed collision-free. Nicolussi suggested changing the address encoding to a delimited series of words, using a dictionary known in advance by all parties\cite{nicolussi2011human}. Like vanity key generators, Nicolussi's encoding partially improves the recognition and readability of an address but does nothing to counter the large key-space nor alleviate the logistic problems of manually entering in the address into the Tor Browser. These attempts are purely cosmetic and do not qualify as a full solution.
 
-The Internet DNS is another one candidate and is already well established as a fundamental abstraction layer for Internet routing. However, despite its widespread use and extreme popularity, the Internet DNS suffers from several significant shortcomings and fundamental security issues that make it inappropriate for use by Tor hidden services. With the exception of extensions such as DNSSEC, the Internet DNS by default does not use any cryptographic primitives. DNSSEC is primarily designed to prevent forgeries and DNS cache poisoning from intermediary name servers and it does not provide any degree of query privacy\cite{wachs2014censorship}. Additional extensions and protocols such as DNSCurve\cite{bernstein2009dnscurve} have been proposed, but DNSSEC and DNSCurve are optional and have not yet seen widespread full deployment across the Internet. The lack of default security in Internet DNS and the financial expenses involved with registering a new TLD casts significant doubt on the feasibility of using it for Tor hidden services. Cachin and Samar\cite{cachin2004secure} extended the Internet DNS and decreased the attack potential for authoritative name servers via threshold cryptography, but the lack of privacy in the Internet DNS and the logistical difficulty in globally implementing their work prevents us from using their system for hidden services.
+The Internet DNS is another one candidate and is already well established as a fundamental abstraction layer for Internet routing. However, despite its widespread use and extreme popularity, the Internet DNS suffers from several significant shortcomings and fundamental security issues that make it inappropriate for use by Tor hidden services. Generally speaking, the Internet DNS by default does not use any cryptographic primitives. DNSSEC is primarily designed to prevent forgeries and DNS cache poisoning from intermediary name servers and it does not provide any degree of query privacy\cite{wachs2014censorship}. Additional extensions and protocols such as DNSCurve\cite{bernstein2009dnscurve} have been proposed, but DNSSEC and DNSCurve are optional and have not yet seen widespread full deployment across the Internet. The lack of default security in Internet DNS and the financial expenses involved with registering a new TLD casts significant doubt on the feasibility of using it for Tor hidden services. Cachin and Samar\cite{cachin2004secure} extended the Internet DNS and decreased the attack potential for authoritative name servers via threshold cryptography, but the lack of privacy in the Internet DNS and the logistical difficulty in globally implementing their work prevents us from using their system for hidden services.
 
 The GNU Name System\cite{wachs2014censorship} (GNS) is another zone-based alternative DNS. GNS describes a hierarchical zones of names with each user managing their own zone and distributing zone access peer-to-peer within social circles. While GNS' design guarantees the uniqueness of names within each zone and users are capable of selecting meaningful nicknames for themselves, GNU does not guarantee that names are \emph{globally} unique. Furthermore, the selection of a trustworthy zone to use would be a significant challenge for using GNS for Tor hidden services and such a selection no longer makes the system distributed. Awerbuch and Scheideler,\cite{awerbuch2004group} constructed a distributed peer-to-peer naming system, but like GNS, made no guarantee that domain names would be globally unique.
 
@@ -305,7 +432,7 @@ Finally, we assume secure cryptographic primitives; namely that Eve cannot break
 
 \begin{figure}[htbp]
 	\centering
-	\begin{tikzpicture}[scale=0.76, ->, node distance=2.2cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries, transform shape}]
+	\begin{tikzpicture}[scale=0.76, ->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries, transform shape}]
 
 			\node[main node] (1) {$ A_{G} $};
 			\node[main node] (2) [right of=1] {};
@@ -352,13 +479,13 @@ Finally, we assume secure cryptographic primitives; namely that Eve cannot break
 
 We propose the Onion Name System (OnioNS) as an abstraction layer to hidden service addresses and introduce ``.tor'' as a new pseudo-TLD for this purpose. First, Bob generates and self-signs a \emph{Record}, containing a meaningful second-level domain name and his public key $ \mathcal{P}_{B} $. Without loss of generality, let this be ``example.tor $ \rightarrow $ onions55e7yam27n.onion''. We introduce a proof-of-work scheme that requires Bob to expend computational and memory resources to claim ``example.tor'', a more privacy-enhanced alternative to financial compensation to a central authority. Proof-of-work systems are noteworthy for their asymmetry: they require the issuer to spend effort to find an answer to a moderately hard computational problem, but once solved can be easily verified correct by any recipient. The requirement of proof-of-work fulfils three main purposes:
 
-\begin{enumerate}[noitemsep,nolistsep]
+\begin{enumerate}
 	\item Significantly reduces the threat of DoS flood attack.
 	\item Introduces a barrier-of-entry that encourages the utilization of domain names and the availability of the underlying hidden services.
 	\item Increases the difficulty of domain squatting.
 \end{enumerate}
 
-Second, Bob uses a Tor circuit to anonymously transmit his Record to an authoritative short-lived random subset of OnioNS servers, known as the \emph{Quorum}, inside the Tor network. The Quorum archive Bob's Record in a sequential public ledger known as a \emph{Pagechain}, of which each OnioNS node holds their own local copy. Bob's Record is received by all Quorum nodes and share signatures of their knowledge with each other, so they maintain a common database. Quorum nodes are not name servers, so let Charlie be a name server outside the Quorum and assume that Charlie stays synchronized with the Quorum.
+Second, Bob uses a Tor circuit to anonymously transmit his Record to an authoritative short-lived random subset of OnioNS servers, known as the Quorum, inside the Tor network. The Quorum archive Bob's Record in a sequential public ledger known as a Pagechain, of which each OnioNS node holds their own local copy. Bob's Record is received by all Quorum nodes and share signatures of their knowledge with each other, so they maintain a common database. Quorum nodes are not name servers, so let Charlie be a name server outside the Quorum and assume that Charlie stays synchronized with the Quorum.
 
 Third, Alice, uses a Tor client to anonymously connect to Charlie, then asks Charlie for ``example.tor''. Alice receives Bob's Record, verifies its signature and proof-of-work, and uses $ \mathcal{P}_{B} $ to contact Bob via Tor's hidden service protocol. As Bob's Record is self-signed and contains $ \mathcal{P}_{B} $, Alice can verify the Record's authenticity relative to $ \mathcal{P}_{B} $. In this way, Alice does not have to resort to using ``onions55e7yam27n.onion'', rather that Bob can be successfully referenced by ``example.tor''. We illustrate the OnioNS overview in Figure \ref{fig:basicDesign}.
 
@@ -366,32 +493,32 @@ Third, Alice, uses a Tor client to anonymously connect to Charlie, then asks Cha
 
 OnioNS makes use of a number of cryptographic primitives, notably a proof-of-work algorithm and a global source of randomness. Additionally, we require that Tor routers generate an Ed25519\cite{bernstein2011high} keypair and distribute the public key via the consensus document. We note that because the Ed25519 elliptic curve is birationally equivalent to Curve25519\cite{bernstein2006curve25519} and because it is possible to convert Curve25519 to Ed25519 in constant time, we can theoretically use existing NTor\cite{goldberg2013anonymity} keys for digital signatures. However, we refrain from this because to our knowledge there is no formal analysis that demonstrates that this a cryptographically secure operation. Therefore we require Tor to introduce Ed25519 keys to all Tor routers. If this is infeasible, Ed25519 can be substituted with RSA in all instances.
 
-\begin{itemize}[noitemsep,nolistsep]
-	\item Let $ H(x) $ be a cryptographic hash function. In our reference implementation we define $ H(x) $ as SHA-384.
-	\item Let $ S_{\mathit{RSA}}(m, r) $ be a deterministic RSA digital signature function that accepts a message $ m $ and a private RSA key $ r $ and returns a digital signature. Let $ S_{\mathit{RSA}}(m, r) $ use $ H(x) $ as a digest function on $ m $ in all use cases. In our reference implementation we define $ S_{\mathit{RSA}}(m, r) $ as EMSA PKCS1 v1.5. (EMSA3)
-	\item Let $ V_{\mathit{RSA}}(m, E) $ validate an RSA digital signature by accepting a message $ m $ and a public key $ R $, and return true if and only if the signature is valid.
-	\item Let $ S_{\mathit{ed}}(m, e) $ be an Ed25519 digital signature function that accepts a message $ m $ and a private key $ e $ and returns a 64-byte digital signature. Let $ S_{\mathit{ed}}(m, e) $ use $ H(x) $ as a digest function on $ m $ in all use cases.
+\begin{itemize}
+	\item Let $ \mathcal{H}(x) $ be a cryptographic hash function. In our reference implementation we define $ \mathcal{H}(x) $ as SHA-384.
+	\item Let $ S_{\mathit{RSA}}(m, r) $ be a deterministic RSA digital signature function that accepts a message $ m $ and a private RSA key $ r $ and returns a digital signature. Let $ S_{\mathit{RSA}}(m, r) $ use $ \mathcal{H}(x) $ as a digest function on $ m $ in all use cases. In our reference implementation we define $ S_{\mathit{RSA}}(m, r) $ as EMSA PKCS1 v1.5. (EMSA3)
+	\item Let $ V_{\mathit{RSA}}(m, R) $ validate an RSA digital signature by accepting a message $ m $ and a public key $ R $, and return true if and only if the signature is valid.
+	\item Let $ S_{\mathit{ed}}(m, e) $ be an Ed25519 digital signature function that accepts a message $ m $ and a private key $ e $ and returns a 64-byte digital signature. Let $ S_{\mathit{ed}}(m, e) $ use $ \mathcal{H}(x) $ as a digest function on $ m $ in all use cases.
 	\item Let $ V_{\mathit{ed}}(m, E) $ validate an Ed25519 digital signature by accepting a message $ m $ and a public key $ E $, and return true if and only if the signature is valid.
 	\item Let $ \mathrm{PoW}(k) $ be a one-way function that accepts an input key $ k $ and returns a deterministic output. Our reference implementation uses the scrypt\cite{percival2012scrypt} key derivation function with a fixed salt.
-	\item Let $ \mathrm{G}(t) $ be a cryptographically-secure generator of random or pseudorandom timestapped numbers. $ \mathrm{G}(t) $ deterministically returns a value for time $ t $ in the present or past.
-	\item Let $ \mathit{R}(s) $ be a pseudorandom number generator that accepts an initial seed $ s $ and returns a list of numerical pseudorandom numbers. In our design, $ \mathit{R}(s) $ uses $ \mathrm{G}(t) $, so $ \mathit{R}(s) $ does not need to be cryptographically secure. We suggest MT19937, commonly known as the Mersenne Twister. This generator is widely used throughout most programming languages and is well known for its speed, long period, and the high quality of its pseudorandom output\cite{matsumoto1998mersenne}.
+	\item Let $ \mathcal{G}(t) $ be a cryptographically-secure generator of random or pseudorandom timestapped numbers. $ \mathcal{G}(t) $ deterministically returns a value for time $ t $ in the present or past.
+	\item Let $ \mathcal{R}(s) $ be a pseudorandom number generator that accepts an initial seed $ s $ and returns a list of pseudorandom numbers. In our design, $ \mathcal{R}(s) $ uses $ \mathcal{G}(t) $, so $ \mathcal{R}(s) $ does not need to be cryptographically secure. We suggest MT19937, commonly known as the Mersenne Twister. This generator is widely used throughout most programming languages and is well known for its speed, long period, and the high quality of its pseudorandom output\cite{matsumoto1998mersenne}.
 \end{itemize}
 
 \subsection{Definitions}
 
 \textbf{domain name} The syntax of OnioNS domain names mirrors the Internet DNS; we use a sequence of name-delimiter pairs with a .tor pseudo-TLD. The Internet DNS defines a hierarchy of administrative realms that are closely tied to the depth of each name. By contrast, OnioNS makes no such distinction; we let hidden service operators claim second-level names and then control all names of greater depth under that second-level name.
 
-\textbf{Record} A \emph{Record} contains \emph{type}, the purpose of this Record; \emph{name}, a meaningful second-level domain name with the .tor pseudo-TLD; \emph{subdomains}, a one-to-one map of .tor domains of level three or higher and .tor or .onion destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{rand}, the output of $ \mathrm{G}(t) $ at the current time; \emph{nonce}, bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{signature}, the output of $ S_{\mathit{RSA}}(m, r) $; and \emph{pubHSKey}, Bob's public RSA key.
+A \textbf{Record} contains $ \mathit{type} $, the purpose of this Record; $ \mathit{name} $, a meaningful second-level domain name with the .tor pseudo-TLD; $ \mathit{subdomains} $, a one-to-one map of .tor domains of level three or higher and .tor or .onion destinations; $ \mathit{contact} $, Bob's PGP key fingerprint if he chooses to disclose it; $ \mathit{rand} $, the output of $ \mathcal{G}(t) $ at the current time; $ \mathit{nonce} $, bytes used as a source of randomness for the proof-of-work; $ \mathit{pow} $, the output of $ \mathrm{PoW}(i) $;  $ \mathit{signature} $, the output of $ S_{\mathit{RSA}}(m, r) $; and $ \mathit{pubHSKey} $, Bob's public RSA key.
 
-\textbf{Page} A \emph{Page} contains \emph{prevHash}, set to $ H(\emph{prevHash} \concat \emph{recordList} \concat \emph{rand}) $ of some previous Page; \emph{recordList}, a \\ deterministically-sorted array list of Records; \emph{rand}, the output of $ \mathrm{G}(t) $ at the current time; \emph{fingerprint}, the Tor fingerprint of the router maintaining this Page; and \emph{pageSig}, the output of  $ S_{\mathit{ed}}(H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{rand})], e) $ where $ e $ is the router's private Ed25519 key.
+A \textbf{Page} contains $ \mathit{prevHash} $, set to $ \mathcal{H}(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{rand}) $ of some previous Page; $ \mathit{recordList} $, a \\ deterministically-sorted array list of Records; $ \mathit{rand} $, the output of $ \mathcal{G}(t) $ at the current time; $ \mathit{fingerprint} $, the Tor fingerprint of the router maintaining this Page; and $ \mathit{pageSig} $, the output of  $ S_{\mathit{ed}}(\mathcal{H}(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{rand}), e) $ where $ e $ is the router's private Ed25519 key.
 
-\emph{prevHash} links Pages over time, forming an append-only public ledger known as an \emph{Pagechain}. In contrast to existing cryptocurrencies such as Namecoin, we bound the Pagechain to a finite length, forcing hidden service operators to renew their domain periodically to avoid it being dropped from the network. In correspondence with our security assumptions, \emph{prevHash} must reference a Page that is both valid and maintained by the largest number of Quorum members whom we assume are at least semi-honest, as illustrated in Figure \ref{fig:sideChains}. As \emph{prevHash} does not include the router-specific \emph{fingerprint} and \emph{pageSig} fields, \emph{prevHash} is equal across all Quorum members maintaining that Page.
+$ \mathit{prevHash} $ links Pages over time, forming an append-only public ledger known as a Pagechain. In contrast to existing cryptocurrencies such as Namecoin, we bound the Pagechain to a finite length, forcing hidden service operators to renew their domain periodically to avoid it being dropped from the network. In correspondence with our security assumptions, $ \mathit{prevHash} $ must reference a Page that is both valid and maintained by the largest number of Quorum members whom we assume are at least semi-honest, as illustrated in Figure \ref{fig:sideChains}. As $ \mathit{prevHash} $ does not include the router-specific $ \mathit{fingerprint} $ and $ \mathit{pageSig} $ fields, $ \mathit{prevHash} $ is equal across all Quorum members maintaining that Page.
 
-\textbf{Mirror} A \emph{Mirror} is any name server that holds a complete copy of the Pagechain and maintains synchronization against the Quorum. Mirrors respond to queries but must provide signatures from Quorum nodes to prevent Mirrors from falsifying responses. We note that Mirrors may be outside the Tor network, but in this work we do not specify any protocols for this scenario.
+A \textbf{Mirror} is any name server that holds a complete copy of the Pagechain and maintains synchronization against the Quorum. Mirrors respond to queries but must provide signatures from Quorum nodes to prevent Mirrors from falsifying responses. We note that Mirrors may be outside the Tor network, but in this work we do not specify any protocols for this scenario.
 
-\textbf{Quorum Candidate} A \emph{Quorum Candidates} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their Tor duties.
+\textbf{Quorum Candidate} are \emph{Mirrors} that provide proof in the network status consensus that they are an up-to-date Mirror in the Tor network and that they have sufficient CPU and bandwidth capabilities to handle OnioNS communication in addition to their Tor duties.
 
-\textbf{Quorum} A \emph{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively maintains its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates as described in section \ref{sec:qFormation}.
+A \textbf{Quorum} is a subset of Quorum Candidates who have active responsibility over maintaining the master Pagechain. Each Quorum node actively maintains its own Page, which has a lifetime of that Quorum. The Quorum is randomly chosen from Quorum Candidates as described in section \ref{sec:qFormation}.
 
 \begin{figure}[h]
 	\centering
@@ -407,15 +534,19 @@ OnioNS makes use of a number of cryptographic primitives, notably a proof-of-wor
 	\caption{The master Pagechain is one-dimensional but spans across the network as each Mirror holds a copy. Each Page is maintained by a respective Quorum.}
 \end{figure}
 
+\renewcommand{\arraystretch}{1.2}
 \begin{table}[h]
-	\begin{tabular}{ | l | l | } \hline
+	\small
+	\begin{tabularx}{\linewidth}{ | l | X | }
+		\hline
     	$ L_{Q} $ & the size of the Quorum \\ \hline
     	$ L_{T} $ & the number of routers in the Tor network \\ \hline
     	$ L_{P} $ & the maximum number of Pages in the Pagechain \\ \hline
     	$ q $ & the Quorum iteration counter \\ \hline
     	$ \Delta q $ & the lifetime of a Quorum in days \\ \hline
-  	\end{tabular}
-  	\caption[Table caption text]{Frequently used notations}
+  	\end{tabularx}
+  	\vspace{6pt}
+  	\caption{Frequently used notations}
 \end{table}
 
 \subsection{Protocols}
@@ -424,16 +555,15 @@ We now describe the protocols fundamental to OnioNS functionality.
 
 \subsubsection{Random Number Generation}
 
-%\cite{VictorsThesis}
-We use $ \mathrm{G}(t) $ as a basis for Quorum selection, although we note that $ \mathrm{G}(t) $ has applications in Tor beyond OnioNS. In previous work we proposed defining $ \mathrm{G}(t) $ as a SHA-384 hash of Tor's consensus documents and demonstrated that they contain significant amounts of entropy, suggesting $ \mathrm{G}(t) $ would be cryptographically secure. However, analysis does not hold because current router descriptors are publicly available before the consensus documents are published, allowing $ \mathrm{G}(t) $ to be easily manipulated by a few malicious Tor routers.
+We use $ \mathcal{G}(t) $ as a basis for Quorum selection, although we note that $ \mathcal{G}(t) $ has applications in Tor beyond OnioNS. One straightforward definition of $ \mathcal{G}(t) $ is the SHA-384 hash of Tor's consensus documents. If the Tor network is dynamic enough to provide significant amounts of entropy into the consensus documents, then $ \mathcal{G}(t) $ may be considered cryptographically secure. However, this assumption does not hold because current router descriptors are publicly available before the consensus documents are published, allowing $ \mathcal{G}(t) $ under this approach to be easily manipulated by a few malicious Tor routers. The attack becomes significantly easier in the final moments before the directory authorities publish the consensus.
 
-Instead, we suggest implementing $ \mathrm{G}(t) $ as the commitment scheme proposed by Goulet and Kadianakis\cite{GouletCommitReveal}. Their algorithm modifies the consensus voting protocol that is run once an hour by Tor directory authorities. In their scheme, each authority commits a SHA-256 hash of a secret key $ x $ into each consensus vote across a 12 hour period. Then each directory authority reveals $ x $ across the next set of 12 consensuses. Finally, the revealed values are hashed together to create a single random number, which is then embedded in the consensus documents so that it is efficiently distributed to both Tor router and end users. A different random number thus appears in the consensus every 24 hours. We reiterate their security analysis in section \ref{sec:RandGeneration}.
+Instead, we suggest implementing $ \mathcal{G}(t) $ as the commitment scheme proposed by Goulet and Kadianakis\cite{GouletCommitReveal}. Their algorithm modifies the consensus voting protocol that is run once an hour by Tor directory authorities. In their scheme, each authority commits a SHA-256 hash of a secret key $ x $ into each consensus vote across a 12 hour period. Then each directory authority reveals $ x $ across the next set of 12 consensuses. Finally, the revealed values are hashed together to create a single random number, which is then embedded in the consensus documents so that it is efficiently distributed to both Tor router and end users. A different random number thus appears in the consensus every 24 hours. We reiterate their security analysis in section \ref{sec:RandGeneration}.
 
 \subsubsection{Quorum Qualification}
 
 Quorum Candidates must prove that they are both up-to-date Mirrors and that they sufficient capabilities to handle the increase in communication and processing from OnioNS protocols.
 
-The na\"{i}ve solution to demonstrating the first requirement is to simply ask Mirrors for their Page, and then compare the recency of its latest Page against the Pages from the other Mirrors. However, this solution does not scale well; Tor has $ \approx $ 2.1 million daily users\cite{TorMetrics}: it is infeasible for any single node to handle queries from all of them. Instead, let each Mirror first calculate $ t = H(\mathit{pc} \concat \floor[\big]{\frac{m - 15}{30}}) $ where \emph{pc} is the Mirror's Pagechain and $ m $ is the number of minutes elapsed in that day, then include $ t $ in the Operator Contact field in his relay descriptor. Tor's consensus documents are published at the top of each hour; we manipulate $ m $ such that $ t $ is consistent at the top of each hour even with at most a 15-minute clock-skew. We suggest placing $ t $ inside a new field within the router descriptor in future work, but our use of the Contact field eases integration with existing Tor infrastructure. OnionNS would not be the first system to embed special information in the Operator Contact field: PGP keys and BTC addresses commonly appear in the field, especially for high-performance routers.
+The na\"{i}ve solution to demonstrating the first requirement is to simply ask Mirrors for their Page, and then compare the recency of its latest Page against the Pages from the other Mirrors. However, this solution does not scale well; Tor has $ \approx $ 2.1 million daily users\cite{TorMetrics}: it is infeasible for any single node to handle queries from all of them. Instead, let each Mirror first calculate $ t = \mathcal{H}(\mathit{pc} \concat \floor[\big]{\frac{m - 15}{30}}) $ where \emph{pc} is the Mirror's Pagechain and $ m $ is the number of minutes elapsed in that day, then include $ t $ in the Operator Contact field in his relay descriptor. Tor's consensus documents are published at the top of each hour; we manipulate $ m $ such that $ t $ is consistent at the top of each hour even with at most a 15-minute clock-skew. We suggest placing $ t $ inside a new field within the router descriptor in future work, but our use of the Contact field eases integration with existing Tor infrastructure. OnionNS would not be the first system to embed special information in the Operator Contact field: PGP keys and BTC addresses commonly appear in the field, especially for high-performance routers.
 
 Tor's infrastructure already provides a mechanism for demonstrating the latter requirement; Quorum Candidates must also have the Fast, Stable, Running, and Valid flags. As of July 2015, out of the $ \approx $ 7,000 nodes participating in the Tor network, $ \approx $ 5,400 of these node have these flags and meet the latter requirement\cite{TorMetrics}. Tor routers with larger CPU or bandwidth capabilities relative to their peers also receive a proportionally larger consensus weight from the directory authorities. Thus we can benefit from this infrastructure by deriving the selection probability from consensus weight.
 
@@ -444,26 +574,26 @@ Tor's infrastructure already provides a mechanism for demonstrating the latter r
 
 Quorum Candidates and Tor clients can derive a Quorum in $ \mathcal{O}(L_{T}) $ time. Without loss of generality, let Alice run this algorithm.
 
-\begin{enumerate}[noitemsep,nolistsep]
-	\item Alice obtains the consensus documents, $ cd $, published on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 UTC.
-	\item Alice extracts $ g = \mathrm{G}(t) $ from $ cd $.
-	\item Alice scans $ cd $ and constructs a list $ l $ of Quorum Candidates that have the Fast, Stable, Running, and Valid flags and that are in the largest set of Tor routers that publish an identical time-based hash.
+\begin{enumerate}
+	\item Alice obtains the consensus documents, $ \mathit{cd} $, published on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 UTC.
+	\item Alice extracts $ g = \mathcal{G}(t) $ from $ cd $.
+	\item Alice scans $ \mathit{cd} $ and constructs a list $ l $ of Quorum Candidates that have the Fast, Stable, Running, and Valid flags and that are in the largest set of Tor routers that publish an identical time-based hash.
 	\item Alice computes $ s = \sum_{j=0}^{\concat R \concat} R_{j}(w) $ where $ R_{j}(w) $ is $ R_{j} $'s consensus weight as determined by Tor directory authorities.
-	\item Alice uses $ \mathit{R}(g) $ to select $ \mathrm{min}(\mathrm{size}(\mathit{qc}), L_{Q}) $ Quorum nodes from $ l $ with selection probability $ P (Q_{i}) = \frac{Q_{j}(w)}{s} $.
+	\item Alice uses $ \mathcal{R}(g) $ to select $ \mathrm{min}(\mathrm{size}(\mathit{qc}), L_{Q}) $ Quorum nodes from $ l $ with selection probability \\ $ P (Q_{i}) = \frac{Q_{j}(w)}{s} $.
 \end{enumerate}
 
-This procedure may be performed on any $ cd $ in the past because Tor consensus documents contain timestamps and digital signatures from Tor directory authorities and thus may be retroactively verified regardless of where they are archived.
+This procedure may be performed on any $ \mathit{cd} $ in the past because Tor consensus documents contain timestamps and digital signatures from Tor directory authorities and thus may be retroactively verified regardless of where they are archived.
 
 \subsubsection{Record Generation}
 \label{sec:RecordGeneration}
 
 Bob must first generate a valid Record to claim a second-level domain name for his hidden service. The validity of his Record is checked by Mirrors and clients, so Bob must follow this protocol to ensure that his Record is accepted.
 
-\begin{enumerate}[noitemsep,nolistsep]
+\begin{enumerate}
 	\item Bob sets \emph{type} to ``Create''.
 	\item Bob provides the \emph{name} and \emph{subdomains} fields by specifying a second-level domain name and subdomain-destination pairs for his hidden service, respectively.
 	\item Bob optionally sets \emph{contact} to his PGP key fingerprint.
-	\item Bob sets \emph{rand} to the value from $ \mathrm{G}(t) $ as published in the consensus documents on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 UTC.
+	\item Bob sets \emph{rand} to the value from $ \mathcal{G}(t) $ as published in the consensus documents on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 UTC.
 	\item Bob fills \emph{nonce} with zeros.
 	\item Let $ \mathit{c} $ be $\mathit{type} \concat \mathit{name} \concat \mathit{subdomains} \concat \mathit{contact} \concat \mathit{rand} \concat \mathit{nonce} $.
 	\item Bob sets \emph{pow} as $ \mathrm{PoW}(\mathit{c}) $.
@@ -471,7 +601,7 @@ Bob must first generate a valid Record to claim a second-level domain name for h
 	\item Bob saves the PKCS.1 DER encoding of his RSA public key in \emph{pubHSKey}.
 \end{enumerate}
 
-The Record is valid when $ H(\mathit{c} \concat \mathit{pow} \concat \mathit{signature}) \leq d $ where \emph{d} is a fixed constant that specifies the work difficulty. This also requires Bob to increment \emph{nonce} and resign his Record at every iteration of $ \mathrm{PoW}(\mathit{c}) $. Once it is valid, Bob can send his Record to all Quorum nodes.
+The Record is valid when $ \mathcal{H}(\mathit{c} \concat \mathit{pow} \concat \mathit{signature}) \leq d $ where \emph{d} is a fixed constant that specifies the work difficulty. This also requires Bob to increment \emph{nonce} and resign his Record at every iteration of $ \mathrm{PoW}(\mathit{c}) $. Once it is valid, Bob can send his Record to all Quorum nodes.
 
 \subsubsection{Record Operations}
 
@@ -489,7 +619,7 @@ The Onion Name System also supports common operations on Records in a manner sim
 
 A Quorum node $ Q_{j} $ listens for new Records from hidden service operators. Mirrors subscribe to Quorum nodes by maintaining a network session with them and sending a subscription request. This allows Records to traverse the network quickly in a peer-to-peer fashion. When a Record $ r $ is received, $ Q_{j} $
 
-\begin{enumerate}[noitemsep,nolistsep]
+\begin{enumerate}
 	\item $ Q_{j} $ rejects $ r $'s \emph{name} already exists in $ Q_{j} $'s Pagechain.
 	\item $ Q_{j} $ rejects $ r $ if the Record is not valid according to the above protocol.
 	\item $ Q_{j} $ rejects $ r $ if Bob's hidden service or any destination in \emph{subdomains} does not exist.
@@ -503,20 +633,20 @@ Quorum nodes must also periodically regenerate and resign the Merkle tree descri
 
 New Quorum nodes must select a Page from the previous Quorum to reference when generating a fresh Page. To reduce the chances of compromise, we select Pages according to our security assumptions. Let Charlie be a Mirror.
 
-\begin{enumerate}[noitemsep,nolistsep]
+\begin{enumerate}
 	\item Charlie obtains and authenticates the consensus \emph{cd} issued on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 UTC and authenticates it.
 	\item Charlie derives the Quorum via the procedure described in section \ref{sec:qFormation}.
 	\item Charlie obtains the set of Pages maintained by $ \mathit{Quorum}_{q} $.
 	\item For each Page,
-		\begin{enumerate}[noitemsep,nolistsep]
+		\begin{enumerate}
 			\item Charlie asserts that $ \mathit{fingerprint} \in \mathit{Quorum}_{q} $.
 			\item Charlie asserts that \emph{prevHash} references $ \mathrm{Page}_{q-1} $ found by this protocol.
-			\item Charlie calculates $ h = H(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{rand}) $.
+			\item Charlie calculates $ h = \mathcal{H}(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{rand}) $.
 			\item Charlie asserts that $ V_{\mathit{ed}}(h, E) $ returns true.
 		\end{enumerate}
 	\item Charlie sorts the set of Pages by the number of routers that have signed $ h $.
 	\item For each Page in each $ h $,
-		\begin{enumerate}[noitemsep,nolistsep]
+		\begin{enumerate}
 			\item Charlie checks that \emph{rand} is contained in \emph{cd}.
 			\item Charlie checks the validity of each Record in \emph{recordList}.
 		\end{enumerate}
@@ -528,7 +658,7 @@ New Quorum nodes must select a Page from the previous Quorum to reference when g
 
 Alice needs only Bob's Record to contact Bob by his meaningful domain name. Let Alice type a domain $ d $ into the Tor Browser.
 
-\begin{enumerate}[noitemsep,nolistsep]
+\begin{enumerate}
 	\item Alice constructs a Tor circuit to Charlie.
 	\item \label{step:ask} Alice asks Charlie for the most recent Record $ r $ containing $ d $.
 	\item Charlie finds and returns $ r $ to Alice and the components of the Merkle tree $ T $ described in section \ref{sec:authDenial}.
@@ -553,9 +683,9 @@ In any system that serves authenticable names, a name server can prove a claim o
 
 We suggest reducing the networking costs with a Merkle tree\cite{merkle1988digital} $ T $. Let each Quorum node
 
-\begin{enumerate}[noitemsep,nolistsep]
+\begin{enumerate}
 	\item Construct an array list \emph{arr}.
-	\item For each second-level domain $ c $ in each Record $ r $ in the Pagechain, add $ c \concat H(r) $ to \emph{arr}.
+	\item For each second-level domain $ c $ in each Record $ r $ in the Pagechain, add $ c \concat \mathcal{H}(r) $ to \emph{arr}.
 	\item Sort \emph{arr}.
 	\item Construct a Merkle tree $ T $ from \emph{arr}.
 	\item Generate $ \mathit{sig}_{T} = S_{\mathit{ed}}(t \concat r, e) $ where $ t $ is a timestamp and $ r $ is the root hash of $ T $.
@@ -563,7 +693,7 @@ We suggest reducing the networking costs with a Merkle tree\cite{merkle1988digit
 
 As Records contain both second-level domains and their subdomains, $ T $ needs only contain $ c $ to reference all domains in $ r $, which further saves space. Then during a Domain Query Alice may use $ T $ to authenticate a domain $ d $ and verify non-existence for a Record $ r $.
 
-\begin{enumerate}[noitemsep,nolistsep]
+\begin{enumerate}
 	\item Alice extracts the second-level name $ c $ from $ d $.
 	\item If $ r $ exists, Charlie returns the leaf node containing $ r $ and all the tree nodes from leaf $ r $ to the root and their sibling nodes, so that Alice can verify authenticity of $ r $ by recomputing the root hash and verify that the largest subset of Quorum nodes signed the same root hash.
 	\item If Charlie claims non-existence of $ c $, he returns two adjacent leaves $ a $ and $ b $ (and the nodes on their paths and siblings) such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf.
@@ -645,7 +775,7 @@ Figure \ref{fig:cumulativeProbability} suggests that although lower values of $ 
 \subsubsection{Global Randomness}
 \label{sec:RandGeneration}
 
-We implement $ \mathrm{G}(t) $ using a commitment scheme run by Tor directory authorities\cite{GouletCommitReveal}. Commitment protocols have been studied in other works\cite{rivest1999unconditionally}\cite{naor1990bit}, have many interesting applications, and are well understood. If all parties are at least semi-honest then the commitment protocols generally display correctness, privacy, and binding. However, if some participants are malicious, they demonstrate known weaknesses. 
+We implement $ \mathcal{G}(t) $ using a commitment scheme run by Tor directory authorities\cite{GouletCommitReveal}. Commitment protocols have been studied in other works\cite{rivest1999unconditionally}\cite{naor1990bit}, have many interesting applications, and are well understood. If all parties are at least semi-honest then the commitment protocols generally display correctness, privacy, and binding. However, if some participants are malicious, they demonstrate known weaknesses. 
 
 Namely, while reveals must demonstrably match commits, each participant may choose to reveal or not. If they do not reveal, their value is lost and the protocol produces a different output. If Eve controls $ b $ participants, she can make this choice with each participant in turn, allowing $ 2^{b} $ different outcomes. Goulet and Kadianakis' directory authority commitment scheme is particularly vulnerable to this attack because the reveals are public for approximately 12 hours before the final random value is published. However, as there are currently only nine directory authorities and the security of the Tor network rests on the assumption that five or more of them are at least semi-honest, the commitment scheme has at most $ 2^{4} = 16 $ different outcomes in the worst case without violation of our assumptions. 
 
@@ -655,24 +785,24 @@ Given the statistical calculations and the safety margin introduced by the recom
 
 In the Record Generation protocol, we intentionally included the scrypt calculation inside the signing step in order to require Bob to run scrypt himself. However, our protocol does not entirely prevent Bob from outsourcing this expensive computation to a secondary resource, Craig, in all cases. We assume that Craig does not have Bob's private key. Then,
 
-\emph{type}, the purpose of this Record; \emph{name}, a meaningful second-level domain name with the .tor pseudo-TLD; \emph{subdomains}, a one-to-one map of .tor domains of level three or higher and .tor or .onion destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{rand}, the output of $ \mathrm{G}(t) $ at the current time; \emph{nonce}, bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{signature}, the output of $ S_{\mathit{RSA}}(m, r) $; and \emph{pubHSKey}
+\emph{type}, the purpose of this Record; \emph{name}, a meaningful second-level domain name with the .tor pseudo-TLD; \emph{subdomains}, a one-to-one map of .tor domains of level three or higher and .tor or .onion destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{rand}, the output of $ \mathcal{G}(t) $ at the current time; \emph{nonce}, bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{signature}, the output of $ S_{\mathit{RSA}}(m, r) $; and \emph{pubHSKey}
 
-\begin{enumerate}[noitemsep,nolistsep]
+\begin{enumerate}
 	\item Bob creates an initial Record $ R $ and completes the \emph{type}, \emph{name}, \emph{subdomains}, \emph{contact}, and \emph{rand} fields.
 	\item Bob sends $ R $ to Craig.
-	\item  Let $ \mathit{c} $ be $\mathit{type} \concat \mathit{name} \concat \mathit{subdomains} \concat \mathit{contact} \concat \mathit{rand} $.
+	\item  Let $ \mathit{c} $ be $ \mathit{type} \concat \mathit{name} \concat \mathit{subdomains} \concat \mathit{contact} \concat \mathit{rand} $.
 	\item Craig generates a random integer $ K $ and then for each iteration $ j $ from 0 to $ K $,
-		\begin{enumerate}[noitemsep,nolistsep]
+		\begin{enumerate}
 			\item Craig increments \emph{nonce}.
 			\item Craig sets \emph{PoW} as $ \mathrm{PoW}(\mathit{c} \concat \mathit{nonce}) $.
 			\item Craig saves the new $ R $ as $ C_{j} $.
 		\end{enumerate}
 	\item Craig sends all $ C_{0 \le j \le K} $ to Bob.
 	\item For each Record $ C_{0 \le j \le K} $ Bob computes
-		\begin{enumerate}[noitemsep,nolistsep]
+		\begin{enumerate}
 			\item Bob sets \emph{pubHSKey} to his public RSA key.
 			\item Bob sets \emph{signature} to $ S_{\mathit{RSA}}(m, r) $ where $ m = \mathit{c} \concat \mathit{nonce} \concat \mathit{pow} $ and $ r $ is Bob's private RSA key.
-			\item Bob has found a valid Record if $ H(\mathit{c} \concat \mathit{nonce} \concat \mathit{pow} \concat \mathit{signature}) \leq d $ where $ d $ is the difficult level.
+			\item Bob has found a valid Record if $ \mathcal{H}(\mathit{c} \concat \mathit{nonce} \concat \mathit{pow} \concat \mathit{signature}) \leq d $ where $ d $ is the difficult level.
 		\end{enumerate}
 \end{enumerate}
 
@@ -728,17 +858,21 @@ We selected the parameters of scrypt such that it consumed 128 MB of RAM during 
 
 Then we conducted several performance measurements for the Domain Queries. Our experiment involves two machines, A and B. Both were hosted on 1 Gbit connections on a university campus. Machine A has an Intel Core2 Quad Q9000 (Penryn architecture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively. We measured and averaged 200 samples of the CPU wall-time required for both machines to validate the Record.
 
-\renewcommand{\arraystretch}{1}
-\begin{center}
-    \begin{tabular}{ | c | c | c |}
-    \hline
+\renewcommand{\arraystretch}{1.3}
+\newcolumntype{L}[1]{>{\hsize=#1\hsize\raggedright\arraybackslash}X}%
+\newcolumntype{R}[1]{>{\hsize=#1\hsize\raggedleft\arraybackslash}X}%
+\newcolumntype{C}[2]{>{\hsize=#1\hsize\centering\arraybackslash}X}%
+\begin{table}[h]
+	\small
+	\begin{tabularx}{\linewidth}{ | C{1} || C{1} || C{1} || }
+		\hline
     \textbf{Description} & \textbf{A (ms)} & \textbf{B (ms)} \\ \hline
     Parsing JSON & 5.21 & 2.42 \\ \hline
 	Validating scrypt & 448.184 & 294.963 \\ \hline
 	$ V_{\mathit{RSA}}(m, E) $ & 6.35 & 2.74 \\ \hline
 	Total Time & 459.744 & 300.123 \\ \hline
-    \end{tabular}
-\end{center}
+  	\end{tabularx}
+\end{table}
 
 As expected, Machine B outperformed Machine A in all instances and we observed that single iteration of scrypt dominated the total validation time. This is a CPU cost introduced to Tor clients, Mirrors, and Quorum nodes for each Record.
 
@@ -765,13 +899,133 @@ In future work we will expand our implementation and pursuit integrating it into
 
 We will also explore the possibilities of hosting the OnioNS servers as hidden services. The Tor protocol provides defences against several network-level attacks and when combined with end-to-end authentication this approach may prove beneficial to our system.
 
-\section{Acknowledgements}
+\section*{Acknowledgements}
 
 We would like to thank Roger Dingledine, George Kadianakis, Yawning Angel, and Nick Mathewson for their support, commentary, and assistance with Tor technical support.
 
 %, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users\cite{percival2009stronger}\cite{percival2012scrypt}. We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
 
+% ----------------------------------------------------------------------------------------
+
+% An example of a floating figure using the graphicx package.
+% Note that \label must occur AFTER (or within) \caption.
+% For figures, \caption should occur after the \includegraphics.
+% Note that IEEEtran v1.7 and later has special internal code that
+% is designed to preserve the operation of \label within \caption
+% even when the captionsoff option is in effect. However, because
+% of issues like this, it may be the safest practice to put all your
+% \label just after \caption rather than within \caption{}.
+%
+% Reminder: the "draftcls" or "draftclsnofoot", not "draft", class
+% option should be used if it is desired that the figures are to be
+% displayed while in draft mode.
+%
+%\begin{figure}[!t]
+%\centering
+%\includegraphics[width=2.5in]{myfigure}
+% where an .eps filename suffix will be assumed under latex, 
+% and a .pdf suffix will be assumed for pdflatex; or what has been declared
+% via \DeclareGraphicsExtensions.
+%\caption{Simulation Results}
+%\label{fig_sim}
+%\end{figure}
+
+% Note that IEEE typically puts floats only at the top, even when this
+% results in a large percentage of a column being occupied by floats.
+
+% ----------------------------------------------------------------------------------------
+
+% An example of a double column floating figure using two subfigures.
+% (The subfig.sty package must be loaded for this to work.)
+% The subfigure \label commands are set within each subfloat command, the
+% \label for the overall figure must come after \caption.
+% \hfil must be used as a separator to get equal spacing.
+% The subfigure.sty package works much the same way, except \subfigure is
+% used instead of \subfloat.
+%
+%\begin{figure*}[!t]
+%\centerline{\subfloat[Case I]\includegraphics[width=2.5in]{subfigcase1}%
+%\label{fig_first_case}}
+%\hfil
+%\subfloat[Case II]{\includegraphics[width=2.5in]{subfigcase2}%
+%\label{fig_second_case}}}
+%\caption{Simulation results}
+%\label{fig_sim}
+%\end{figure*}
+%
+% Note that often IEEE papers with subfigures do not employ subfigure
+% captions (using the optional argument to \subfloat), but instead will
+% reference/describe all of them (a), (b), etc., within the main caption.
+
+% ----------------------------------------------------------------------------------------
+
+% An example of a floating table. Note that, for IEEE style tables, the 
+% \caption command should come BEFORE the table. Table text will default to
+% \footnotesize as IEEE normally uses this smaller font for tables.
+% The \label must come after \caption as always.
+%
+%\begin{table}[!t]
+%% increase table row spacing, adjust to taste
+%\renewcommand{\arraystretch}{1.3}
+% if using array.sty, it might be a good idea to tweak the value of
+% \extrarowheight as needed to properly center the text within the cells
+%\caption{An Example of a Table}
+%\label{table_example}
+%\centering
+%% Some packages, such as MDW tools, offer better commands for making tables
+%% than the plain LaTeX2e tabular which is used here.
+%\begin{tabular}{|c||c|}
+%\hline
+%One & Two\\
+%\hline
+%Three & Four\\
+%\hline
+%\end{tabular}
+%\end{table}
+
+% ----------------------------------------------------------------------------------------
+
+% Note that IEEE does not put floats in the very first column - or typically
+% anywhere on the first page for that matter. Also, in-text middle ("here")
+% positioning is not used. Most IEEE journals/conferences use top floats
+% exclusively. Note that, LaTeX2e, unlike IEEE journals/conferences, places
+% footnotes above bottom floats. This can be corrected via the \fnbelowfloat
+% command of the stfloats package.
+
+% conference papers do not normally have an appendix
+
+% ----------------------------------------------------------------------------------------
+
+% trigger a \newpage just before the given reference
+% number - used to balance the columns on the last page
+% adjust value as needed - may need to be readjusted if
+% the document is modified later
+%\IEEEtriggeratref{8}
+% The "triggered" command can be changed if desired:
+%\IEEEtriggercmd{\enlargethispage{-5in}}
+
+% references section can use a bibliography generated by BibTeX as a .bbl file
+% BibTeX documentation can be easily obtained at:
+% http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
+% The IEEEtran BibTeX style support page is at:
+% http://www.michaelshell.org/tex/ieeetran/bibtex/
+%\bibliographystyle{IEEEtranS}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+%
+% <OR> manually copy in the resultant .bbl file
+% set second argument of \begin to the number of references
+% (used to reserve space for the reference number labels box)
+%\begin{thebibliography}{1}
+%
+%\bibitem{IEEEhowto:kopka}
+%H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
+%  0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
+%
+%\end{thebibliography}
+
 \bibliographystyle{abbrv}
 \bibliography{citations}
 
+% that's all folks
 \end{document}
