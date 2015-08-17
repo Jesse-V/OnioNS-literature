@@ -416,7 +416,7 @@ Namecoin\cite{NamecoinHome} is an early fork of Bitcoin\cite{nakamoto2008bitcoin
 
 We assume that Tor provides privacy and anonymity; if Alice constructs a three-hop Tor circuit to Bob with modern Tor cryptographic protocols and sends a message $ m $ to Bob, we assume that Bob can learn no more about Alice than the contents of $ m $. This implies that if $ m $ does not contain identifiable information, Alice is anonymous from Bob's perspective, regardless of if $ m $ is exposed to an attacker, Eve. Identifiable information in $ m $ is outside of Tor's scope, but we do not introduce any protocols that cause this scenario. The security of Tor circuits is also dependent on the honesty of directory authorities: we also assume that more than fifty percent of Tor directory authorities are at least semi-honest; they may wiretap but are not capable of violating protocols. 
 
-Let $ R $ be the set of Tor routers with the Fast, Stable, Running, and Valid flag and let $ Q $ be an $ M $-sized set randomly chosen from $ R $ with selection probability $ P (Q_{i}) = \frac{Q_{i}(w)}{\sum_{j=0}^{\concat R \concat} R_{j}(w)} $ where $ Q_{i}(w) $ is $ Q_{i} $'s consensus weight as determined by Tor directory authorities. We then assume that $ Q $ is under the influence of one or more adversaries and that largest subset of agreeing routers in $ Q $ are at least semi-honest.
+Let $ R $ be the set of Tor routers with the Fast, Stable, and Running flags and let $ Q $ be an $ M $-sized set randomly chosen from $ R $ with selection probability $ P (Q_{i}) = \frac{Q_{i}(w)}{\sum_{j=0}^{\concat R \concat} R_{j}(w)} $ where $ Q_{i}(w) $ is $ Q_{i} $'s consensus weight as determined by Tor directory authorities. We then assume that $ Q $ is under the influence of one or more adversaries and that largest subset of agreeing routers in $ Q $ are at least semi-honest.
 
 %$ P (Q_{i}) = \frac{Q_{i}(w)}{\sum_{j=0}^{\concat R \concat} R_{j}(w)} $
 
@@ -565,7 +565,7 @@ Quorum Candidates must prove that they are both up-to-date Mirrors and that they
 
 The na\"{i}ve solution to demonstrating the first requirement is to simply ask Mirrors for their Page, and then compare the recency of its latest Page against the Pages from the other Mirrors. However, this solution does not scale well; Tor has $ \approx $ 2.1 million daily users\cite{TorMetrics}: it is infeasible for any single node to handle queries from all of them. Instead, let each Mirror first calculate $ t = \mathcal{H}(\mathit{pc} \concat \floor[\big]{\frac{m - 15}{30}}) $ where \emph{pc} is the Mirror's Pagechain and $ m $ is the number of minutes elapsed in that day, then include $ t $ in the Operator Contact field in his relay descriptor. Tor's consensus documents are published at the top of each hour; we manipulate $ m $ such that $ t $ is consistent at the top of each hour even with at most a 15-minute clock-skew. We suggest placing $ t $ inside a new field within the router descriptor in future work, but our use of the Contact field eases integration with existing Tor infrastructure. OnionNS would not be the first system to embed special information in the Operator Contact field: PGP keys and BTC addresses commonly appear in the field, especially for high-performance routers.
 
-Tor's infrastructure already provides a mechanism for demonstrating the latter requirement; Quorum Candidates must also have the Fast, Stable, Running, and Valid flags. As of July 2015, out of the $ \approx $ 7,000 nodes participating in the Tor network, $ \approx $ 5,400 of these node have these flags and meet the latter requirement\cite{TorMetrics}. Tor routers with larger CPU or bandwidth capabilities relative to their peers also receive a proportionally larger consensus weight from the directory authorities. Thus we can benefit from this infrastructure by deriving the selection probability from consensus weight.
+Tor's infrastructure already provides a mechanism for demonstrating the latter requirement; Quorum Candidates must also have the Fast, Stable, and Running flags. Tor routers with higher CPU or bandwidth capabilities relative to their peers also receive a proportionally larger consensus weight from the directory authorities. This consensus weight in turn strongly influences router selection during circuit construction: routers with higher weights are more likely to be chosen in a circuit. Thus, we can benefit from this infrastructure by selecting the Quorum from the pool of Quorum Candidates by a similar mechanism.
 
 %mention that consensus weight is tied to path selection
 
@@ -577,9 +577,9 @@ Quorum Candidates and Tor clients can derive a Quorum in $ \mathcal{O}(L_{T}) $ 
 \begin{enumerate}
 	\item Alice obtains the consensus documents, $ \mathit{cd} $, published on day $ \floor[\big]{\frac{q}{\Delta q}} $ at 00:00 UTC.
 	\item Alice extracts $ g = \mathcal{G}(t) $ from $ cd $.
-	\item Alice scans $ \mathit{cd} $ and constructs a list $ l $ of Quorum Candidates that have the Fast, Stable, Running, and Valid flags and that are in the largest set of Tor routers that publish an identical time-based hash.
-	\item Alice computes $ s = \sum_{j=0}^{\concat R \concat} R_{j}(w) $ where $ R_{j}(w) $ is $ R_{j} $'s consensus weight as determined by Tor directory authorities.
-	\item Alice uses $ \mathcal{R}(g) $ to select $ \mathrm{min}(\mathrm{size}(\mathit{qc}), L_{Q}) $ Quorum nodes from $ l $ with selection probability \\ $ P (Q_{i}) = \frac{Q_{j}(w)}{s} $.
+	\item Alice scans $ \mathit{cd} $ and constructs a list $ l $ of Quorum Candidates that have the Fast, Stable, and Running flags and that are in the largest set of Tor routers that publish an identical time-based hash.
+	\item Alice computes $ s = \sum_{j=0}^{\concat l \concat} l_{j}(w) $ where $ l_{j}(w) $ is $ l_{j} $'s consensus weight as determined by Tor directory authorities.
+	\item Alice uses $ \mathcal{R}(g) $ to select $ \mathrm{min}(\mathrm{size}(l), L_{Q}) $ Quorum nodes from $ l $ with selection probability \\ $ P (Q_{i}) = \frac{Q_{j}(w)}{s} $.
 \end{enumerate}
 
 This procedure may be performed on any $ \mathit{cd} $ in the past because Tor consensus documents contain timestamps and digital signatures from Tor directory authorities and thus may be retroactively verified regardless of where they are archived.
@@ -712,80 +712,76 @@ In this section, we analyse the security of the OnioNS system with regard to our
 \subsection{Quorum Selection}
 \label{sec:QSelection}
 
-In section \ref{sec:threatModel}, we assume that an attacker, Eve, controls some fixed $ f_{E} $ fraction of routers on the Tor network. Quorum selection may be considered as an $ L_{Q} $-sized random sample taken from an $ L_{T} $-sized population without replacement, where the population contains a subset of $ L_{Q} * f_{E} $ entities that we assume are compromised and colluding. If our selection includes $ L_{E} $ Eve-controlled routers, then Eve controls the Quorum if either $ > \frac{L_{Q} - L_{E}}{2} $ honest Quorum nodes disagree or if $ L_{E} > \frac{L_{Q}}{2} $. The former scenario is hard to model theoretically or in simulation, but the probability of the latter can be statistically calculated. The Quorum is short-lived and changed every $ \Delta q $ days, so we must consider the implications of selections for both $ L_{Q} $ and $ \Delta q $.
-
-The probability that Eve controls $ L_{E} $ Quorum nodes is given by the hypergeometric distribution, whose probability mass function (PMF) is shown in Equation \ref{eq:hypergeoPMF}.
-
-\begin{align}
-	\mathrm{Pr}(L_{E}) &= \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}}
-	\label{eq:hypergeoPMF}
-\end{align}
-
-Quorum selection is heavily skewed by the distribution of consensus weight. The influence of consensus weight provides a strong defence against Sybil attacks by making malicious subversion significantly more expensive.
+In section \ref{sec:threatModel}, we assume that an attacker, Eve, controls some fixed $ f_{E} $ fraction of routers on the Tor network. Quorum selection may be considered as an $ L_{Q} $-sized random sample taken from an $ L_{T} $-sized population without replacement, where the population contains $ L_{T} * f_{E} $ entities that we assume are compromised and colluding. If our selection includes $ L_{E} $ Eve-controlled routers, then Eve controls the Quorum if either $ > \frac{L_{Q} - L_{E}}{2} $ honest Quorum nodes disagree or if $ L_{E} > \frac{L_{Q}}{2} $. The former scenario is hard to model theoretically or in simulation, but the probability of the latter can be statistically calculated. The Quorum is rotated every $ \Delta q $ days, so we must consider the implications of selections for both $ L_{Q} $ and $ \Delta q $.
 
 \subsubsection{Quorum Size}
 \label{sec:qSize}
 
-If all Tor routers have equal consensus weight, then the probability that $ L_{E} > \frac{L_{Q}}{2} $, a complete compromise of the Quorum, is given by Equation \ref{eq:compromiseProb}. Odd choices for $ L_{Q} $ prevents the network from splintering in the event that the Quorum is evenly split across two Pages. We assume that $ L_{Q} $ will be selected from a pool of 5,400 Quorum Candidates -- the number of Tor routers that have Fast, Stable, Running, and Valid flags as of July 2015\cite{TorMetrics}. We provide the statistical calculations in Figure \ref{fig:quorumMajority}.
+The probability that Eve controls $ L_{E} $ Quorum nodes is given by the hypergeometric distribution, whose probability mass function (PMF) is shown in Equation \ref{eq:hypergeoPMF}.
 
 \begin{align}
-	\mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) &= \displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{f_{E}}{k}\binom{N - f_{E}}{L_{Q} - k}}{\binom{N}{L_{Q}}}
+	\mathrm{Pr}(L_{E}) &= \frac{\binom{L_{T} * f_{E}}{L_{E}}\binom{L_{T} - L_{T} * f_{E}}{L_{Q} - L_{E}}}{\binom{L_{T}}{L_{Q}}}
+	\label{eq:hypergeoPMF}
+	\\
+	\mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) &= \displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{L_{T} * f_{E}}{x}\binom{L_{T} - L_{T} * f_{E}}{L_{Q} - x}}{\binom{L_{T}}{L_{Q}}}
 	\label{eq:compromiseProb}
 \end{align}
 
-\begin{figure*}
-	\centering
-	\includegraphics[width=0.75\linewidth]{../assets/analysis/MaliciousQuorumProbability_tight.eps}
-	\caption{We calculate the PMF of the hypergeometric distribution for a population of 5,400, $ f_{E} \in [1,33] $, and five selections for $ L_{Q} $: 31, 63, 127, 255, and 511. $ f_{E} > 33 $ represents a complete compromise of the Tor network, so we do not consider values beyond this range.}
-	\label{fig:quorumMajority}
-\end{figure*}
-
-However, in practice Tor routers do not have equal consensus weight. We provide a histogram of weight distribution across July 2015 in Figure \ref{fig:weightDist}. This significantly skews the hypergeometric distribution as shown in Figure \ref{fig:skewedProb}.
+If all Quorum Candidates have an equal probability of selection, then the probability that $ L_{E} > \frac{L_{Q}}{2} $ is given by the $p$-value of the hypergeometric test for over-representation, expressed in Equation \ref{eq:compromiseProb}. Odd choices for $ L_{Q} $ prevents the network from splintering in the event that the Quorum is evenly split across two Pages. We provide the statistical calculations of Equation \ref{eq:compromiseProb} for various Quorum sizes in Figure \ref{fig:quorumUnweightedMajority}.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.95\linewidth]{../assets/analysis/MaliciousQuorumProbability_tight.eps}
-	\caption{PLACEHOLDER IMAGE}
+	\includegraphics[width=\linewidth]{../assets/analysis/QuorumSelectionUnweighted.eps}
+	\caption{The values for $ \mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) $ for Quorum sizes of 31, 63, 127, 255, and 511. All probabilities exceed 0.5 when more than 50 percent of the Tor network is under Eve's control. We set our population to 4540 routers; the average number of routers with the Fast, Stable, and Running flags across all consensuses in July 2015\cite{TorMetrics}.}
+	\label{fig:quorumUnweightedMajority}
+\end{figure}
+
+In practice Tor routers do not have equal consensus weight, thus Quorum selection from the pool of Quorum Candidates is heavily skewed by the distribution of consensus weight. The selection probabilities of routers with the Fast, Stable, and Running flags closely follows an exponentially-decreasing distribution, as shown in Figure \ref{fig:weightDist}. The figure suggests that the Tor network contains a low number of high-end routers and a large number of low-end routers.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\linewidth]{../assets/analysis/QuorumCandidateWeights.eps}
+	\caption{The selection probabilities of Quorum Candidates averaged across all consensuses in July 2015. The probability of selecting each router is its consensus weight divided by the weights of all other Quorum Candidates. These probabilities closely follow an exponential distribution; a exponential trendline models it with $ R^{2} = 0.9884 $.}
 	\label{fig:weightDist}
 \end{figure}
 
+We re-examine Equation \ref{eq:compromiseProb} with regard to this distribution of consensus weight in Figure \ref{fig:quorumWeightedMajority}. In contrast to Figure \ref{fig:quorumUnweightedMajority} which demonstrates that an unweighted selection leads to a high probability of compromise with small levels of collusion, Figure \ref{fig:quorumWeightedMajority} suggests that biasing Quorum selection by consensus weight provides a strong defence against large-scale Sybil attacks. Indeed, even when 60 percent of the low-end Quorum Candidates are malicious, most Quorum sizes produce negligible probabilities of compromise. We consider it reasonable to assume that low-end routers are under Eve's control; these routers are the cheapest and logistically easiest to operate. Our approach remains resistant to this attack: these routers will be included in the Quorum very infrequently because of their low consensus weight.
+
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.95\linewidth]{../assets/analysis/MaliciousQuorumProbability_tight.eps}
-	\caption{PLACEHOLDER IMAGE}
-	\label{fig:skewedProb}
+	\includegraphics[width=\linewidth]{../assets/analysis/QuorumSelectionWeighted10.eps}
+	\caption{The values for $ \mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) $ for various Quorum sizes. We assume that all routers with weights in the lowest X percentile are under Eve's control, while all other routers have a 10 percent chance of being under Eve's influence.}
+	\label{fig:quorumWeightedMajority}
 \end{figure}
 
-Figure \ref{fig:quorumMajority} shows that choices of $ L_{Q} = XX $ and $ L_{Q} = YY $ are suboptimal, they quickly grow for even low levels of $ f_{E} $. Small Quorums are also more susceptible to DDoS attacks. We feel it safe to discard threats that have probabilities $ \leq \frac{1}{2^{128}} \approx 10^{-38.532} $ --- the probability of Eve randomly guessing a 128-bit AES key. $ L_{Q} = 31 $ exceeds this with more than XX percent collusion, $ L_{Q} = 63 $ above YY percent, and $ L_{Q} = 127 $, $ L_{Q} = 255 $, and $ L_{Q} = 511 $ at $ \geq AA $, $ \geq BB $, and $ \geq CC $ percent, respectively. Therefore we recommend setting $ L_{Q} \geq ZZ $.
+Small Quorums are also more susceptible to node downtime or distributed denial-of-service (DDoS) attacks. Figure \ref{fig:quorumWeightedMajority} shows that the choices of $ L_{Q} = 31 $ is suboptimal; it is more easily compromised even with low levels of collusion. $ L_{Q} = 63 $ is more resistant, but not significantly more so. We therefore recommend $ L_{Q} \geq 127 $.
 
 \subsubsection{Quorum Rotation}
 
-In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not increase in response to the inclusion of OnioNS on the Tor network. If we also assume that $ L_{T} $ is fixed, then we can examine the impact of choices for $ \Delta q $ and calculate the probability of Eve compromising \emph{any} Quorum over a long period of time $ t $. Smaller values for $ \Delta q $ implies that we select more Quorums over that time period and thus increase our cumulative chances of compromise, but it also reduces the disruption timeline for a malicious Quorum. Eve's cumulative chances of compromising any Quorum is given by $ 1 - (1 - \frac{f_{E}}{L_{T}})^t $. We estimate this over 10 years in Figure \ref{fig:cumulativeProbability}.
+In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not increase in response to the inclusion of OnioNS on the Tor network. If we also assume that $ L_{T} $ is fixed, then we can examine the impact of choices for $ \Delta q $ and calculate the probability of Eve compromising \emph{any} Quorum over a long period of time $ t $. Smaller values for $ \Delta q $ implies that we select more Quorums over that time period and thus increase our cumulative chances of compromise, but it also reduces the disruption timeline for a malicious Quorum. Eve's cumulative chances of compromising any Quorum is given by $ 1 - (1 - f_{c})^{\frac{t}{\Delta q}} $ where $ f_{c} $ is Eve's chances of compromising a single Quorum. We estimate this over 10 years in Figure \ref{fig:cumulativeProbability}.
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=\linewidth]{../assets/analysis/CumulativeMaliciousQuorum_tight.eps}
-	\caption{The cumulative probability that Eve controls any Quorum at different rotation rates over 10 years at $ f_{E} = 10 $. We do not consider $ L_{Q} = 255 $ or $ L_{Q} = 511 $ as they produce values less than $ 10^{-58} $ and $ 10^{-134} $, respectively, far below our $ 10^{-38.532} $ threshold.}
+	\includegraphics[width=\linewidth]{../assets/analysis/CumulativeMaliciousQuorumNew.eps}
+	\caption{The cumulative probability that Eve controls any Quorum at different rotation rates over 10 years at $ f_{E} = 50 $ for Quorum sizes 31, 63, 127, and 255. We base these statistics on the probabilities from Figure \ref{fig:quorumWeightedMajority} at 50 percent collusion.}
 	\label{fig:cumulativeProbability}
 \end{figure}
 
 %It also supports our earlier conclusion that the choices of $ L_{Q} = 31 $ and $ L_{Q} = 63 $ are suboptimal.
-Figure \ref{fig:cumulativeProbability} suggests that although lower values of $ \Delta q $ negatively impact security, the choice of $ L_{Q} $ is more significant. Based on Figure \ref{fig:cumulativeProbability} we further reiterate our recommendation of $ L_{Q} \geq 127 $ and suggest $ \Delta q \geq 1 $. Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} $ and $ \Delta q $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to specific Quorum-level attacks.
+Figure \ref{fig:cumulativeProbability} suggests that although lower values of $ \Delta q $ negatively impact security, the choice of $ L_{Q} $ is more significant. Based on Figure \ref{fig:cumulativeProbability} we further reiterate our recommendation of $ L_{Q} \geq 127 $ and suggest $ \Delta q = 7 $. Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} $ and $ \Delta q $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to specific Quorum-level attacks.
 
 \subsubsection{Global Randomness}
 \label{sec:RandGeneration}
 
-We implement $ \mathcal{G}(t) $ using a commitment scheme run by Tor directory authorities\cite{GouletCommitReveal}. Commitment protocols have been studied in other works\cite{rivest1999unconditionally}\cite{naor1990bit}, have many interesting applications, and are well understood. If all parties are at least semi-honest then the commitment protocols generally display correctness, privacy, and binding. However, if some participants are malicious, they demonstrate known weaknesses. 
+We implement $ \mathcal{G}(t) $ using a commitment scheme run by Tor directory authorities\cite{GouletCommitReveal}. Commitment protocols have been studied in other works\cite{rivest1999unconditionally}\cite{naor1990bit}, have many interesting applications, and are well understood. If all parties are at least semi-honest then the commitment protocols generally display correctness, privacy, and binding. 
 
-Namely, while reveals must demonstrably match commits, each participant may choose to reveal or not. If they do not reveal, their value is lost and the protocol produces a different output. If Eve controls $ b $ participants, she can make this choice with each participant in turn, allowing $ 2^{b} $ different outcomes. Goulet and Kadianakis' directory authority commitment scheme is particularly vulnerable to this attack because the reveals are public for approximately 12 hours before the final random value is published. However, as there are currently only nine directory authorities and the security of the Tor network rests on the assumption that five or more of them are at least semi-honest, the commitment scheme has at most $ 2^{4} = 16 $ different outcomes in the worst case without violation of our assumptions. 
+However, if some participants are malicious, they demonstrate known weaknesses. Namely, while reveals must demonstrably match commits, each participant may choose to reveal or not. If they do not reveal, their value is lost and the protocol produces a different output. If Eve controls $ b $ participants, she can make this choice with each participant in turn, allowing $ 2^{b} $ different outcomes. Goulet and Kadianakis' directory authority commitment scheme is particularly vulnerable to this attack because the reveals are public for approximately 12 hours before the final random value is published. However, as there are currently only nine directory authorities and the security of the Tor network rests on the assumption that five or more of them are at least semi-honest, the commitment scheme has at most $ 2^{4} = 16 $ different outcomes in the worst case without violation of our assumptions. 
 
-Given the statistical calculations and the safety margin introduced by the recommendations in section \ref{sec:qSize}, we do not consider this a significant threat to our system and conclude that the Quorum Formation protocol is secure under our design assumptions. The unpredictability of the reveals provides the strongest defence against Quorum-level attacks.
+Given the statistical calculations and the safety margin introduced by the recommendations in section \ref{sec:qSize}, we do not consider this a significant threat to our system and conclude that the Quorum Formation protocol is secure under our design assumptions. The unpredictability of the reveals and the low probability of compromise shown in Figures \ref{fig:quorumWeightedMajority} and \ref{fig:cumulativeProbability} provides the strongest defence against Quorum-level attacks.
 
 \subsection{Outsourcing Record Generation}
 
 In the Record Generation protocol, we intentionally included the scrypt calculation inside the signing step in order to require Bob to run scrypt himself. However, our protocol does not entirely prevent Bob from outsourcing this expensive computation to a secondary resource, Craig, in all cases. We assume that Craig does not have Bob's private key. Then,
-
-\emph{type}, the purpose of this Record; \emph{name}, a meaningful second-level domain name with the .tor pseudo-TLD; \emph{subdomains}, a one-to-one map of .tor domains of level three or higher and .tor or .onion destinations; \emph{contact}, Bob's PGP key fingerprint if he chooses to disclose it; \emph{rand}, the output of $ \mathcal{G}(t) $ at the current time; \emph{nonce}, bytes used as a source of randomness for the proof-of-work; \emph{pow}, the output of $ \mathrm{PoW}(i) $; \emph{signature}, the output of $ S_{\mathit{RSA}}(m, r) $; and \emph{pubHSKey}
 
 \begin{enumerate}
 	\item Bob creates an initial Record $ R $ and completes the \emph{type}, \emph{name}, \emph{subdomains}, \emph{contact}, and \emph{rand} fields.
