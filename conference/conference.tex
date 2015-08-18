@@ -227,6 +227,7 @@
 \usetikzlibrary{decorations.text}
 \usepackage{tkz-berge}
 \usepackage{amsmath}
+\usepackage{amsfonts}
 \usepackage{tabularx}
 
 % https://tex.stackexchange.com/questions/42271/floor-and-ceiling-functions
@@ -353,17 +354,17 @@ Here we enumerate a list of requirements that must be met by any DNS applicable 
 
 1. \textbf{The system must support anonymous registrations.} The system should not require any personally-identifiable or location information from the registrant. Tor hidden services publicize no more information than a public key and Introduction Points.
 
-2. \textbf{The system must support privacy-enhanced queries.} Clients should be anonymous, indistinguishable, and unable to be tracked by name servers.
+2. \textbf{The system must support privacy-enhanced queries.} Clients should be anonymous, indistinguishable, and unable to be tracked by name servers. Tor tunnels hidden service descriptor lookups and most Internet DNS queries over circuits, preventing observers from breaking a user's privacy even if the user anonymously contacts the underlying server.
 
-3. \textbf{Registrations must be authenticable.} Clients must be able to verify that the domain-address pairing that they receive from name servers is authentic relative to the authenticity of the hidden service.
+3. \textbf{Registrations must be authenticable.} Clients must be able to verify that the domain-address pairing that they receive from name servers is authentic relative to the authenticity of the hidden service. This objective provides a defence against phishing attacks.
 
-4. \textbf{Domain names must be globally unique.} Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack.
+4. \textbf{Domain names must be globally unique.} Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack. Unique domain names prevent fragmentation of users and provide a defence against phishing attacks.
 
 5. \textbf{The system must be distributed.} Systems with root authorities have distinct disadvantages compared to distributed networks: specifically, central authorities have absolute control over the system and root security breaches could easily compromise the integrity of the entire system. Root authorities may also be able to compromise the privacy of both users and hidden services or may not allow anonymous registrations.
 
 6. \textbf{The system must be relatively easy to use.} It should be assumed that users are not security experts or have technical backgrounds. The system must resolve protocols with minimal input from the user and hide non-essential details.
 
-7. \textbf{The system must be backwards compatible.} Naming systems for Tor must preserve the original Tor hidden service protocol, making the DNS optional but not required.
+7. \textbf{The system must be optional.} Not all hidden services require meaningful names. For example, applications such as Ricochet\cite{RicochetGithub} may create ephemeral hidden services where names may not be appropriate or necessary. Thus a naming system should be optional but not required. Systems that provide backwards compatibility by preserving the Tor hidden service protocol also achieve this property.
 
 8. \textbf{The system should be lightweight.} In most realistic environments clients have neither the bandwidth nor storage capacity to hold the system's entire database, nor the capability of meeting significant computation burdens.
 
@@ -380,8 +381,6 @@ In 2001, Zooko Wilcox-O'Hearn described three desirable properties for any persi
 	\caption{Zooko's Triangle.}
 	\label{fig:ZookosTriangle}
 \end{figure}
-
-\newpage
 
 Some examples of naming systems that achieve only two of these properties include:
 
@@ -405,11 +404,11 @@ Vanity key generators (e.g. Shallot\cite{KatmagicShallot}) attempt to find by br
 
 The Internet DNS is another one candidate and is already well established as a fundamental abstraction layer for Internet routing. However, despite its widespread use and extreme popularity, the Internet DNS suffers from several significant shortcomings and fundamental security issues that make it inappropriate for use by Tor hidden services. Generally speaking, the Internet DNS by default does not use any cryptographic primitives. DNSSEC is primarily designed to prevent forgeries and DNS cache poisoning from intermediary name servers and it does not provide any degree of query privacy\cite{wachs2014censorship}. Additional extensions and protocols such as DNSCurve\cite{bernstein2009dnscurve} have been proposed, but DNSSEC and DNSCurve are optional and have not yet seen widespread full deployment across the Internet. The lack of default security in Internet DNS and the financial expenses involved with registering a new TLD casts significant doubt on the feasibility of using it for Tor hidden services. Cachin and Samar\cite{cachin2004secure} extended the Internet DNS and decreased the attack potential for authoritative name servers via threshold cryptography, but the lack of privacy in the Internet DNS and the logistical difficulty in globally implementing their work prevents us from using their system for hidden services.
 
-The GNU Name System\cite{wachs2014censorship} (GNS) is another zone-based alternative DNS. GNS describes a hierarchical zones of names with each user managing their own zone and distributing zone access peer-to-peer within social circles. While GNS' design guarantees the uniqueness of names within each zone and users are capable of selecting meaningful nicknames for themselves, GNU does not guarantee that names are \emph{globally} unique. Furthermore, the selection of a trustworthy zone to use would be a significant challenge for using GNS for Tor hidden services and such a selection no longer makes the system distributed. Awerbuch and Scheideler,\cite{awerbuch2004group} constructed a distributed peer-to-peer naming system, but like GNS, made no guarantee that domain names would be globally unique.
+The GNU Name System\cite{wachs2014censorship} (GNS) is a decentralized alternative DNS. GNS distributes names across a hierarchical system of zones constructed into directed graphs. Each user manages their own zone and distributes zone access peer-to-peer within social circles. However, GNS does not guarantee that names are \emph{globally} unique. Furthermore, the selection of a trustworthy zone to use would be a significant challenge for using GNS for Tor hidden services and such a selection no longer makes the system distributed. Awerbuch and Scheideler,\cite{awerbuch2004group} constructed a distributed peer-to-peer naming system, but like GNS, made no guarantee that domain names would be globally unique.
 
 % \cite{jacobs2014providing} was
 
-Namecoin\cite{NamecoinHome} is an early fork of Bitcoin\cite{nakamoto2008bitcoin} and is noteworthy for achieving all three properties of Zooko's Triangle. Namecoin holds information transactions in a distributed ledger known as a blockchain. Storing textual information such as a domain registration consumes some Namecoins, a unit of currency. While Namecoin is often advertised as capable of assigning names to Tor hidden services, it has several practical issues that make it generally infeasible to be used for that purpose. First, to authenticate registrations, clients must be able to prove the relationship between a Namecoin owner's secp256k1 ECDSA key and the target hidden service's RSA key: constructing this relationship is non-trivial. Second, Namecoin generally requires users to pre-fetch the blockchain which introduces significant logistical issues due to high bandwidth, storage, and CPU load. Third, although Namecoin supports anonymous ownership of information, it is non-trivial to anonymously purchase Namecoins, thus preventing domain registration from being truly anonymous. These issues prevent Namecoin from being a practical alternative DNS for Tor hidden service. However, our work shares some design principles with Namecoin.
+Namecoin\cite{NamecoinHome} is an early fork of Bitcoin\cite{nakamoto2008bitcoin} and is noteworthy for achieving all three properties of Zooko's Triangle. Namecoin holds information transactions in a distributed ledger known as a blockchain. The act of storing textual information such as a domain registration in the blockchain consumes some Namecoins, a unit of currency. Transactions and information are added to the head of the blockchain by ``miners'', who solve a proof-of-work problem to generate the next block. While Namecoin is often advertised as capable of assigning names to Tor hidden services, it has several practical issues that make it generally infeasible to be used for that purpose. First, Namecoin does not provide a mechanism for proving ownership of domain names; this makes it difficult for a client to prove that the owner of the hidden service private RSA key also maintains the Namecoin secp256k1 ECDSA private key. Second, Namecoin generally requires users to pre-fetch the blockchain which introduces significant logistical issues due to high bandwidth, storage, and CPU load. Third, although Namecoin supports anonymous ownership of information, it is non-trivial to anonymously purchase Namecoins, thus preventing domain registration from being truly anonymous. These issues prevent Namecoin from being a practical alternative DNS for Tor hidden service. However, our work shares some design principles with Namecoin.
 
 \section{Assumptions and Threat Model}
 \label{sec:threatModel}
@@ -432,7 +431,7 @@ Finally, we assume secure cryptographic primitives; namely that Eve cannot break
 
 \begin{figure}[htbp]
 	\centering
-	\begin{tikzpicture}[scale=0.76, ->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries, transform shape}]
+	\begin{tikzpicture}[scale=0.74, ->, node distance=2.5cm, main node/.style={circle, fill=blue!20, draw, font=\sffamily\bfseries, transform shape}]
 
 			\node[main node] (1) {$ A_{G} $};
 			\node[main node] (2) [right of=1] {};
@@ -477,7 +476,7 @@ Finally, we assume secure cryptographic primitives; namely that Eve cannot break
 	\label{fig:basicDesign}
 \end{figure}
 
-We propose the Onion Name System (OnioNS) as an abstraction layer to hidden service addresses and introduce ``.tor'' as a new pseudo-TLD for this purpose. First, Bob generates and self-signs a \emph{Record}, containing a meaningful second-level domain name and his public key $ \mathcal{P}_{B} $. Without loss of generality, let this be ``example.tor $ \rightarrow $ onions55e7yam27n.onion''. We introduce a proof-of-work scheme that requires Bob to expend computational and memory resources to claim ``example.tor'', a more privacy-enhanced alternative to financial compensation to a central authority. Proof-of-work systems are noteworthy for their asymmetry: they require the issuer to spend effort to find an answer to a moderately hard computational problem, but once solved can be easily verified correct by any recipient. The requirement of proof-of-work fulfils three main purposes:
+We propose the Onion Name System (OnioNS) as an abstraction layer to hidden service addresses and introduce ``.tor'' as a new pseudo-TLD for this purpose. First, Bob generates and self-signs a \emph{Record}, containing a meaningful second-level domain name and his public key $ \mathcal{P}_{B} $. Without loss of generality, let this be ``example.tor $ \rightarrow $ onions55e7yam27n.onion''. We introduce a proof-of-work scheme that requires Bob to expend computational and memory resources to claim ``example.tor''; the protocol allows Bob to claim a meaningful name in a distributed environment while remaining anonymous. Proof-of-work systems are noteworthy for their asymmetry: they require the issuer to spend effort to find an answer to a moderately hard computational problem, but once solved can be easily verified correct by any recipient. The requirement of proof-of-work fulfils three main purposes:
 
 \begin{enumerate}
 	\item Significantly reduces the threat of DoS flood attack.
@@ -487,7 +486,7 @@ We propose the Onion Name System (OnioNS) as an abstraction layer to hidden serv
 
 Second, Bob uses a Tor circuit to anonymously transmit his Record to an authoritative short-lived random subset of OnioNS servers, known as the Quorum, inside the Tor network. The Quorum archive Bob's Record in a sequential public ledger known as a Pagechain, of which each OnioNS node holds their own local copy. Bob's Record is received by all Quorum nodes and share signatures of their knowledge with each other, so they maintain a common database. Quorum nodes are not name servers, so let Charlie be a name server outside the Quorum and assume that Charlie stays synchronized with the Quorum.
 
-Third, Alice, uses a Tor client to anonymously connect to Charlie, then asks Charlie for ``example.tor''. Alice receives Bob's Record, verifies its signature and proof-of-work, and uses $ \mathcal{P}_{B} $ to contact Bob via Tor's hidden service protocol. As Bob's Record is self-signed and contains $ \mathcal{P}_{B} $, Alice can verify the Record's authenticity relative to $ \mathcal{P}_{B} $. In this way, Alice does not have to resort to using ``onions55e7yam27n.onion'', rather that Bob can be successfully referenced by ``example.tor''. We illustrate the OnioNS overview in Figure \ref{fig:basicDesign}.
+Third, Alice, uses a Tor circuit to anonymously ask Charlie for ``example.tor''. Alice receives Bob's Record, verifies its signature and proof-of-work, and uses $ \mathcal{P}_{B} $ to contact Bob via Tor's hidden service protocol. As Bob's Record is self-signed and contains $ \mathcal{P}_{B} $, Alice can verify the Record's authenticity relative to $ \mathcal{P}_{B} $. In this way, Alice does not have to resort to using ``onions55e7yam27n.onion'', rather that Bob can be successfully referenced by ``example.tor''. We illustrate the OnioNS overview in Figure \ref{fig:basicDesign}.
 
 \subsection{Cryptographic Primitives}
 
@@ -670,7 +669,7 @@ Alice needs only Bob's Record to contact Bob by his meaningful domain name. Let 
 	\item Alice sends the original $ d $ to the hidden service.
 \end{enumerate}
 
-The Merkle tree also prevents phishing attacks from Charlie. While the Quorum provides the verification that $ r $ is authentic and that $ d $ is unique, Alice may become certain by performing a synchronization against the OnioNS network and checking the Pagechain herself, but this is impractical in most environments. Tor's median circuit speed is often less than 4 Mbit/s,\cite{TorMetrics} so for the sake of convenience data transfer must be minimized. Therefore Alice can simply fetch minimal information and rely on her existing trust of members of the Tor network.
+Alice may choose to synchronize against the OnioNS network and check the authenticity and uniqueness in the Pagechain herself, but this is impractical in most environments. Tor's median circuit speed is often less than 4 Mbit/s,\cite{TorMetrics} so for the sake of convenience data transfer must be minimized. Therefore Alice can simply fetch minimal information and rely on her existing trust of members of the Tor network.
 
 \subsubsection{Onion Query}
 
@@ -691,11 +690,11 @@ We suggest reducing the networking costs with a Merkle tree\cite{merkle1988digit
 	\item Generate $ \mathit{sig}_{T} = S_{\mathit{ed}}(t \concat r, e) $ where $ t $ is a timestamp and $ r $ is the root hash of $ T $.
 \end{enumerate}
 
-As Records contain both second-level domains and their subdomains, $ T $ needs only contain $ c $ to reference all domains in $ r $, which further saves space. Then during a Domain Query Alice may use $ T $ to authenticate a domain $ d $ and verify non-existence for a Record $ r $.
+As Records contain both second-level domains and their subdomains, $ T $ needs only contain $ c $ to reference all domains in $ r $, which further saves space. Then during a Domain Query Alice may use $ T $ to authenticate a domain $ d $ and verify non-existence for a Record $ r $. The Merkle tree also prevents phishing attacks from Charlie; the tree allows Alice to verify the mappings in $ r $ and the uniqueness of $ d $. The signatures from the Quorum allow her to verify the tree's authenticity. Quorum nodes maintaining identical Pages will sign the same Merkle tree root, so Alice needs to obtain only one subtree and the root signatures by every Quorum node from Charlie.
 
 \begin{enumerate}
 	\item Alice extracts the second-level name $ c $ from $ d $.
-	\item If $ r $ exists, Charlie returns the leaf node containing $ r $ and all the tree nodes from leaf $ r $ to the root and their sibling nodes, so that Alice can verify authenticity of $ r $ by recomputing the root hash and verify that the largest subset of Quorum nodes signed the same root hash.
+	\item If $ r $ exists, Charlie returns the leaf node containing $ r $ and all the tree nodes from leaf $ r $ to the root and their sibling nodes, so that Alice can verify authenticity of $ r $ by recomputing the root hash and verify that at least the largest subset of Quorum nodes' signatures are valid and sign the same root hash.	
 	\item If Charlie claims non-existence of $ c $, he returns two adjacent leaves $ a $ and $ b $ (and the nodes on their paths and siblings) such that $ a < c < b $, or in the boundary cases that $ a $ is undefined and $ b $ is the left-most leaf or $ b $ is undefined and $ a $ is the right-most leaf.
 	\item If either assertion fails, Charlie is dishonest.
 \end{enumerate}
@@ -720,10 +719,10 @@ In section \ref{sec:threatModel}, we assume that an attacker, Eve, controls some
 The probability that Eve controls $ L_{E} $ Quorum nodes is given by the hypergeometric distribution, whose probability mass function (PMF) is shown in Equation \ref{eq:hypergeoPMF}.
 
 \begin{align}
-	\mathrm{Pr}(L_{E}) &= \frac{\binom{L_{T} * f_{E}}{L_{E}}\binom{L_{T} - L_{T} * f_{E}}{L_{Q} - L_{E}}}{\binom{L_{T}}{L_{Q}}}
+	\mathrm{Pr}(L_{E}) &= \frac{\binom{L_{T} \cdot f_{E}}{L_{E}}\binom{L_{T} - L_{T} \cdot f_{E}}{L_{Q} - L_{E}}}{\binom{L_{T}}{L_{Q}}}
 	\label{eq:hypergeoPMF}
 	\\
-	\mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) &= \displaystyle\sum_{x=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{L_{T} * f_{E}}{x}\binom{L_{T} - L_{T} * f_{E}}{L_{Q} - x}}{\binom{L_{T}}{L_{Q}}}
+	\mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) &= \displaystyle\sum_{i=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{L_{T} \cdot f_{E}}{i}\binom{L_{T} - L_{T} \cdot f_{E}}{L_{Q} - i}}{\binom{L_{T}}{L_{Q}}}
 	\label{eq:compromiseProb}
 \end{align}
 
@@ -741,24 +740,34 @@ In practice Tor routers do not have equal consensus weight, thus Quorum selectio
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=\linewidth]{../assets/analysis/QuorumCandidateWeights.eps}
-	\caption{The selection probabilities of Quorum Candidates averaged across all consensuses in July 2015. The probability of selecting each router is its consensus weight divided by the weights of all other Quorum Candidates. These probabilities closely follow an exponential distribution; a exponential trendline models it with $ R^{2} = 0.9884 $.}
+	\caption{The selection probabilities of Quorum Candidates averaged across all consensuses in July 2015. These probabilities closely follow an exponential distribution; a exponential trendline models it with $ R^{2} = 0.9884 $.}
 	\label{fig:weightDist}
 \end{figure}
 
-We re-examine Equation \ref{eq:compromiseProb} with regard to this distribution of consensus weight in Figure \ref{fig:quorumWeightedMajority}. In contrast to Figure \ref{fig:quorumUnweightedMajority} which demonstrates that an unweighted selection leads to a high probability of compromise with small levels of collusion, Figure \ref{fig:quorumWeightedMajority} suggests that biasing Quorum selection by consensus weight provides a strong defence against large-scale Sybil attacks. Indeed, even when 60 percent of the low-end Quorum Candidates are malicious, most Quorum sizes produce negligible probabilities of compromise. We consider it reasonable to assume that low-end routers are under Eve's control; these routers are the cheapest and logistically easiest to operate. Our approach remains resistant to this attack: these routers will be included in the Quorum very infrequently because of their low consensus weight.
+We now re-examine Equation \ref{eq:compromiseProb} with regard to this distribution of consensus weight. Consider that the hypergeometric distribution describes the probability of selecting $ k $ Eve-controlled routers in an $ L_{Q} $-sized Quorum from an $ N $-sized population containing $ K $ Eve-controlled routers and let $ L(x) $ is the probabilities of selection for routers in the lowest $ x $ percentile of consensus weight. Then the probability of compromise is given by Equation \ref{eq:compromiseWeighted} where $ K $ is given by Equation \ref{eq:compromiseK} and $ R $ is the probability that routers outside $ L(x) $ are compromised. Since $ L(x) $ describes probabilities and $ N $ must be a natural number ($ N \in \mathbb{N} $) then the compromise probabilities may be approximated with sufficiently large values of $ N $. We illustrate the probabilities against $ x $ and various Quorum sizes in Figure \ref{fig:quorumWeightedMajority} using $ N = 10^{7} $.
+
+\begin{align}
+	K &= R \cdot N + N \cdot \displaystyle\sum_{j=0}^{x} L(j)
+	\label{eq:compromiseK}
+	\\
+	\mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) &= \displaystyle\sum_{i=\ceil{\frac{L_{Q}}{2}}}^{L_{Q}} \frac{\binom{K}{i}\binom{N - K}{L_{Q} - i}}{\binom{N}{L_{Q}}}
+	\label{eq:compromiseWeighted}
+\end{align}
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=\linewidth]{../assets/analysis/QuorumSelectionWeighted10.eps}
-	\caption{The values for $ \mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) $ for various Quorum sizes. We assume that all routers with weights in the lowest X percentile are under Eve's control, while all other routers have a 10 percent chance of being under Eve's influence.}
+	\caption{The values for $ \mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) $ from Equation \ref{eq:compromiseWeighted} for various Quorum sizes. We assume that all routers $ \in L(x) $ are under Eve's control, while routers $ \notin L(x) $ have a 10 percent chance of being under Eve's control.}
 	\label{fig:quorumWeightedMajority}
 \end{figure}
+
+In contrast to Figure \ref{fig:quorumUnweightedMajority} which demonstrates that an unweighted selection leads to a high probability of compromise with small levels of collusion, Figure \ref{fig:quorumWeightedMajority} suggests that biasing Quorum selection by consensus weight provides a strong defence against large-scale Sybil attacks. Indeed, even when 60 percent of the low-end Quorum Candidates are malicious, most Quorum sizes produce negligible probabilities of compromise. We consider it reasonable to assume that low-end routers are under Eve's control; these routers are the cheapest and logistically easiest to operate. Our approach remains resistant to this attack: these routers will be included in the Quorum very infrequently because of their low consensus weight.
 
 Small Quorums are also more susceptible to node downtime or distributed denial-of-service (DDoS) attacks. Figure \ref{fig:quorumWeightedMajority} shows that the choices of $ L_{Q} = 31 $ is suboptimal; it is more easily compromised even with low levels of collusion. $ L_{Q} = 63 $ is more resistant, but not significantly more so. We therefore recommend $ L_{Q} \geq 127 $.
 
 \subsubsection{Quorum Rotation}
 
-In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not increase in response to the inclusion of OnioNS on the Tor network. If we also assume that $ L_{T} $ is fixed, then we can examine the impact of choices for $ \Delta q $ and calculate the probability of Eve compromising \emph{any} Quorum over a long period of time $ t $. Smaller values for $ \Delta q $ implies that we select more Quorums over that time period and thus increase our cumulative chances of compromise, but it also reduces the disruption timeline for a malicious Quorum. Eve's cumulative chances of compromising any Quorum is given by $ 1 - (1 - f_{c})^{\frac{t}{\Delta q}} $ where $ f_{c} $ is Eve's chances of compromising a single Quorum. We estimate this over 10 years in Figure \ref{fig:cumulativeProbability}.
+In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not increase in response to the inclusion of OnioNS on the Tor network. If we also assume that $ L_{T} $ is fixed, then we can examine the impact of choices for $ \Delta q $ and calculate the probability of Eve compromising \emph{any} Quorum over a long period of time $ t $. Smaller values for $ \Delta q $ implies that we select more Quorums over that time period and thus increase our cumulative chances of compromise, but it also reduces the disruption timeline for a malicious Quorum. Shorter-lived Quorums are less susceptible to the disruption caused by node downtime or from nodes or disappearing entirely from the network. Eve's cumulative chances of compromising any Quorum is given by $ 1 - (1 - f_{c})^{\frac{t}{\Delta q}} $ where $ f_{c} $ is Eve's chances of compromising a single Quorum. We estimate this over 10 years in Figure \ref{fig:cumulativeProbability}.
 
 \begin{figure}[h]
 	\centering
@@ -768,7 +777,7 @@ In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not
 \end{figure}
 
 %It also supports our earlier conclusion that the choices of $ L_{Q} = 31 $ and $ L_{Q} = 63 $ are suboptimal.
-Figure \ref{fig:cumulativeProbability} suggests that although lower values of $ \Delta q $ negatively impact security, the choice of $ L_{Q} $ is more significant. Based on Figure \ref{fig:cumulativeProbability} we further reiterate our recommendation of $ L_{Q} \geq 127 $ and suggest $ \Delta q = 7 $. Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} $ and $ \Delta q $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to specific Quorum-level attacks.
+Figure \ref{fig:cumulativeProbability} suggests that although larger values of $ \Delta q $ positively impact security, the choice of $ L_{Q} $ is more significant. Furthermore, even "Stable" routers in the Tor network may be too unstable for very high values of $ \Delta q $. Therefore, based on Figure \ref{fig:cumulativeProbability}, we further reiterate our recommendation of $ L_{Q} \geq 127 $ and suggest $ \Delta q = 7 $. Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} $ and $ \Delta q $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to specific Quorum-level attacks.
 
 \subsubsection{Global Randomness}
 \label{sec:RandGeneration}
@@ -781,7 +790,7 @@ Given the statistical calculations and the safety margin introduced by the recom
 
 \subsection{Outsourcing Record Generation}
 
-In the Record Generation protocol, we intentionally included the scrypt calculation inside the signing step in order to require Bob to run scrypt himself. However, our protocol does not entirely prevent Bob from outsourcing this expensive computation to a secondary resource, Craig, in all cases. We assume that Craig does not have Bob's private key. Then,
+In the Record Generation protocol, we intentionally included the scrypt calculation inside the signing step in order to require Bob to run scrypt himself, preventing him from utilizing large-scale compute engines such as the Amazon Cloud. However, our protocol does not entirely prevent Bob from outsourcing this expensive computation to a secondary resource, Craig, in all cases. We assume that Craig does not have Bob's private key. Then,
 
 \begin{enumerate}
 	\item Bob creates an initial Record $ R $ and completes the \emph{type}, \emph{name}, \emph{subdomains}, \emph{contact}, and \emph{rand} fields.
@@ -813,15 +822,31 @@ Accidental leakage of .tor lookups over the Internet DNS via human mistakes or m
 \section{Evaluation}
 \label{sec:eval}
 
+\subsection{Comparison to Related Works}
+
+The Onion Name System and Namecoin both achieve all three properties of Zooko's Triangle, and while the two systems share some design similarities, each system is constructed with different threat models and different objectives in mind.
+
+Namecoin's security rests on two primary assumptions: that its network is resistant to Sybil attacks and that more than 50 percent of the network's computational power is at least semi-honest. An attacker who gained the majority of the computational power (a ``51\% attack'') may double-spend transactions, prevent new transactions from entering the honest blockchain, and prevent honest miners contributing blocks. A successful Sybil attack on Namecoin's network allows an attacker to disrupt the network by purposefully not relaying blocks or transactions, providing attacker-controlled data to clients, or increasing the potential for double-spending attacks. Namecoin's blockchain has an indefinite length in order to allow the network to trace transactions and ownership of Namecoins back to their originating source. It relies on each participant in the Namecoin network to hold, validate, and read from its own local copy of the blockchain. Namecoin's blockchain also has an indefinite length; the CPU, bandwidth, and memory requirements for anyone holding the blockchain scales linearly as the age and popularity of the Namecoin system increases.
+
+By contrast, OnioNS' central security assumption is that circuits through the Tor network provide privacy. This assumption implies that the Tor network remains resistant to Sybil attack, traffic analysis, and that the majority of the directory authorities remain semi-honest. We have shown that a sufficiently-large Quorum remains strongly resistant to large-scale Sybil attacks on the Tor network. Thus, we do not introduce a new network for our naming system and instead utilize the Tor network to achieve both communication privacy and the infrastructure for OnioNS. If an attacker gains control of the Tor network (such as by Sybil attack or by compromising the directory authorities) then circuits no longer provide privacy, hidden services can be de-anonymized, and a privacy-enhanced naming system no longer becomes necessary. We do not also rely on assumptions of computational power: unlike Namecoin, attackers with large computational capacities are not able to disrupt network communication or to provide malicious responses to client queries.
+
+Both Namecoin and OnioNS utilize append-only data structures for long-term storage. Namecoin typically requires clients to either hold their own copy of the blockchain, rely on the honesty of their Namecoin-compatible DNS server, or to utilize a Simplified Payment Verification\cite{nakamoto2008bitcoin} (SPV) scheme which allows clients to download and verify minimalistic information from a central server. These latter two cases are vulnerable to a variety of attacks if the server is malicious and neither approach provides authenticated denial-of-existence. OnioNS does also not require clients to download the Pagechain; instead, clients receive a minimal number of mappings, a Merkle subtree, and Quorum signatures on the root hash. Our protocols prevent a malicious server from acting dishonestly, including spoofing mappings or falsely claiming non-existence. The security of the response depends on our security assumptions regarding the Quorum.
+
+Namecoin and OnioNS allow full enumeration of all registered domains. We do not consider this a significant threat to our system as registrations do not contain personal information. Similar to Namecoin, any any machine may become a OnioNS Mirror and join the network by obtaining a complete copy of the Pagechain and Mirrors must be able to access and verify all information in the Pagechain in order to respond to client queries. In both Namecoin and OnioNS, name registrations be assumed to be public knowledge immediately after they are uploaded to the network.
+
+Both OnioNS and Namecoin operate under weaker adversarial models than the GNU Name System. GNS assumes than attacker may participant in any role, may infiltrate the network by large-scale Sybil attack, and is assumed to have more computational power than all honest participants combined. Neither Namecoin, OnioNS, nor Tor provide full defences against such well-resourced adversaries. Tor hidden services may become de-anonymized under GNS' adversarial model so we do not assume that our adversaries are that powerful. End-users should select their naming system carefully according to their threat model.
+
 \subsection{Implementation}
 
-We have build a reference implementation of the Onion Name System in C++11. We implemented the essential protocols for Bob, Charlie, and Alice. We divided our software into three parts: OnioNS-client, OnioNS-server, and OnioNS-HS, with OnioNS-common as a shared library dependency and built packages for several Linux distributions. We utilize several common libraries; Botan\cite{BotanLib} provides the implementation of our cryptographic operations, Boost Asio\cite{AsioLib} provides our networking engine, Stem provides abstraction for Tor control, and jsoncpp\cite{JsonCppLib} provides implementations of JSON encoding and decoding. We encode all the data structures in JSON; JSON is significantly more compact than XML, but retains user readability and its support of basic primitive types is highly applicable to our needs. Our code is available under the Modified BSD License, matching Tor.
+We have build a reference implementation of the Onion Name System in C++11. We implemented the essential protocols for Bob, Charlie, and Alice. We divided our software into three parts: OnioNS-client, OnioNS-server, and OnioNS-HS, with OnioNS-common as a shared library dependency. We utilize several common libraries; Botan\cite{BotanLib} provides the implementation of our cryptographic operations, Boost Asio\cite{AsioLib} provides our networking engine, Stem provides abstraction for Tor control, and jsoncpp\cite{JsonCppLib} provides implementations of JSON encoding and decoding. We encode all the data structures in JSON; JSON is significantly more compact than XML, but retains user readability and its support of basic primitive types is highly applicable to our needs. 
 
 OnioNS-HS is a small command-line utility that provides the capability for Bob to define a Record, make it valid, and then transmit it over a Tor circuit to a Quorum node. We provide flags to allow Bob to run the proof-of-work while inside a small VM or other restricted environment. OnioNS-HS then communicates with Tor's SOCKS port to send the Record to Quorum nodes.
 
 OnioNS-server provides the main OnioNS functionality and is designed to run in the background with minimal configuration. We introduce a flag to specify whether the server is a Quorum node or a traditional Mirror. As a Mirror, it maintains a network connection and subscribes to OnioNS servers running as Quorum nodes. It utilizes OnioNS-common to distributes networking information and public keys by installing several JSON files.
 
 The client-side software consists of three distinct pieces: onions-client, which connects to a Tor circuit over a Mirror and then listens on a TCP port on localhost for .tor domains; a Python script which waits for Tor stream requests, intercepts .tor domains, and sends them to the IPC port for resolution; and onions-tbb, which launches the Tor executable, onions-client, and then the Python script as child processes when the Tor Browser starts. The Python script reconfigures Tor to prevent it from auto-attaching network streams to circuits; instead, it filters stream requests and resolves .tor domains before letting Tor attach them, while instantly manually attaching all other domains.
+
+We created a Linux repository and used the Launchpad build system to package our software for several distributions. We designed the software with usability in mind: each aspect of the software runs with minimal configuration and management; the onions-client in particular integrates easily with the Tor Browser. Our code is available on Github under the Modified BSD License, matching Tor.
 
 \subsubsection{Integration Test}
 
@@ -830,7 +855,6 @@ First, we started two OnioNS servers, a Quorum node and a Mirror. We created a h
 Finally, we installed our client software into Tor Browser 5.5, a fork of Firefox 38.2.0 ESR. Once we launched the Tor Browser, the prepackaged Tor binary, onions-client, and the Python script started in the background. We entered ``example.tor'' into the Tor Browser, which caused Tor to fire a network stream event over its controller port. The Python script intercepted the .tor pseudo-TLD and sent the domain over IPC to onions-client. The client then issued a Domain Query to the Mirror for ``example.tor'' and resolved it to ``onions55e7yam27n.onion''. The Python script rewrote the stream request to ``onions55e7yam27n.onion'' before letting Tor attach it to a circuit. Tor then loaded our hidden service and returned our webpage back to the Tor Browser.
 
 This process resulted in the Tor Browser transparently loading our hidden service under ``example.tor'' without requiring any further user interaction. We illustrate this result in Figure \ref{fig:prototypeExample}. The software performed asynchronously and allowed normal browsing to both the Internet and other hidden services, even while the OnioNS domain was resolving.
-% todo: need to test verifying agreement from multiple Quorum nodes
 
 %\begin{figure}[h]
 %	\centering
@@ -850,9 +874,11 @@ This process resulted in the Tor Browser transparently loading our hidden servic
 
 \subsubsection{Performance}
 
-We selected the parameters of scrypt such that it consumed 128 MB of RAM during operation. We consider this an affordable amount of RAM for low-end consumer-grade computers. We created a multi-threaded implementation of the Record Generation protocol and used all eight virtual CPU cores on Machine B to generate our Record. As expected, our RAM consumption scaled linearly with the number of scrypt instances executed in parallel; we observed approximately 1 GB of RAM consumption during Record Generation. 
+Our experiment involves two machines, A and B. Both were hosted on 1 Gbit connections on a university campus. Machine A has an Intel Core2 Quad Q9000 (Penryn architecture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively.
 
-Then we conducted several performance measurements for the Domain Queries. Our experiment involves two machines, A and B. Both were hosted on 1 Gbit connections on a university campus. Machine A has an Intel Core2 Quad Q9000 (Penryn architecture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively. We measured and averaged 200 samples of the CPU wall-time required for both machines to validate the Record.
+We selected the parameters of scrypt such that it consumed 128 MB of RAM during operation. We consider this an affordable amount of RAM for low-end consumer-grade computers. We created a multi-threaded implementation of the Record Generation protocol and used all eight virtual CPU cores on Machine B to generate our Record. As expected, our RAM consumption scaled linearly with the number of scrypt instances executed in parallel; we observed approximately 1 GB of RAM consumption during Record Generation. We set our difficulty level so that Records took approximately six hours on average to become valid on Machine B.
+
+We conducted several performance measurements for the Domain Queries.  We measured and averaged 200 samples of the CPU wall-time required for both machines to validate the Record.
 
 \renewcommand{\arraystretch}{1.3}
 \newcolumntype{L}[1]{>{\hsize=#1\hsize\raggedright\arraybackslash}X}%
@@ -874,6 +900,8 @@ As expected, Machine B outperformed Machine A in all instances and we observed t
 
 Mirrors must also check the Page signatures from all $ L_{Q} $ Quorum nodes. We use Ed25519 to reduce the signature space requirements and CPU time required for verification: $ S_{\mathit{ed}}(m, e) $ signatures fit into 64 bytes and may be verified in batch form. Bernstein et al. reports that a quad-core Westmere-era CPU can generate 109,000 signatures per second and verify 71,000 signatures per second with 134,000 CPU cycles per signature\cite{bernstein2011high}. Therefore, even with large Quorums, we anticipate Mirrors being able to verify Page signatures from all Quorums in sub-second time on moderate hardware.
 
+\newpage
+
 \subsubsection{Latency}
 
 Although Tor is a low-latency network, as Domain Queries occur over a Tor circuit the three-hop path still introduces some latency into the communications between the client and a Mirror. The time is highly dependent on the circuit's network distance and the speed of each Tor router. This adds an additional delay between the time that a user enters an OnioNS domain into the Tor Browser and when Tor begins loading the hidden service. Fortunately, latency and load times across Tor circuits have been well studied. Domain Queries transfer both a Record, a Merkle subtree, and a collection of ed25519 signatures. We estimate the size of this information to be approximately 50 KB. We provide the distribution of circuit performance in Figure \ref{fig:latencyGraph}.
@@ -887,6 +915,16 @@ Although Tor is a low-latency network, as Domain Queries occur over a Tor circui
 
 This network latency is supplemental to the time to verify the Record and Merkle subtree. We avoid additional latency costs by implementing a client-side cache in order to allow subsequent queries to be resolved locally. We also reduce the expense of circuit construction by building the circuit on startup.
 
+\subsubsection{Usability}
+
+Our software maximizes usability in for two main groups of users: hidden service administrators and Tor end-users. The OnioNS-HS command-line utility provides minimal prompts, loads the hidden service private key, and automatically uploads the Record to the Quorum after the Record is made valid. We released a beta test of our software to Tor developers and volunteers and received positive feedback on the simplicity of the registration process.
+
+Our client software integrates well into the Tor Browser and starts and stops with the Tor Browser environment. As shown in Figure \ref{fig:prototypeExample}, OnioNS resolves and loads hidden services under a meaningful name transparently without requiring any user interaction, similar to traditional DNS requests over Tor circuits. We observed that queries for unknown domains added several seconds of latency to the load time of hidden services, matching our above analysis. Similar to the BIND software for DNS, OnioNS-client caches known Records in local storage, allowing further queries for their domains to be resolved nearly instantaneously. This mechanism also accelerates load times if those Records are part of a chain of resolutions. Local resolution also minimizes a Mirror's exposure to the popularity of domain names.
+
+%We also maintain significant usability and security benefits over similar systems such as Namecoin. OnioNS Records 
+
+We achieve another primary usability benefit by introducing an automatic naming system for Tor hidden services: it is no longer necessary for the Tor community to construct and maintain directories of hidden services. The automatic resolution of domain names allows scaling beyond human-maintained directories, which only efficiently scales to several hundred names at most. OnioNS should provide a significant usability to Tor users and the community at large.
+
 \section{Conclusions and Future Work}
 
 We have presented the Onion Name System (OnioNS), a distributed, secure, and usable alternative DNS that maps globally-unique and meaningful .tor domains to .onion hidden service addresses, and achieve all three properties of Zooko's Triangle. We enable any hidden service operator to anonymously claim a human-readable name for their server and clients to query the system in privacy-enhanced manner. We introduce a distributed self-healing blockchain-based database and mechanisms that let clients authenticate and verify denial-of-existence claims. Additionally, we utilize the existing and semi-trusted infrastructure of Tor, which significantly narrows our threat model to already well-understood attack surfaces and allows our system to be integrated into Tor with minimal effort. Our reference implementation demonstrates high usability and shows that OnioNS successfully addresses the major usability issue that has been with Tor hidden services since their introduction in 2002.
@@ -895,9 +933,16 @@ In future work we will expand our implementation and pursuit integrating it into
 
 We will also explore the possibilities of hosting the OnioNS servers as hidden services. The Tor protocol provides defences against several network-level attacks and when combined with end-to-end authentication this approach may prove beneficial to our system.
 
-\section*{Acknowledgements}
+%\section*{Acknowledgements}
 
-We would like to thank Roger Dingledine, George Kadianakis, Yawning Angel, and Nick Mathewson for their support, commentary, and assistance with Tor technical support.
+%We would like to thank Roger Dingledine, George Kadianakis, Yawning Angel, and Nick Mathewson for their support, commentary, and assistance with Tor technical support.
+
+
+
+
+
+
+
 
 %, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users\cite{percival2009stronger}\cite{percival2012scrypt}. We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
 
