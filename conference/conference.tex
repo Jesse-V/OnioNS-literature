@@ -250,18 +250,15 @@
 % use a multiple column layout for up to three different
 % affiliations
 \author{
-	\IEEEauthorblockN{[Anonymous submission]}
-	\IEEEauthorblockA{}
+	\IEEEauthorblockN{Jesse Victors}
+	\IEEEauthorblockA{Utah State University \\ jvictors@jessevictors.com}
+	\and
+	\IEEEauthorblockN{Ming Li}
+	\IEEEauthorblockA{University of Arizona \\ lim@email.arizona.edu}
+	\and
+	\IEEEauthorblockN{Xinwen Fu}
+	\IEEEauthorblockA{University of Massachusetts Lowell \\ xinwenfu@cs.uml.edu}
 }
-	
-%	\IEEEauthorblockN{Jesse Victors}
-%	\IEEEauthorblockA{Utah State University \\ jvictors@jessevictors.com}
-%	\and
-%	\IEEEauthorblockN{Ming Li}
-%	\IEEEauthorblockA{University of Arizona \\ lim@email.arizona.edu}
-%	\and
-%	\IEEEauthorblockN{Xinwen Fu}
-%	\IEEEauthorblockA{University of Massachusetts Lowell \\ xinwenfu@cs.uml.edu}
 
 \IEEEoverridecommandlockouts
 \makeatletter\def\@IEEEpubidpullup{9\baselineskip}\makeatother
@@ -316,6 +313,8 @@ As the prevalence of the Internet and other communication has grown, so too has 
 
 Tor \cite{dingledine2004tor} is a third-generation onion routing system and is the most popular low-latency anonymous communication network in use today. In Tor, users construct a layered encrypted communications circuit over three onion routers in order to mask their identity and location. As messages travel through the circuit, each onion router in turn decrypts their encryption layer, exposing their respective routing information. This provides end-to-end communication confidentiality of the sender.
 
+\newpage
+
 Tor users interact with the Internet and other systems over Tor via the Tor Browser, a security-enhanced fork of Firefox ESR. This achieves a level of usability but also security: Tor achieves most of its application-level sanitization via privacy filters in the Tor Browser; unlike its predecessors, Tor performs little sanitization itself. Tor's threat model assumes that the capabilities of adversaries are limited to traffic analysis attacks on a restricted scale; they may observe or manipulate portions of Tor traffic, that they may run onion routers themselves, and that they may compromise a fraction of other existing routers. Tor's design centers around usability and defense against these types of attacks.
 
 \subsection{Motivation}
@@ -339,7 +338,7 @@ Tor hidden service addresses are distributed and globally collision-free, but th
 
 \subsection{Contributions}
 
-In this paper, we present the design, analysis and implementation of the Onion Name System, (OnioNS) a distributed, secure, and usable domain name system for Tor hidden services. Any hidden service can anonymously register an association between a meaningful human-readable domain name and a target hidden service and clients can query against OnioNS in a privacy-preserving and verifiable manner. OnioNS is powered by a random subset of nodes within the existing infrastructure of Tor, significantly limiting the additional attack surface. We devise a distributed DNS database using a blockchain-based data structure that is tamper-proof, resistant to node compromise, and provides authenticated denial-of-existence. We design OnioNS as a backwards-compatible plugin to the Tor software. Our prototype implementation demonstrates the high usability and performance of OnioNS. To the best of our knowledge, this is the first alternative DNS for Tor hidden services which is distributed, secure, and usable at the same time.
+In this paper, we present the design, analysis and implementation of the Onion Name System, (OnioNS) a distributed, secure, and usable domain name system for Tor hidden services. Any hidden service can anonymously construct a claim for a meaningful human-readable domain name and clients can query against OnioNS in a privacy-preserving and verifiable manner. OnioNS is powered by a random subset of nodes within the existing infrastructure of Tor, significantly limiting the additional attack surface. We devise a distributed DNS database using a blockchain-based data structure that is tamper-proof, resistant to node compromise, and provides authenticated denial-of-existence. We design OnioNS as a backwards-compatible plugin to the Tor software. Our prototype implementation demonstrates the high usability and performance of OnioNS. To the best of our knowledge, this is the first alternative DNS for Tor hidden services which is distributed, secure, and usable at the same time.
 
 \textbf{Paper Organization:} This paper is divided into four main sections. In section \ref{sec:problemStatement} we define our design objectives and explain why existing works do not meet our goals. We also define our threat model, which closely matches Tor's model with one additional assumption. In section \ref{sec:Solution}, we describe the system overview and define several key protocols. In section \ref{sec:Analysis} we analyse the security of our assumptions and examine other attack vectors. Last, in section \ref{sec:Analysis} we evaluate our implementation prototype and show that it can access a hidden service under a meaningful domain name.
 
@@ -360,7 +359,7 @@ Here we enumerate a list of requirements that must be met by any DNS applicable 
 
 4. \textbf{Domain names must be globally unique.} Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack. Unique domain names prevent fragmentation of users and also provides a defence against phishing attacks.
 
-5. \textbf{The system must be distributed.} Systems with root authorities have distinct disadvantages compared to distributed networks: specifically, central authorities have absolute control over the system and root security breaches could easily compromise the integrity of the entire system. Root authorities may also be able to compromise the privacy of both users and hidden services or may not allow anonymous registrations.
+5. \textbf{The system must be distributed.} Central authorities have absolute control over the system and root security breaches could easily compromise the integrity of the entire system. They may also be able to compromise the privacy of both users and hidden services or may not allow anonymous registrations.
 
 6. \textbf{The system must be relatively easy to use.} It should be assumed that users are not security experts or have technical backgrounds. The system must resolve protocols with minimal input from the user and hide non-essential details.
 
@@ -925,7 +924,7 @@ By contrast, OnioNS' central security assumption is that circuits through the To
 
 Both Namecoin and OnioNS utilize append-only data structures for long-term storage. Namecoin typically requires clients to either hold their own copy of the blockchain, rely on the honesty of their Namecoin-compatible DNS server, or to utilize a Simplified Payment Verification \cite{nakamoto2008bitcoin} (SPV) scheme which allows clients to download and verify minimalistic information from a central server. These latter two cases are vulnerable to a variety of attacks if the server is malicious and neither approach provides authenticated denial-of-existence. OnioNS does also not require clients to download the Pagechain; instead, clients receive a minimal number of mappings, a Merkle subtree, and Quorum signatures on the root hash. Our protocols prevent a malicious server from acting dishonestly, including spoofing mappings or falsely claiming non-existence. The security of the response depends on our security assumptions regarding the Quorum.
 
-Namecoin and OnioNS allow full enumeration of all registered domains. We do not consider this a significant threat to our system as registrations do not contain personal information. Similar to Namecoin, any machine may become a OnioNS Mirror and join the network by obtaining a complete copy of the Pagechain and Mirrors must be able to access and verify all information in the Pagechain in order to respond to client queries. In both Namecoin and OnioNS, name registrations be assumed to be public knowledge immediately after they are uploaded to the network.
+Namecoin and OnioNS allow full enumeration of all registered domains; name registrations are assumed to be public knowledge immediately after they are uploaded to either network. We do not consider this a significant threat to our system as registrations do not contain personal information. Similar to Namecoin, anyone may obtain a complete copy of the Pagechain and Mirrors must be able to access and verify all information in the Pagechain in order to respond to client queries.
 
 Both OnioNS and Namecoin operate under weaker adversarial models than the GNU Name System. GNS assumes than attacker may participant in any role, may infiltrate the network by large-scale Sybil attack, and is assumed to have more computational power than all honest participants combined. Neither Namecoin, OnioNS, nor Tor provide full defences against such well-resourced adversaries. Tor hidden services may become de-anonymized under GNS' adversarial model so we do not assume that our adversaries are that powerful. End-users should select their naming system carefully according to their threat model.
 
@@ -939,9 +938,9 @@ We will also explore the possibilities of hosting the OnioNS servers as hidden s
 
 \section*{Acknowledgements}
 
-%We would like to thank Roger Dingledine, George Kadianakis, Yawning Angel, and Nick Mathewson for their support, commentary, and assistance with Tor technical support.
+We would like to thank Roger Dingledine, George Kadianakis, Yawning Angel, and Nick Mathewson for their support, commentary, and assistance with Tor technical support.
 
-We would like to thank Tor developers and volunteers within the community for technical support and their commentary on our work.
+%We would like to thank Tor developers and volunteers within the community for technical support and their commentary on our work.
 
 \newpage
 
