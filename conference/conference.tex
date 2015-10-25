@@ -1,51 +1,69 @@
+\documentclass[USenglish,oneside,twocolumn]{article}
+\usepackage{etex}
 
-\documentclass[conference]{IEEEtran}
-
-\pagestyle{plain}
+\usepackage[utf8]{inputenc}
+\usepackage[big]{dgruyter_NEW}
 
 \usepackage{mathtools}
-\usepackage[urlbordercolor={1 1 1},citebordercolor={1 1 1},linkbordercolor={1 1 1}]{hyperref}
-%\usepackage{enumitem}
 \usepackage{tikz}
 \usetikzlibrary{decorations.text}
 \usepackage{tkz-berge}
-\usepackage{amsmath}
 \usepackage{amsfonts}
+
+% these packages may not be needed
+%\usepackage[urlbordercolor={1 1 1},citebordercolor={1 1 1},linkbordercolor={1 1 1}]{hyperref}
+\usepackage{enumitem}
+\usepackage{amsmath}
 \usepackage{tabularx}
+
+%todo
+%\DOI{foobar}
+
+\cclogo{\includegraphics{by-nc-nd.pdf}}
 
 % https://tex.stackexchange.com/questions/42271/floor-and-ceiling-functions
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
 \DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
 
 \newcommand*\concat{\mathbin{\|}}
-
+  
 \begin{document}
 
-\title{The Onion Name System: \\ \huge Tor-powered Distributed DNS for Tor Hidden Services}
+\author[1]{Jesse Victors}
+\author[2]{Ming Li}
+\author[3]{Xinwen Fu}
 
-% author names and affiliations
-% use a multiple column layout for up to three different
-% affiliations
-\author{
-	\IEEEauthorblockN{Jesse Victors}
-	\IEEEauthorblockA{Utah State University \\ jvictors@jessevictors.com}
-	\and
-	\IEEEauthorblockN{Ming Li}
-	\IEEEauthorblockA{University of Arizona \\ lim@email.arizona.edu}
-	\and
-	\IEEEauthorblockN{Xinwen Fu}
-	\IEEEauthorblockA{University of Massachusetts Lowell \\ xinwenfu@cs.uml.edu}
+\affil[1]{Utah State University \newline \hspace{2em} E-mail: jvictors@jessevictors.com}
+\affil[2]{University of Arizona \newline \hspace{2em} E-mail: lim@email.arizona.edu}
+\affil[3]{University of Massachusetts Lowell \newline \hspace{2em} E-mail: xinwenfu@cs.uml.edu}
+
+\title{\huge The Onion Name System \large \\ Tor-powered Distributed DNS for Tor Hidden Services}
+%\subtitle{Tor-powered Distributed DNS for Tor Hidden Services}
+\runningtitle{The Onion Name System -- Tor-powered Distributed DNS for Tor Hidden Services}
+
+\begin{abstract} {
+Tor hidden services are anonymous servers of unknown location and ownership which can be accessed through any Tor-enabled web browser. They have gained popularity over the years, but since their introduction in 2002 still suffer from major usability challenges primarily due to their cryptographically-generated non-memorable addresses. \newline \hspace*{1em} In response to this difficulty, in this work we introduce the Onion Name System (OnioNS), a privacy-enhanced distributed resolution service. OnioNS allows Tor users to reference a hidden service by a meaningful globally-unique verifiable domain name chosen by the hidden service operator. We construct OnioNS as an optional backwards-compatible plugin for Tor, simplify our design and threat model by embedding OnioNS within the Tor network, and provide mechanisms for authenticated denial-of-existence with minimal networking costs. We also introduce a lottery-like system to reduce the threat of land rushes and domain squatting. Finally, we conduct performance analysis of our prototype and find that the Tor Browser can load a hidden service under a meaningful domain name in approximately YYY seconds above baseline.
 }
-
-\maketitle
-
-\begin{abstract}
-
-Tor hidden services are anonymous servers of unknown location and ownership which can be accessed through any Tor-enabled web browser. They have gained popularity over the years, but since their introduction in 2002 still suffer from major usability challenges primarily due to their cryptographically-generated non-memorable addresses.
-
-In response to this difficulty, in this work we introduce the Onion Name System (OnioNS), a privacy-enhanced distributed resolution service. OnioNS allows Tor users to reference a hidden service by a meaningful globally-unique verifiable domain name chosen by the hidden service operator. We construct OnioNS as an optional backwards-compatible plugin for Tor, simplify our design and threat model by embedding OnioNS within the Tor network, and provide mechanisms for authenticated denial-of-existence with minimal networking costs. We also introduce a lottery-like system to reduce the threat of land rushes and domain squatting. Finally, we conduct performance analysis of our prototype and find that the Tor Browser can load a hidden service under a meaningful domain name in approximately YYY seconds above baseline.
-
 \end{abstract}
+  
+%\keywords{keywords, keywords} %todo?
+%\classification[PACS]{}
+%\communicated{...}
+%\dedication{...}
+
+%todo
+\journalname{Proceedings on Privacy Enhancing Technologies}
+%\DOI{Editor to enter DOI}
+%\startpage{1}
+%\received{..}
+%\revised{..}
+%\accepted{..}
+
+\journalyear{2015}
+\journalvolume{2015}
+\journalissue{2}
+ 
+\maketitle
 
 \section{Introduction}
 
@@ -644,8 +662,6 @@ We illustrate the probabilities against discrete values of $ x $ and various Quo
 	\label{fig:quorumWeightedMajority}
 \end{figure}
 
-\newpage
-
 In contrast to Figure \ref{fig:quorumUnweightedMajority} which demonstrates that an unweighted selection leads to a high probability of compromise with small levels of collusion, Figure \ref{fig:quorumWeightedMajority} suggests that biasing Quorum selection by consensus weight provides a strong defence against large-scale Sybil attacks. Indeed, even when 60 percent of the low-end Quorum Candidates are malicious, most Quorum sizes produce negligible probabilities of compromise. We consider it reasonable to assume that low-end routers are under Eve's control; these routers are the cheapest and logistically easiest to operate. Our approach remains resistant to this attack: these routers will be included in the Quorum very infrequently because of their low consensus weight.
 
 Small Quorums are also more susceptible to node downtime or distributed denial-of-service (DDoS) attacks. Figure \ref{fig:quorumWeightedMajority} shows that the choices of $ L_{Q} = 31 $ is suboptimal; it is more easily compromised even with low levels of collusion. $ L_{Q} = 63 $ is more resistant, but not significantly more so. We therefore recommend $ L_{Q} \geq 127 $.
@@ -704,8 +720,6 @@ In the Record Generation protocol, we intentionally included the scrypt calculat
 \end{enumerate}
 
 % todo: calculate chances of Craig computing a correct record
-
-\newpage
 
 However, this ensures that Craig will with high probability compute more scrypt iterations than necessary; Craig cannot generate \emph{signature} and thus cannot compute if the hash is below the threshold. Moreover, the scrypt work incurs a cost onto Craig that must be compensated financially by Bob. Thus the Record Generation protocol always places a cost on Bob.
 
