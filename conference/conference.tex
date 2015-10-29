@@ -42,7 +42,7 @@
 \runningtitle{The Onion Name System -- Tor-powered Distributed DNS for Tor Hidden Services}
 
 \begin{abstract} {
-Tor hidden services are anonymous servers of unknown location and ownership which can be accessed through any Tor-enabled web browser. They have gained popularity over the years, but since their introduction in 2002 still suffer from major usability challenges primarily due to their cryptographically-generated non-memorable addresses. \newline \hspace*{1em} In response to this difficulty, in this work we introduce the Onion Name System (OnioNS), a privacy-enhanced distributed resolution service. OnioNS allows Tor users to reference a hidden service by a meaningful globally-unique verifiable domain name chosen by the hidden service operator. We construct OnioNS as an optional backwards-compatible plugin for Tor, simplify our design and threat model by embedding OnioNS within the Tor network, and provide mechanisms for authenticated denial-of-existence with minimal networking costs. We also introduce a lottery-like system to reduce the threat of land rushes and domain squatting. Finally, we conduct performance analysis of our prototype and find that the Tor Browser can load a hidden service under a meaningful domain name in approximately YYY seconds above baseline.
+Tor hidden services are anonymous servers of unknown location and ownership which can be accessed through any Tor-enabled web browser. They have gained popularity over the years, but since their introduction in 2002 still suffer from major usability challenges primarily due to their cryptographically-generated non-memorable addresses. \newline \hspace*{1em} In response to this difficulty, in this work we introduce the Onion Name System (OnioNS), a privacy-enhanced distributed resolution service. OnioNS allows Tor users to reference a hidden service by a meaningful globally-unique verifiable domain name chosen by the hidden service operator. We construct OnioNS as an optional backwards-compatible plugin for Tor, simplify our design and threat model by embedding OnioNS within the Tor network, and provide mechanisms for authenticated denial-of-existence with minimal networking costs. We also introduce a lottery-like system to reduce the threat of land rushes and domain squatting. Finally, we integrate our client software with the Tor Browser and conduct performance analysis of our prototype. %find that the Tor Browser can load a hidden service under a meaningful domain name in approximately YYY seconds above baseline.
 }
 \end{abstract}
   
@@ -179,14 +179,15 @@ Namecoin \cite{NamecoinHome} is an early fork of Bitcoin \cite{nakamoto2008bitco
 \section{Assumptions and Threat Model}
 \label{sec:threatModel}
 
-We assume that Tor circuits provides privacy and anonymity; if Alice constructs a three-hop Tor circuit to Bob with modern Tor cryptographic protocols and sends a message $ m $ to Bob, we assume that Bob can learn no more about Alice than the contents of $ m $. This implies that if $ m $ does not contain identifiable information, Alice is anonymous from Bob's perspective. This also implies an assumption on the security of cryptographic primitives and a lack of backdoors or analogous breaks in cryptographic libraries. The security of Tor circuits is also dependent on the honesty of directory authorities: we also assume that more than fifty percent of Tor directory authorities are at least semi-honest; they may wiretap but are not capable of violating protocols. The aforementioned assumptions are shared by the Tor network.
+We assume that Tor circuits provides privacy and anonymity; if Alice constructs a three-hop Tor circuit to Bob with modern Tor cryptographic protocols and sends a message $ m $ to Bob, we assume that Bob can learn no more about Alice than the contents of $ m $. This implies that if $ m $ does not contain identifiable information, Alice is anonymous from Bob's perspective. This also implies an assumption on the security of cryptographic primitives and a lack of backdoors or analogous breaks in cryptographic libraries. The security of Tor circuits is also dependent on the assignment of consensus weight; we assume that the majority of directory authorities are at least semi-honest and that consensus weight is an effective defence against Sybil attacks. The aforementioned assumptions are shared by the Tor network.
 
 We assume that Eve controls some percentage of dishonest colluding Tor routers as well as semi-honest routers, however this percentage is small enough to avoid violating our second assumption. We assume a fixed percentage of dishonest and semi-honest routers; namely that the percentage of routers under an Eve's control does not increase in response to the inclusion of OnionNS into Tor infrastructure. This assumption simplifies our threat model analysis but we consider it realistic because while Tor traffic is purposely secret as it travels through the network, we consider OnioNS information public so we don't consider the inclusion of OnioNS a motivating factor to Eve.
 
-% todo: this paragraph is now out-of-date
-Let $ R $ be the set of Tor routers with the Fast, Stable, and Running flags and let $ Q $ be an $ M $-sized set randomly chosen from $ R $ with selection probability $ P (Q_{i}) = \frac{Q_{i}(w)}{\sum_{j=0}^{\| R \|} R_{j}(w)} $ where $ Q_{i}(w) $ is $ Q_{i} $'s consensus weight as determined by Tor directory authorities. We then assume that $ Q $ is under the influence of zero or more adversaries and that largest subset of agreeing routers in $ Q $ are at least semi-honest.
+Let $ R $ be a set of Tor routers with the Fast, Stable, and Running flags and let $ \mathit{qc} \in R $ be the set of agreeing routers with the largest cumulative amount of consensus weight. If an $ M $-sized set $ Q $ is randomly chosen from $ \mathit{qc} $ with selection probability determined by the consensus weight of each member in $ \mathit{qc} $, then we assume that the largest subset of agreeing routers in $ Q $ are at least semi-honest.
 
-We assume no upper-bound on the computational capabilities of any adversary, with the exception that they are unable to compromise cryptographic primitives. However, we assume that the adversary has a fixed budget, namely that they have a quota on the memory and CPU hours that they can allocate against our system. We further assume that an adversary may try to gain control of authoritative OnioNS servers through a Sybil attack on the Tor network or that they may operate any of the non-authoritative name servers
+We assume no upper-bound on the computational capabilities of any adversary, with the exception that they are unable to compromise cryptographic primitives. However, we assume that the adversary has a fixed budget, namely that they have a quota on the memory and CPU hours that they can allocate against our system. We also assume that an adversary may run operate any of the non-authoritative name servers.
+
+% We further assume that an adversary may try to gain control of authoritative OnioNS servers through a Sybil attack on the Tor network or that they may 
 
 \subsection{Use Cases}
 \label{sec:useCases}
@@ -423,7 +424,7 @@ A Quorum node $ Q_{i,k} $ listens for tickets from hidden service operators. Whe
 
 \subsubsection{Lottery Management} % done
 
-In section \ref{sec:ticketGeneration} we describe a proof-of-work (PoW) protocol that acts as a barrier-of-entry. It is straightforward to design a system where a name is awarded after the completion of this PoW; however such a system is vulnerable to attacks by adversaries with strong computational capabilities who may quickly register many names, as we described in section \ref{sec:adversaryPowers}. In an attempt to resolve this problem, we introduce a lottery-like system, managed by Quorum nodes.
+In section \ref{sec:ticketGeneration} we describe a proof-of-work (PoW) protocol that acts as a barrier-of-entry. It is straightforward to design a system where a name is awarded after the completion of this PoW; however such a system is vulnerable to attacks by adversaries with strong computational capabilities who may quickly register many names, as we described in section \ref{sec:useCases}. In an attempt to resolve this problem, we introduce a lottery-like system, managed by Quorum nodes.
 
 The lottery starts at the formation of the Quorum. During the lottery, the Quorum accepts requests (or ``tickets'') for names for hidden services, creating a list $ T_{i} $. The lottery ends when $ Q_{i} $ is cycled to $ Q_{i + 1} $. At this time, each node in $ Q_{i} $ performs the following algorithm. Let Charlie $ \in Q_{i} $.
 
@@ -471,7 +472,7 @@ Bob can modify his registration by changing either his \emph{subdomains} or \emp
 
 %todo: analysis: non-winners will likely try again. Won't this impact the PoW-difficulty adjustment?
 	
-\subsubsection{Authenticated Denial-of-Existence} % todo
+\subsubsection{Authenticated Denial-of-Existence} % done
 \label{sec:authDenial}
 
 We described in section \ref{sec:authDenialIntro} that a malicious name server may forge a response or may falsely claim non-existence of a name. These are attack vectors that remain open by naming systems that do not provide authentication mechanisms. We use a Merkle tree \cite{merkle1988digital} to defend against these attacks with minimal networking costs. All mirrors, including Quorum nodes, perform this algorithm.
@@ -483,7 +484,7 @@ We described in section \ref{sec:authDenialIntro} that a malicious name server m
 	\item Charlie publishes the root hash of $ T $ in the consensus as described in section \ref{sec:qQualification}.
 \end{enumerate}
 
-We note that a sorted Merkle tree does not support dynamic record updates and must be rebuilt at each update. While similar data structures exist that support proof of existence and non-existence and allow efficient updates, such as a skip list \cite{goodrich2001implementation}, these structures are significantly more complicated. We consider it sufficient to use a Merkle tree as it is only rebuilt once per day in $ \mathcal{O}(n \dot \mathrm{log}(n)) $ time.
+We note that a sorted Merkle tree does not support dynamic record updates and must be rebuilt at each update. While similar data structures exist that support proof of existence and non-existence and allow efficient updates, such as a skip list \cite{goodrich2001implementation}, these structures are significantly more complicated. We consider it sufficient to use a Merkle tree as it is only rebuilt once per day in $ \mathcal{O}(n \log(n) $ time.
 
 %As the \mathit{name} field of each Record is globally unique, we may reference each Record by its \mathit{name}, which saves space. The Merkle tree also 
 
@@ -522,39 +523,7 @@ While Alice can verify the authenticity and uniqueness of $ r $ by synchronize a
 
 OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a hidden service address \emph{addr} to Charlie and receives back all Records that have \emph{addr} as either the owner or as a destination in their \emph{subdomain}. Alice may obtain additional verification on the results by issuing Domain Queries on the source .tor domains. We do not anticipate Onion Queries to have significant practical value, but they complete the symmetry of lookups and allow OnioNS domain names to have Forward-Confirmed Reverse DNS matches. We suggest caching destination hidden service addresses in a digital tree (trie) to accelerate this lookup; a trie turns the lookup from $ \mathcal{O}(n) $ to $ \mathcal{O}(1) $, while requiring $ \mathcal{O}(n) $ time and $ \mathcal{O}(n) $ space to pre-compute the cache.
 
-
-
-
-%In simple terms, the essential idea is that many HSs can buy a lottery ticket for permission to claim a name, but later only a fix number of them actually get this permission. I assume that each HS will only make one lottery ticket for itself, though I realize that in this type of lottery, it's advantageous to buy many tickets in an attempt the chances of winning. In my scheme this results in a more expensive lottery ticket, which primarily affects the person who bought many tickets, thus the system self-adjusts to defend against a resource-rich adversary.
-
-%In some more detail, let each HS create a ticket for permission to claim a name for itself. The ticket requires PoW to create but does not contain the desired name. The Quorum collects all the tickets and after some time compares the tickets to the latest shared randomness value. The closest Y applications are then allowed to claim a name, which they can then do. The key to the scheme is that nobody can know the shared randomness value in advance and that makes it a sort of lottery where Y winners are found once the random value is revealed. The system remembers the highest number of tickets received; if this number is exceeded the difficulty of the PoW increases proportionally, but the difficulty is never decreased. A well-resourced adversary might create many tickets in order to increase their chances, and while this might work once, in the next round it's harder to repeat the attack. This scheme also means that the system adjusts in response to an increase in average computational speed over time (often confused with Moore's Law).
-
-%To clarify, a ticket can be compared to the shared random value by counting the number of "1" bits in A & V, where A is a ticket and "&" is the bitwise AND operation. Quorum nodes then sort the tickets by this comparison and allow the top Y HSs to claim a name. I chose this over a simpler comparison scheme, such as the absolute value of A - V, because this latter formula is easily exploitable.
-
 % The idea here is that although everyone gets a proportionally-higher increase in PoW difficulty, it's acceptable by innocent parties (an extra 36 minutes is not that much) but the attacker now has to spend 48 hour of CPU (18 more hours) to get 30 tickets. If the attacker has a fixed budget for 30 hours of CPU time he'll be unable to make 30 tickets in lottery 3, but rather only 30/1.6=18. The difficulty never decreases, so if the number of tickets in the lottery is blinded from everyone except the Quorum, a point will be reached where the statistics are no longer in the attacker's favor, leading him to conclude that it's no longer worth it.
-
-% Finally, an attacker might want to create many tickets in order to register many names or to increase the chances of registering a single name. Although it's very hard to stop the former attack, my lottery system rate-limits registrations and makes the attack expensive and minimizes the damage. The latter attack can be prevented by having each ticket contain a blinded name (by hashing the name) which winners must reveal in order to claim the name. Because a hash is used, the reveal can be applied to all tickets and any duplicates can be discarded, then the lottery can be repeated until a unique set of winners is chosen. 
-
-
-%While the anonymous nature of hidden services makes it extremely difficult to distinguish 
-
-%It is not easy to design a system that is resistant to this 
-%
-%
-%land rushes and en-masse domain squatting by  (section \ref{sec:adversaryPowers}). 
-%
-%
-%We listed this attack in section \ref{sec:adversaryPowers} and as a counter-measure we introduce a lottery-like system. While a h
-%
-%While it is straightforward to design a system 
-%
-%The protocol described in In section \ref{sec:RecordGeneration} we describe a hidden service operator can claim a name for his hidden 
-%
-
-%
-%A \textbf{Page} contains $ \mathit{prevHash} $, set to $ \mathcal{H}(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{rand}) $ of some previous Page; $ \mathit{recordList} $, a \\ deterministically-sorted array list of Records; $ \mathit{rand} $, the output of $ \mathcal{G}(t) $ at the current time; $ \mathit{fingerprint} $, the Tor fingerprint of the router maintaining this Page; and $ \mathit{pageSig} $, the output of  $ S_{\mathit{ed}}(\mathcal{H}(\mathit{prevHash} \concat \mathit{recordList} \concat \mathit{rand}), e) $ where $ e $ is the router's private Ed25519 key.
-%
-%$ \mathit{prevHash} $ links Pages over time, forming an append-only public ledger known as a Pagechain. In contrast to existing cryptocurrencies such as Namecoin, we bound the Pagechain to a finite length, forcing hidden service operators to renew their domain periodically to avoid it being dropped from the network. In correspondence with our security assumptions, $ \mathit{prevHash} $ must reference a Page that is both valid and maintained by the largest number of Quorum members whom we assume are at least semi-honest, as illustrated in Figure \ref{fig:sideChains}. As $ \mathit{prevHash} $ does not include the router-specific $ \mathit{fingerprint} $ and $ \mathit{pageSig} $ fields, $ \mathit{prevHash} $ is equal across all Quorum members maintaining that Page.
 
 %\setlength{\belowcaptionskip}{-10pt}
 
@@ -564,14 +533,6 @@ OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a
 %
 %We propose the Onion Name System (OnioNS) as an abstraction layer to hidden service addresses and introduce ``.tor'' as a new pseudo-TLD for this purpose.
 %
-%forget signing the same page/database, signing the same Merkle root?
-%	include last Record's name + root sig in consensus
-%prop224
-%
-%% \cite{jacobs2014providing} was
-%
-%%$ P (Q_{i}) = \frac{Q_{i}(w)}{\sum_{j=0}^{\concat R \concat} R_{j}(w)} $
-%
 % First, Bob generates and self-signs a \emph{Record}, containing a meaningful second-level domain name and his public key $ \mathcal{P}_{B} $. Without loss of generality, let this be ``example.tor $ \rightarrow $ onions55e7yam27n.onion''. We introduce a proof-of-work scheme that requires Bob to expend computational and memory resources to claim ``example.tor''; the protocol allows Bob to claim a meaningful name in a distributed environment while remaining anonymous. Proof-of-work systems are noteworthy for their asymmetry: they require the issuer to spend effort to find an answer to a moderately hard computational problem, but once solved can be easily verified correct by any recipient. The requirement of proof-of-work fulfils three main purposes:
 %
 %\begin{enumerate}
@@ -580,16 +541,6 @@ OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a
 %	\item Increases the difficulty of domain squatting.
 %\end{enumerate}
 %
-%Second, Bob uses a Tor circuit to anonymously transmit his Record to an authoritative short-lived random subset of OnioNS servers, known as the Quorum, inside the Tor network. The Quorum archive Bob's Record in a sequential public ledger known as a Pagechain, of which each OnioNS node holds their own local copy. Bob's Record is received by all Quorum nodes and share signatures of their knowledge with each other, so they maintain a common database. Quorum nodes are not name servers, so let Charlie be a name server outside the Quorum and assume that Charlie stays synchronized with the Quorum.
-%
-%Third, Alice, uses a Tor circuit to anonymously ask Charlie for ``example.tor''. Alice receives Bob's Record, verifies its signature and proof-of-work, and uses $ \mathcal{P}_{B} $ to contact Bob via Tor's hidden service protocol. As Bob's Record is self-signed and contains $ \mathcal{P}_{B} $, Alice can verify the Record's authenticity relative to $ \mathcal{P}_{B} $. In this way, Alice does not have to resort to using ``onions55e7yam27n.onion'', rather that Bob can be successfully referenced by ``example.tor''. We illustrate the OnioNS overview in Figure \ref{fig:basicDesign}.
-
-
-
-%mention that consensus weight is tied to path selection
-
-
-
 
 \section{Security Analysis}
 \label{sec:Analysis}
