@@ -70,12 +70,13 @@
   publisher={Springer}
 }
 
-% http://www.hpl.hp.com/techreports/2005/HPL-2005-148.pdf
-@article{stiegler2005petname,
+
+@techreport{stiegler2005petname,
   title={Petname systems},
   author={Stiegler, Marc},
-  journal={HP Laboratories, Mobile and Media Systems Laboratory, Palo Alto, Tech. Rep. HPL-2005-148},
-  year={2005}
+  institution={Hewlett-Packard},
+  year={2005},
+  note="\url{http://www.hpl.hp.com/techreports/2005/HPL-2005-148.pdf}"
 }
 
 @incollection{bernstein2006curve25519,
@@ -138,10 +139,10 @@
 @misc{bernstein2009dnscurve,
   title={DNSCurve: Usable security for DNS},
   author={Bernstein, Daniel J},
-  year={2009}
+  year={2009},
+  howpublished="\url{http://dnscurve.org/}"
 }
 
-% http://persons.unik.no/josang/papers/FJSB2009-NordSec.pdf
 @incollection{ferdous2009security,
   title={Security Usability of Petname Systems},
   author={Ferdous, Md Sadek and J{\o}sang, Audun and Singh, Kuldeep and Borgaonkar, Ravishankar},
@@ -151,28 +152,33 @@
   publisher={Springer}
 }
 
-% http://www.sinic.name/docs/bachelor.pdf
-@article{nicolussi2011human,
+@mastersthesis{nicolussi2011human,
+  type={Bachelor Thesis},
   title={Human-readable Names for Tor Hidden Services},
   author={Nicolussi, Simon},
   year={2011},
-  publisher={Leopold–Franzens–Universitat Innsbruck, Institute for Computer Science}
+  school={Leopold–Franzens–Universitat Innsbruck, Institute for Computer Science},
+  note="\url{http://www.sinic.name/docs/bachelor.pdf}"
 }
 
-@incollection{bernstein2011high,
+@article{bernstein2012high,
   title={High-speed high-security signatures},
   author={Bernstein, Daniel J and Duif, Niels and Lange, Tanja and Schwabe, Peter and Yang, Bo-Yin},
-  booktitle={Cryptographic Hardware and Embedded Systems--CHES 2011},
-  pages={124--142},
-  year={2011},
+  journal={Journal of Cryptographic Engineering},
+  volume={2},
+  number={2},
+  pages={77--89},
+  year={2012},
   publisher={Springer}
 }
 
-@article{percival2012scrypt,
+@techreport{percival2012scrypt,
   title={The scrypt Password-Based Key Derivation Function},
   author={Percival, Colin and Josefsson, Simon},
+  month={September},
   year={2012},
-  publisher={Internet Engineering Task Force}
+  publisher={Internet Engineering Task Force},
+  note="\url{https://tools.ietf.org/html/draft-josefsson-scrypt-kdf-00}"
 }
 
 @article{goldberg2013anonymity,
@@ -186,10 +192,10 @@
   publisher={Springer}
 }
 
-@article{thomasmeasuring,
-  title={Measuring the Leakage of Onion at the Root},
+@techreport{thomasmeasuring,
+	title={Measuring the Leakage of Onion at the Root},
   author={Thomas, Matthew and Mohaisen, Aziz},
-  journal={In the Proceedings of the 12th Workshop on Privacy in the Electronic Society},
+  institution={Verisign Labs},
   year={2014}
 }
 
@@ -202,14 +208,6 @@
   organization={Springer}
 }
 
-@article{syversongenuine,
-  title={Genuine onion: Simple, Fast, Flexible, and Cheap Website Authentication},
-  author={Syverson, Paul and Boyce, Griffin},
-  publisher={U.S. Naval Research Laboratory},
-  year={2014}
-}
-
-% https://pdf.k0nsl.org/A_Censorship-Resistant_Privacy-Enhancing_Decentralized_Name_System.pdf
 @incollection{wachs2014censorship,
   title={A Censorship-Resistant, Privacy-Enhancing and Fully Decentralized Name System},
   author={Wachs, Matthias and Schanzenbach, Martin and Grothoff, Christian},
@@ -219,82 +217,73 @@
   publisher={Springer}
 }
 
-@article{jacobs2014providing,
-  title={Providing better confidentiality and authentication on the Internet using Namecoin and MinimaLT},
-  author={Jacobs, Frederic},
-  journal={arXiv preprint arXiv:1407.6453},
-  year={2014}
+@techreport{kadianakis2015extrapolating,
+	title={Extrapolating network totals from hidden-service statistics},
+  author={George Kadianakis and Karsten Loesing},
+	institution={The Tor Project},
+	pages={10},
+  year={2015}
+}
+
+@article{scaife2015oniondns,
+  title={{OnionDNS}: A Seizure-Resistant Top-Level Domain},
+  author={Scaife, Nolen and Carter, Henry and Traynor, Patrick},
+  journal={IEEE Conference on Communications and Network Security},
+  year={2015}
 }
 
 @misc{TorMetrics,
-  author = {The Tor Project},
-  title = {Tor Metrics},
-  howpublished = "\url{https://metrics.torproject.org/}",
-  year = {2015},
-  note = "accessed May 9, 2015"
-}
-
-@article{kadianakis2015extrapolating,
-  title={Extrapolating network totals from hidden-service statistics},
-  author={George Kadianakis and Karsten Loesing},
-  journal={Tor Technical Report},
-  pages={10},
-  year={2015},
-  publisher={The Tor Project}
+  author={The Tor Project},
+  title={Tor Metrics},
+  howpublished="\url{https://metrics.torproject.org/}",
+  year={2015}
 }
 
 @misc{NamecoinHome,
-  author = {Ryan Castellucci},
-  title = {Namecoin},
-  year = {2015},
-  howpublished={\url{https://namecoin.info/}}
+  author={Ryan Castellucci},
+  title={Namecoin},
+  year={2015},
+  howpublished="\url{https://namecoin.info/}"
 }
 
-% https://github.com/katmagic/Shallot
 @misc{KatmagicShallot,
-  author = {katmagic},
-  title = {Shallot},
-  howpublished = "\url{https://github.com/katmagic/Shallot}",
-  year = {2012},
-  note = "accessed May 9, 2015"
+  author={katmagic},
+  title={Shallot},
+  howpublished="\url{https://github.com/katmagic/Shallot}",
+  year={2012}
 }
 
 @misc{GouletCommitReveal,
-  author = {Goulet, David and Kadianakis, George},
-  title = {Random Number Generation During Tor Voting},
-  howpublished = "\url{https://gitweb.torproject.org/torspec.git/tree/proposals/250-commit-reveal-consensus.txt}",
-  year = {2015},
-  note = "accessed August 10, 2015"
+  author={Goulet, David and Kadianakis, George},
+  title={Random Number Generation During Tor Voting},
+  howpublished="\url{https://gitweb.torproject.org/torspec.git/tree/proposals/250-commit-reveal-consensus.txt}",
+  year={2015}
 }
 
 @misc{BotanLib,
-  author = {Botan Developers},
-  title = {Botan: Crypto and TLS for C++11},
-  howpublished = "\url{http://botan.randombit.net/}",
-  year = {2015},
-  note = "accessed August 10, 2015"
+  author={Botan Developers},
+  title={Botan: Crypto and TLS for C++11},
+  howpublished="\url{http://botan.randombit.net/}",
+  year={2015}
 }
 
 @misc{AsioLib,
-  author = {Christopher Kohlhoff},
-  title = {Boost Asio},
-  howpublished = "\url{http://www.boost.org/doc/libs/1_59_0/doc/html/boost_asio.html}",
-  year = {2015},
-  note = "accessed August 10, 2015"
+  author={Christopher Kohlhoff},
+  title={Boost Asio},
+  howpublished="\url{http://www.boost.org/doc/libs/1_59_0/doc/html/boost_asio.html}",
+  year={2015}
 }
 
 @misc{JsonCppLib,
-  author = {Christopher Dunn},
-  title = {JsonCpp -- C++ library for interacting with JSON},
-  howpublished = "\url{https://github.com/open-source-parsers/jsoncpp}",
-  year = {2015},
-  note = "accessed August 10, 2015"
+  author={Christopher Dunn},
+  title={JsonCpp -- C++ library for interacting with JSON},
+  howpublished="\url{https://github.com/open-source-parsers/jsoncpp}",
+  year ={2015}
 }
 
 @misc{RicochetGithub,
-  author = {John Brooks},
-  title = {Anonymous peer-to-peer instant messaging},
-  howpublished = "\url{https://github.com/ricochet-im/ricochet}",
-  year = {2015},
-  note = "accessed August 10, 2015"
+  author={John Brooks},
+  title={Anonymous peer-to-peer instant messaging},
+  howpublished="\url{https://github.com/ricochet-im/ricochet}",
+  year={2015}
 }
