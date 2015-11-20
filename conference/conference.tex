@@ -500,6 +500,7 @@ Assuming that all directory authorities reveal at 12:00 UTC, the design of \cite
 Merkle trees are widely used to achieve secure verification of very large data structures. They are an integral component in the ZFS file system, Bitcoin, \cite{nakamoto2008bitcoin} Apache's Cassandra NoSQL database, \cite{CassandraDatabase} and in many other applications. The security of the Merkle tree largely rests on the underlying hash function and its resistance to second pre-image attacks. During a domain query, clients fetch a subtree from mirrors, verify the integrity of the ticket or record against the leaf node, and recompute and verify the hashes of the subtree. The cryptographic strength of SHA-384 prevents mirrors from forging or falsely claiming non-existence of a ticket or record. Clients also check the subtree value against the Quorum's published hashes, preventing mirrors from forging the subtree or returning an obsolete subtree. This approach provides strong integrity guarantees for both existent and non-existent records even if the mirror is malicious.
 
 \subsection{Proof-of-Work} % done
+\label{sec:proofOfWork}
 
 The proof-of-work formula is satisfied when $ \mathrm{PoW}(S_{\mathit{RSA}}(c, r)) \leq d $, where $ c $ is static data, $ r $ is Bob's private key, and $ d $ is the work difficulty. We integrated the proof-of-work step into our registration protocols in order to create a barrier-of-entry, with the expectation that Bob run the scrypt function himself. However, our algorithm does not entirely prevent Bob from outsourcing this expensive computation to a secondary computational resource, Frank, whom we assume does not have $ r $. 
 
@@ -507,14 +508,14 @@ First, Bob repeatedly computes $ S_{\mathit{RSA}}(c, r) $, producing a large lis
 
 Alternative algorithms may more tightly couple the scrypt and RSA-PSS components and prevent Bob from outsourcing the proof-of-work step. However, we are unaware of any existing algorithm that combines proof-of-work with digital signatures. The next generation of Tor hidden services \cite{TorProp224} replaces RSA-1024 keys with Ed25519; in future work we will explore whether the Ed25519 deterministic signature scheme may be tightly combined with scrypt. 
 
-\subsection{Lottery} % todo
+\subsection{Lottery} % done
 \label{sec:lottery}
 
 Our lottery uses proof-of-work as a barrier-of-entry and awards names to a fixed number of hidden services to limit abuse. However, adversaries with significant computational capabilities may still register many tickets in order to improve their chances of winning the lottery. This may be done as part of a denial-of-registration attack or an en-mass registration strategy. By contrast, we anticipate that honest hidden services will only attempt to register a single name, therefore they may be assumed to be computationally weak. We considered this dichotomy during the design of our lottery and it must also be considered when selecting the initial parameters.
 
 Our lottery has a high degree of usability if it awards names a very large number of hidden services. Although this increases its vulnerability to the aforementioned attacks from computationally-powerful adversaries, we introduce several straightforward countermeasures. First, we may preload OnioNS with a large set of ``reserved'' names by constructing a mapping between popular hidden services and their self-declared name. Although these pre-existing hidden services must still generate a lottery ticket, they win names immediately. This both increases the usability of our system and removes a significant incentive for land rush attacks. Second, we demonstrate that a large number of winners and the lottery's difficultly-adjustment scheme provides a statistical defense against well-resourced adversaries.
 
-As described in section \ref{sec:lotteryManagement}, the difficulty of generating a ticket increases according to the formula $ d / \ceil{\frac{i}{M}} $, where $ d $ the base difficulty and $ i $ is the ticket's number. If the lottery has $ M $ winners and $ M $ innocent parties submit tickets, an adversary must then perform $ \frac{M [n  (n+1) - 1]}{2} $ amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. If Craig (a computationally-powerful adversary) is $ X $ times computationally stronger than the average capabilities of the innocent parties, then Equation \ref{eq:numCraigTickets} computes the number of lottery tickets that he may generate following the $ M $ innocent tickets. From this, the expected number of innocent parties to win the lottery is given by Equation \ref{eq:expInnWinners}.
+As described in section \ref{sec:lotteryManagement}, the difficulty of generating a ticket increases according to the formula $ d / \ceil{\frac{i}{M}} $, where $ d $ the base difficulty and $ i $ is the ticket's number. If the lottery has $ M $ winners and $ M $ innocent parties submit tickets, an adversary must then perform  $ \frac{M \cdot n \cdot  (n+1) - M}{2} $ amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. If Craig (a computationally-powerful adversary) is $ X $ times computationally stronger than the average capabilities of the innocent parties, then Equation \ref{eq:numCraigTickets} computes the number of lottery tickets that he may generate following the $ M $ innocent tickets. The expected number of innocent parties to win the lottery is given by Equation \ref{eq:expInnWinners}.
 
 \begin{equation}
 \frac{-3M + M \sqrt{9 + \frac{8X}{M}}}{2}
@@ -526,164 +527,44 @@ As described in section \ref{sec:lotteryManagement}, the difficulty of generatin
 \label{eq:expInnWinners}
 \end{equation}
 
-Equation \ref{eq:numCraigTickets} also implies that large values for $ M $ act as a defense against a denial-of-registration attack; with large $ M $ it is impractical for Craig to generate many tickets in order to increase the proof-of-work difficulty beyond the means of innocent parties. Craig could also carry out  denial-of-registration attack may als
-
-Furthermore, it provides a statistical defense against Craig 
-
-Large values of $ M $ 
-
-Craig may also generate many tickets in order to increase the increase the difficulty for innocent parties bey
-
-With sufficient computation, Craig may also a
-
-resistant to computational attack
-resistant to practical DoS
-easier for innocents
+Equation \ref{eq:numCraigTickets} also implies that large values for $ M $ act as a defense against a denial-of-registration attack; with large $ M $ it is impractical for Craig to generate many tickets in order to increase the proof-of-work difficulty beyond the means of innocent parties. Furthermore, while Craig could generate many tickets in order to statistically prevent others from winning the lottery, this also becomes impractical for large $ M $. If Equation \ref{eq:expInnWinners} is set to 1, then $ X $ is given by Equation \ref{eq:SpeedForDoR}.
 
 \begin{equation}
 \frac{M^{3} + M^{2}}{2} - M
+\label{eq:SpeedForDoR}
 \end{equation}
 
-We suggest 35
+However, large $ M $ also allows Craig to claim or squat many names. Bared on the above equations, we recommend awarding more than 21 names per lottery and suggest $ M = 35 $. We note that this value is adjustable and can be easily increased to meet a demonstrably higher demand from the Tor community.
 
-%\begin{center}
-%	\vspace{0mm}
-%	\begin{table}[htp]
-%		\hspace{5 mm}
-%  		\begin{tabular}{ | c | l | }
-%			7 & 189 \\ \hline
-%			14 & 1,456 \\ \hline
-%			21 & 4,830 \\ \hline
-%			28 & 11,340 \\ \hline
-%			35 & 22,015 \\ \hline
-%			42 & 37,884 \\ \hline
-%			49 & 59,976 \\ \hline
-%			56 & 89,320 \\ \hline
-%			63 & 126,945 \\ \hline
-%			70 & 173,880 \\
-%		\end{tabular}
-%		%\caption{Frequently used notation.}
-%	\end{table}
-%	\vspace{-10mm}
-%\end{center}
+We must also set $ d $, our initial proof-of-work difficulty for the first $ M $ tickets. Low values for $ d $ provides a low barrier-to-entry, increasing usability, but it also increases the lottery's vulnerability to attacks from Craig. We consider that Craig that has access to efficient cloud computation, such as Amazon EC2. A compute-optimized instance, such as c4.large in California, costs appropriately 1 USD for 11 CPU core-hours on an Intel Xeon E5-2666 processor. In the table below, we use \href{https://www.cpubenchmark.net/}{cpubenchmark.net} to convert this to the equivalent quantity of computation from a selection of Intel i7 CPUs, which are commonly found in high-end consumer-grade computers.
 
+\begin{center}
+	\vspace{0mm}
+	\begin{table}[htp]
+		\hspace{5 mm}
+  		\begin{tabular}{ | c | c | c | c | c | }
+  		\textbf{CPU} & \textbf{Speed} & \textbf{vCPUs} & \textbf{CPU Hours} & \textbf{Wall Time} \\ \hline
+  		c4.large & 24804 & 2 & 11 & 7.33 \\ \hline
+  		i7-5960X	 & 16002 & 16 & 17.05 & 1.42 \\ \hline
+  		i7-5930K & 13666 & 12 & 19.96 & 2.21 \\ \hline
+  		i7-4930K & 13074 & 12 & 20.87 & 2.32 \\ \hline
+  		i7-3930K & 12080 & 12 & 22.58 & 2.51 \\ \hline
+  		i7-4790K & 11228 & 8 & 24.30 & 4.05 \\ \hline
+  		i7-6700K & 11028 & 8 & 24.74 & 4.12 \\ \hline
+  		i7-4790 & 10034 & 8 & 27.19 & 4.53 \\ \hline
+  		i7-6700 & 9962 & 8 & 27.38 & 4.56 \\
+		\end{tabular}
+		\caption{The average time to complete the proof-of-work across various computational resources. These CPUs utilize hyper-threading; we assume that a single vCPU provides 75 percent of the power of a real core.}
+	\end{table}
+	\vspace{-10mm}
+\end{center}
 
-Our system has high usability with a low proof-of-work difficulty as innocent hidden services may easily enter the lottery. However, the low barrier-to-entry also increases the lottery's susceptibility to attacks from computationally-powerful adversaries. We suggest a difficulty level by balancing the expected computational capabilities of innocent parties against the expected economic costs of an adversary.
+% , which will be accepted as long as $ \mathit{rand} $ is updated to the $ \mathcal{G}(i) $
+We anticipate that innocent hidden services with high-end CPUs will take less than five or six hours to generate a lottery ticket. Even with lower-end CPUs, fewer utilized cores, or a higher difficulty, the proof-of-work algorithm will generate a valid ticket eventually. It may be possible to lower the difficulty if we can prevent innocent hidden services from outsourcing computation by more tightly coupling proof-of-work to a digital signature algorithm. We also suggest doubling the difficulty every two years so as to keep pace with a global average increase in computational power.
 
+With a sufficiently high value of $ M $ and significant proof-of-work difficulty, we believe that our lottery can resist a well-resourced adversary while simultaneously serving computationally-weak innocent parties.
 
-
-% what if names were awarded according to whoever had the most computation? ticket with the lowest number, perhaps?
-
-%Tset the proof-of-work difficulty for a lottery ticket 
-%
-%If the proof-of-work difficulty of our system is too high, it is too difficult for innocent individuals to enter our lottery. However, if 
-%
-%It is necessary to 
-%
-%Selecting the number of winners in our lottery requires balancing the demand from innocent requests for names against the threat of en-mass registrations by adversaries. If the number of winners is too low, it is too difficult for innocent HS operators to claim a name. On the other hand, too many winners allows computationally-powerful domain squatters to claim many names. Both scenarios negatively impact the usability of our system. 
-%
-%
-%
-%We propose to double the difficulty every two years in order to keep pace with advancements in computational speeds.
-%
-%too low: land rush, DoR
-%too high: too hard to enter
-%
-%
-%
-%
-% we demonstrate that a large number of winners allows the lottery's difficulty-adjustment scheme to provide a strong defense against well-resourced 
-%
-% we demonstrate in the next section that the lottery's difficulty-adjustment scheme provides a de
-%
-%%We select the number of winners in our lottery by balancing the demand from innocent requests for names against the threat of en-mass registrations by adversaries.
-%
-%We can maximize the usability of our lottery by awarding names to a very large number of hidden services, but this also increases its vulnerability to land rushes and other attacks from computationally-powerful adversaries. 
-%
-%We can maximize the usability of our system by awarding names to a large number of hidden services. However, this also increases 
-%
-%A large number of winners solves many problems! I want like 35, 42, 49, or 56 winners. 12*7 = 84, 
-%
-%84*D + 2*84*D, etc
-%
 %Selecting the number of winners in our lottery requires balancing the demand from innocent requests for names against the threat of en-mass registrations by adversaries. If the number of winners is too low, it is too difficult for innocent HS operators to claim a name. On the other hand, too many winners allows computationally-powerful domain squatters to claim many names. Both scenarios negatively impact the usability of our system. While it is difficult to accurately predict honest demand for our system, we can estimate it by examining the number of popular hidden services on the Tor network.
-%
-%Too low: hard to win the lottery
-%Too high: land rush, DoR
-%
-%\begin{center}
-%	\vspace{0mm}
-%	\begin{table}[htp]
-%		\hspace{5 mm}
-%  		\begin{tabular}{ | c | l | }
-%			7 & 189 \\ \hline
-%			14 & 1456 \\ \hline
-%			21 & 4830 \\ \hline
-%			28 & 11340 \\ \hline
-%			35 & 22015 \\ \hline
-%			42 & 37884 \\
-%		\end{tabular}
-%		%\caption{Frequently used notation.}
-%	\end{table}
-%	\vspace{-10mm}
-%\end{center}
-
-
-
-
-%The initial proof-of-work difficulty establishes a lower-bound on the barrier-to-entry.
-%
-%Too low: too easy to carry out many-to-many attack
-%Too high: too hard to enter lottery
-%
-%2 hours on i7
-%5 dollars worth of CPU?
-%
-% The initial proof-of-work difficulty establishes a lower-bound on the barrier-to-entry, which is proportionally increased in response to a DoS attack. Our scheme allows innocent HS operators to create a lottery ticket while preventing en-mass registrations 
-%
-%% it should be self-evident to set the maximum tickets to 1 initially
-%
-%The name lottery uses three primary parameters: $ d $, the proof-of-work difficulty; $ M $, the number of winners; and $ m $, the maximum number of tickets seen across any lottery. As $ d $ increases proportionally with $ m $, we consider it self-evident to initially set $ m $ to 1. However, setting $ d $ 
-%
-% and set $ d $ to some initial difficulty level.
-%
-%%As $ d $ increases proportionally in response to an increase in $ m $, we consider it self-evident to set $ m $ to 1 initially.
-%
-%The Quorum increases $ d $ We consider it self-evident to set $ m $ to 1 as this allows the system to quickly adjust to demand.
-%
-%
-%$ \max(\mathrm{size}(T)) $, representing the highest number of tickets received by any past Quorum. Then, if $ Q_{i} $ receives more tickets than this amount, $ Q_{i} $ tells $ Q_{i + 1} $ to increase the difficulty of ticket generation according to the formula $ \frac{\max(\mathrm{size}(T))}{\mathrm{size}(T_{i})} $
-%
-%
-%Our lottery has three initial parameters that must be set
-%
-%Initial PoW difficulty, initial count of tickets, number of winners (M)
-%
-%initial count of 1, initial PoW difficulty to some arbitrary number (1 hour on i7-2600k)
-%number of winners, 7
-%
-%We assume in section \ref{sec:threatModel} that all users, including any adversaries, have a quota on their CPU and memory resources. If a lottery ticket takes $ x $ hours for a 
-%
-%	\item \textbf{Create many hidden services to register many names.}
-%	\item \textbf{Create one hidden service to register many names.}
-%	\item \textbf{Create many hidden services to register a single name.}
-%	\item \textbf{Create one hidden service to register a single name.}
-%
-%
-%\begin{center}
-%	\vspace{0mm}
-%	\begin{table}[htp]
-%		\hspace{5 mm}
-%  		\begin{tabular}{ | c | l | }
-%			$ L_{Q} $ & size of the Quorum \\ \hline
-%			$ L_{T} $ & number of routers in the Tor network \\ \hline
-%			$ Q_{i} $ & the $ i $th Quorum where $ i $ is an iteration counter \\ \hline
-%			$ \Delta q $ & lifetime of the Quorum \\
-%		\end{tabular}
-%		\caption{Frequently used notation.}
-%	\end{table}
-%	\vspace{-10mm}
-%\end{center}
 
 % As $ T_{i} $ is initially blinded, it is difficult for the adversary to determine in advance if this threshold is reached. This scheme also means that the system adapts in response to an increase in global average computational speed as the barrier-of-entry becomes too low.
 
