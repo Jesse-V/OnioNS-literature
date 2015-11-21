@@ -30,13 +30,14 @@
   
 \begin{document}
 
-\author[1]{Jesse Victors}
-\author[2]{Ming Li}
-\author[3]{Xinwen Fu}
+\author[1]{Anonymized Submission}
+%\author[1]{Jesse Victors}
+%\author[2]{Ming Li}
+%\author[3]{Xinwen Fu}
 
-\affil[1]{Utah State University \newline \hspace{2em} E-mail: jvictors@jessevictors.com}
-\affil[2]{University of Arizona \newline \hspace{2em} E-mail: lim@email.arizona.edu}
-\affil[3]{University of Massachusetts Lowell \newline \hspace{2em} E-mail: xinwenfu@cs.uml.edu}
+%\affil[1]{Utah State University \newline \hspace{2em} E-mail: jvictors@jessevictors.com}
+%\affil[2]{University of Arizona \newline \hspace{2em} E-mail: lim@email.arizona.edu}
+%\affil[3]{University of Massachusetts Lowell \newline \hspace{2em} E-mail: xinwenfu@cs.uml.edu}
 
 \title{\huge The Onion Name System \large \\ Tor-powered Distributed DNS for Tor Hidden Services}
 %\subtitle{Tor-powered Distributed DNS for Tor Hidden Services}
@@ -69,7 +70,7 @@ Tor hidden services are anonymous servers of unknown location and ownership whic
 \section{Introduction}
 
 As the prevalence of the Internet and other communication has grown, so too has the development and usage of privacy-enhancing systems. These are protocols that provide privacy by obfuscating the link between a user's identity or location and their communications. Following a general distrust of unsecured Internet communications and in light of the 2013-current revelations by Edward Snowden of international Internet mass-surveillance, users have increasingly turned to these tools for their own protection.
-
+\newpage
 Tor \cite{dingledine2004tor} is a third-generation onion routing system and is the most popular low-latency anonymous communication network in use today. In Tor, users construct a layered encrypted communications circuit over three onion routers in order to mask their identity and location. As messages travel through the circuit, each onion router in turn decrypts their encryption layer, exposing their respective routing information. The first router is only exposed to the user's IP address, while the last router conducts Internet activities on the user's behalf. This provides end-to-end communication confidentiality of the sender.
 
 %The Tor network is managed by set of nine directory authorities, spread out across geographically diverse locations. Once per hour, the directory authorities vote on the state of the network and redistribute routing information to all relays and clients, forming a PKI and a information
@@ -243,11 +244,13 @@ The \textbf{Quorum} is authoritative subset of Quorum candidates who have active
 			$ L_{Q} $ & size of the Quorum \\ \hline
 			$ L_{T} $ & number of routers in the Tor network \\ \hline
 			$ Q_{i} $ & the $ i $th Quorum where $ i $ is an iteration counter \\ \hline
-			$ \Delta q $ & lifetime of the Quorum \\
+			$ \Delta q $ & lifetime of the Quorum \\ \hline
+			$ r(f) $ & if $ r $ is a record, the field $ f $ in $ r $ \\ \hline
+			$ \left\vert{S}\right\vert $ & the cardinality of the set $ S $ \\
 		\end{tabular}
 		\caption{Frequently used notation.}
 	\end{table}
-	\vspace{-10mm}
+	\vspace{-12mm}
 \end{center}
 
 % We also define frequently used notation. Let $ L_{Q} $ be the size of the Quorum, $ L_{T} $ the number of routers in the Tor network, and $ Q_{i} $ as the $ i $th Quorum where $ i $ is an iteration counter. Let the Quorum have have a lifetime of $ \Delta q $ days.
@@ -282,11 +285,11 @@ We now describe the protocols fundamental to OnioNS functionality.% These protoc
 
 We use $ \mathcal{G}(t) $ as a basis for several of our protocols, although we note that $ \mathcal{G}(t) $ has applications in Tor beyond OnioNS. One straightforward definition of $ \mathcal{G}(t) $ is the SHA-384 hash of Tor's consensus documents. If the Tor network is dynamic enough to provide significant amounts of entropy into the consensus documents, then $ \mathcal{G}(t) $ may be considered cryptographically secure. However, this assumption does not hold because current router descriptors are publicly available before the consensus documents are published, allowing $ \mathcal{G}(t) $ under this approach to be easily manipulated by a few malicious Tor routers. The attack becomes significantly easier in the final moments before the directory authorities publish the consensus.
 
-Instead, we suggest implementing $ \mathcal{G}(t) $ as the commitment scheme proposed by Goulet and Kadianakis \cite{GouletCommitReveal}. Their algorithm modifies the consensus voting protocol that is run once an hour by Tor directory authorities. In their scheme, at 00:00 UTC each authority commits a SHA-256 hash of a secret value $ x $ into each consensus vote across a 12 hour period. Then at 12:00 UTC, each directory authority reveals $ x $ across the next set of 12 consensuses. Then at 24:00 UTC, the revealed values are hashed together to create a single random number, which is then embedded in the consensus documents so that it is efficiently distributed to both Tor routers and clients. A different random number thus appears in the consensus every 24 hours. While this implementation of $ \mathcal{G}(t) $ defines $ t $ as an integer of 24 hours, $ \Delta q $ may be greater than 24 hours, as discussed in \ref{sec:qRotation}. Therefore, throughout the remainder of this document we will use the notation $ \mathcal{G}(i) $ to reference the $ \mathcal{G}(t \dot 24 \cdot \Delta q) $ that defines $ Q_{i} $.
+Instead, we suggest implementing $ \mathcal{G}(t) $ as the commitment scheme proposed by Goulet and Kadianakis \cite{GouletCommitReveal}. Their algorithm modifies the consensus voting protocol that is run once an hour by Tor directory authorities. In their scheme, at 00:00 UTC each authority commits a SHA-256 hash of a secret value $ v $ into each consensus vote across a 12 hour period. Then at 12:00 UTC, each directory authority reveals $ v $ across the next set of 12 consensuses. Then at 24:00 UTC, the revealed values are hashed together to create a single random number, which is then embedded in the consensus documents so that it is efficiently distributed to both Tor routers and clients. A different random number thus appears in the consensus every 24 hours. While this implementation of $ \mathcal{G}(t) $ defines $ t $ as an integer of 24 hours, $ \Delta q $ may be greater than 24 hours, as discussed in \ref{sec:qRotation}. Therefore, throughout the remainder of this document we will use the notation $ \mathcal{G}(i) $ to reference the $ \mathcal{G}(t \dot 24 \cdot \Delta q) $ that defines $ Q_{i} $.
 
 %todo: need image here to explain the cycle and Quorum lifetime
 
-The two time boundaries in this implementation of $ \mathcal{G}(t) $ trigger events within our system. The publication of $ \mathcal{G}(i) $ at midnight defines the selection of the next Quorum, causes all mirrors to publish the state of their database, marks the beginning of the next lottery, and determines the winners of the previous lottery. The first reveal at 12:00 UTC ends the lottery and contains the pool of Quorum candidates. We clarify our distinction of these boundaries in section \ref{sec:RandGeneration}. 
+The two time boundaries in this implementation of $ \mathcal{G}(t) $ trigger events within our system. The publication of $ \mathcal{G}(i) $ at midnight defines the selection of the next Quorum, causes all mirrors to publish the state of their database, marks the beginning of the next lottery, and determines the winners of the previous lottery. The first reveal at 12:00 UTC ends the lottery and contains the pool of Quorum candidates. We clarify our distinction of these boundaries in section \ref{sec:GlobalRand}. 
 
 % todo: verify that these timings are reflected in the below protocols
 
@@ -296,13 +299,13 @@ The two time boundaries in this implementation of $ \mathcal{G}(t) $ trigger eve
 We described in section \ref{sec:authDenialIntro} that a malicious name server may forge a response or may falsely claim non-existence of a name. These are attack vectors that remain open by naming systems that do not provide authentication mechanisms. We use a Merkle tree \cite{merkle1988digital} to defend against these attacks with minimal networking costs. This tree is a fundamental authentication mechanism for both existing and non-existing names. All mirrors, including Quorum nodes, perform this algorithm. The tree's root hash is then checked by clients during other protocols.
 
 \begin{enumerate}
-	\item Charlie fills an array list $ l $ with the $ r_{i}(\mathit{name}) \concat \mathcal{H}(r_{i}) $ for each record $ r_{i} $ received from hidden services.
-	\item Charlie sorts \emph{arr} by the $ \mathit{name} $ field.
-	\item Charlie constructs a Merkle tree $ T $ from $ l $.
+	\item Charlie fills an array list $ S $ with the $ r_{i}(\mathit{name}) \concat \mathcal{H}(r_{i}) $ for each record $ r_{i} $ received from hidden services.
+	\item Charlie sorts $ S $ by the $ \mathit{name} $ field.
+	\item Charlie constructs a Merkle tree $ T $ from $ S $.
 	\item Charlie publishes the root hash of $ T $ in the consensus as described in section \ref{sec:qQualification}.
 \end{enumerate}
 
-We note that a sorted Merkle tree does not support dynamic record updates and must be rebuilt at each update. While similar data structures exist that support proof of existence and non-existence and allow efficient updates, such as a skip list \cite{goodrich2001implementation}, these structures are significantly more complicated. We consider it sufficient to use a Merkle tree as it is only rebuilt once per day in $ \mathcal{O}(n \log(n) $ time.
+We note that a sorted Merkle tree does not support dynamic record updates and must be rebuilt at each update. While other data structures exist that support proof of existence and non-existence and allow efficient updates, such as a skip list \cite{goodrich2001implementation}, these structures are significantly more complicated. We consider it sufficient to use a Merkle tree as the tree is only rebuilt once per day in $ \mathcal{O}(n \log(n) $ time.
 
 %As the \mathit{name} field of each Record is globally unique, we may reference each Record by its \mathit{name}, which saves space. The Merkle tree also 
 
@@ -327,11 +330,16 @@ Tor provides a mechanism for demonstrating the latter requirement; Quorum candid
 Mirrors and Tor clients can check the aforementioned qualifications to locally derive the current or any previous Quorum in $ \mathcal{O}(L_{T}) $ time locally without performing any network queries. Without loss of generality, let a client Alice run this algorithm. Alice must download consensus documents from some source, however these documents are timestamped and signed by Tor directory authorities and thus may be retroactively authenticated regardless of where they are archived.
 
 \begin{enumerate}
-	\item Alice obtains and validates two consensus documents: $ \mathit{cd}_{a} $, which is published at 00:00 UTC and contains $ \mathcal{G}(i) $; and $ \mathit{cd}_{b} $, which is the document published 12 hours prior to $ \mathit{cd}_{a} $. 
-	\item Alice constructs a list $ l $ from $ \mathit{cd}_{b} $ of Quorum candidates that have the Fast, Stable, and Running flags.
-	\item For each group $ g_{1} .. g_{k} \in l $ that publishes an identical root hash, Alice computes $ s_{n} = \sum_{j=0}^{k} l_{j}(w) $, where $ 1 \leq n \leq k $ and $ l_{j}(w) $ is $ l_{j} $'s consensus weight as determined by Tor directory authorities. The Quorum candidates, $ \mathit{qc} $, is the group with the largest value of $ s_{n} $.
-	\item Alice uses $ \mathcal{R}(\mathcal{G}(i)) $ to select $ \min(\mathrm{size}(\mathit{qc}), L_{Q}) $ Quorum nodes from $ \mathit{qc} $ with selection probability $ P(Q_{i}) = \frac{Q_{j}(w)}{s_{n}} $.
+	\item Alice obtains and validates two consensus documents: $ C_{a} $, which is published at 00:00 UTC and contains $ \mathcal{G}(i) $; and $ C_{b} $, which is the document published 12 hours prior to $ C_{a} $. 
+	\item Alice constructs a list $ S $ from $ C_{b} $ of Quorum candidates that have the Fast, Stable, and Running flags.
+	\item For each group $ g \in S $ that publishes an identical root hash, Alice computes $ s_{g} = \sum_{j=0}^{\left\vert{g}\right\vert} w_{g}(j) $ where $ w_{g}(j) $ is the consensus weight of Tor router $ j $ in group $ g $. The Quorum candidates, $ \mathit{qc} $, is the group with the largest value of $ s_{g} $.
+	\item Alice uses $ \mathcal{R}(\mathcal{G}(i)) $ to select $ \min(\mathrm{size}(\mathit{qc}), L_{Q}) $ Quorum nodes from $ \mathit{qc} $ with the probability of selecting router $ x $ determined by Equation \ref{eq:qSelection}.
 \end{enumerate}
+
+\begin{equation}
+P(x) = \frac{w_{\mathit{qc}}(x)}{s_{\mathit{qc}}}
+\label{eq:qSelection}
+\end{equation}
 
 \subsubsection{Database Selection}
 
@@ -339,12 +347,12 @@ Database updates are usually done in near real-time in a peer-to-peer fashion. A
 
 % todo: enough detail here?
 \begin{enumerate}
-	\item Charlie asks each Quorum node for $ \mathcal{H}(\mathit{database}_{ephemeral}) $ and $ \mathcal{H}(\mathit{database}_{main}) $.
-	\item Charlie finds the largest group of Quorum nodes that return the same hashes.
-	\item Charlie downloads the ephemeral and main databases from any of these nodes.
-	\item Charlie verifies that $ \mathcal{H}(\mathit{database}_{ephemeral}) $ and $ \mathcal{H}(\mathit{database}_{main}) $ match the group's hashes.
-	\item Charlie verifies the integrity of all records in both databases.
-	\item Charlie merges the downloaded databases into his local databases.
+	\item Charlie asks each Quorum node for $ \mathcal{H}(\mathit{db}_{e}) $ and $ \mathcal{H}(\mathit{db}_{m}) $, where $ \mathit{db}_{e} $ and $ \mathit{db}_{m} $ is the node's ephemeral and main databases, respectively.
+	\item Charlie finds the largest group, $ g $, of Quorum nodes that return the same hashes.
+	\item Charlie downloads $ \mathit{db}_{e} $ and $ \mathit{db}_{m} $ from any node in $ g $.
+	%\item Charlie verifies that $ \mathcal{H}(\mathit{db}_{e}) $ and $ \mathcal{H}(\mathit{db}_{m}) $ match the $ g $'s hashes.
+	\item Charlie verifies the integrity of all records.
+	\item Charlie merges and $ \mathit{db}_{e} $ and $ \mathit{db}_{m} $ into his locally-stored $ \mathit{db}_{e} $ and $ \mathit{db}_{m} $.
 \end{enumerate}
 
 Quorum nodes that were temporarily offline conduct the same algorithm, but may also ask other Quorum nodes to replay new tickets so that they may update that database too. Non-Quorum mirrors subscribe to Quorum nodes according to the same algorithm.
@@ -366,7 +374,7 @@ A hidden service operator, Bob, may enter into the OnioNS lottery by generating 
 	\item Bob saves his RSA public key in \emph{pubHSKey}.
 \end{enumerate}
 
-Bob's ticket is valid when $ \mathrm{PoW}(\mathit{signature}) \leq T $ where \emph{T} is a constant threshold. Each iteration of $ \mathrm{PoW}(\mathit{signature}) $ results in a different and one-way output because EMSA-PSS (EMSA4) is a probabilistic digital signature scheme. Bob must repeatedly resign and recompute scrypt until the formula is satisfied. Once this is the case, Bob sends his ticket to all Quorum nodes.
+Bob's ticket is valid when $ \mathrm{PoW}(\mathit{signature}) \leq t_{d} $ where $ t_{d} $ is a difficulty threshold set by Quorum nodes. Each iteration of $ \mathrm{PoW}(\mathit{signature}) $ results in a different and one-way output because $ S_{\mathit{RSA}}(m, r) $ is a probabilistic signature scheme. Bob must repeatedly resign and recompute scrypt until the formula is satisfied. Once this is the case, Bob sends his ticket to all Quorum nodes.
 
 \subsubsection{Ticket Processing}
 
@@ -390,17 +398,13 @@ The lottery starts at the formation of the Quorum. During the lottery, the Quoru
 
 \begin{enumerate}
 	\item Charlie publishes $ T_{i} $ to all subscribers.
-	\item Charlie uses $ \mathcal{R}(\mathcal{G}(i + 1)) $ to select an $ M $-sized list of winners, $ W_{i} $, from $ T_{i} $. 
+	\item Charlie uses $ \mathcal{R}(\mathcal{G}(i + 1)) $ to select a list of winners, $ W_{i} $, from $ T_{i} $. 
 	\item Charlie merges $ W_{i} $ into his main database, letting them receive names.
 \end{enumerate}
 
 All mirrors or other parties may verify $ W_{i} $ and update their main database accordingly through the same protocol because $ T_{i} $ is now public. As this algorithm occurs at 00:00 UTC, mirrors then update their Merkle root hash per the protocol described in section \ref{sec:qQualification}.
 
-In order to defend against the one-to-many and many-to-one attacks described in section \ref{sec:useCases}, each Quorum node only accepts the first ticket per hidden service and the first ticket per name. We provide a defense to the many-to-many attack by setting the proof-of-work threshold for each ticket according to the formula $ d / \ceil{\frac{i}{M}} $, where $ d $ the base difficulty and $ i $ is the ticket's number.
-
-% decreasing $ d $ (increasing the difficulty) according to the formula $ d_{2} \ceil{\frac{M}{i}} $
-
-%A many-to-many (either ``land rush'' or denial-of-registration) attack primarily increases the chances of the adversary winning names. However, our countermeasure is straightforward. First, the Quorum remembers a value $ \max(\mathrm{size}(T)) $, representing the highest number of tickets received by any past Quorum. Then, if $ Q_{i} $ receives more tickets than this amount, $ Q_{i} $ tells $ Q_{i + 1} $ to increase the difficulty of ticket generation according to the formula $ \frac{\max(\mathrm{size}(T))}{\mathrm{size}(T_{i})} $. The increase in ticket difficulty reduces the impact of the attack in the next lottery under our assumptions, as we detail in section \ref{sec:lotteryWinners}.
+In order to defend against the one-to-many and many-to-one attacks described in section \ref{sec:useCases}, each Quorum node only accepts the first ticket per hidden service and the first ticket per name. We provide a defense to the many-to-many attack by setting the proof-of-work threshold $ t_{d} $ according to the formula $ d_{b} / \ceil{\frac{j}{\left\vert{W_{i}}\right\vert}} $, where $ d_{b} $ is the base difficulty and and $ j $ is the ticket's index, $ 1 \leq i \leq \left\vert{W_{i}}\right\vert $.
 
 %Quorum ends when G(t+1) is actually published. 
 %
@@ -486,6 +490,7 @@ OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a
 In this section, we analyse the security of the Onion Name System with regard to our security goals and expected threat model. 
 
 \subsection{Global Randomness} % done
+\label{sec:GlobalRand}
 
 We implement $ \mathcal{G}(t) $ using \cite{GouletCommitReveal}. Commitment protocols have been studied in other works \cite{rivest1999unconditionally, naor1990bit} and are well understood. If all parties are at least semi-honest then the commitment protocols generally display correctness, privacy, and binding. However, if some participants are malicious, they demonstrate known weaknesses. Namely, while reveals must demonstrably match commits, each participant may choose to reveal or not. If they do not reveal, their value is lost and the protocol produces a different output. If Mallory controls $ b $ participants, she can make this choice with each participant in turn, allowing $ 2^{b} $ different outcomes.
 
@@ -502,9 +507,9 @@ Merkle trees are widely used to achieve secure verification of very large data s
 \subsection{Proof-of-Work} % done
 \label{sec:proofOfWork}
 
-The proof-of-work formula is satisfied when $ \mathrm{PoW}(S_{\mathit{RSA}}(c, r)) \leq d $, where $ c $ is static data, $ r $ is Bob's private key, and $ d $ is the work difficulty. We integrated the proof-of-work step into our registration protocols in order to create a barrier-of-entry, with the expectation that Bob run the scrypt function himself. However, our algorithm does not entirely prevent Bob from outsourcing this expensive computation to a secondary computational resource, Frank, whom we assume does not have $ r $. 
+The proof-of-work formula is satisfied when $ \mathrm{PoW}(S_{\mathit{RSA}}(c, r)) \leq t_{d} $, where $ c $ is static data. We integrated the proof-of-work step into our registration protocols in order to create a barrier-of-entry, with the expectation that Bob run the scrypt function himself. However, our algorithm does not entirely prevent Bob from outsourcing this expensive computation to a secondary computational resource, Frank, whom we assume does not have the private key $ r $. 
 
-First, Bob repeatedly computes $ S_{\mathit{RSA}}(c, r) $, producing a large list of digital signatures. Frank then tests $ \mathrm{PoW}(x) \leq d $ for each digital signature $ x $ until the formula is satisfied. Bob then sets the ticket's $ \mathit{signature} $ field to this $ x $ value, producing a valid ticket. Bob can minimize the size of his precomputed list by sending each signature individually to Frank for testing. However, as scrypt is an purposely computationally-expensive function, this still incurs a cost upon Frank that must be financially compensated by Bob. Thus, the algorithm always places a cost to Bob.
+First, Bob repeatedly computes $ S_{\mathit{RSA}}(c, r) $, producing a large list of digital signatures. Frank then tests $ \mathrm{PoW}(x) \leq t_{d} $ for each digital signature $ x $ until the formula is satisfied. Bob then sets the ticket's $ \mathit{signature} $ field to this $ x $ value, producing a valid ticket. Bob can minimize the size of his precomputed list by sending each signature individually to Frank for testing. However, as scrypt is an purposely computationally-expensive function, this still incurs a cost upon Frank that must be financially compensated by Bob. Thus, the algorithm always places a cost to Bob.
 
 Alternative algorithms may more tightly couple the scrypt and RSA-PSS components and prevent Bob from outsourcing the proof-of-work step. However, we are unaware of any existing algorithm that combines proof-of-work with digital signatures. The next generation of Tor hidden services \cite{TorProp224} replaces RSA-1024 keys with Ed25519; in future work we will explore whether the Ed25519 deterministic signature scheme may be tightly combined with scrypt. 
 
@@ -514,6 +519,8 @@ Alternative algorithms may more tightly couple the scrypt and RSA-PSS components
 Our lottery uses proof-of-work as a barrier-of-entry and awards names to a fixed number of hidden services to limit abuse. However, adversaries with significant computational capabilities may still register many tickets in order to improve their chances of winning the lottery. This may be done as part of a denial-of-registration attack or an en-mass registration strategy. By contrast, we anticipate that honest hidden services will only attempt to register a single name, therefore they may be assumed to be computationally weak. We considered this dichotomy during the design of our lottery and it must also be considered when selecting the initial parameters.
 
 Our lottery has a high degree of usability if it awards names a very large number of hidden services. Although this increases its vulnerability to the aforementioned attacks from computationally-powerful adversaries, we introduce several straightforward countermeasures. First, we may preload OnioNS with a large set of ``reserved'' names by constructing a mapping between popular hidden services and their self-declared name. Although these pre-existing hidden services must still generate a lottery ticket, they win names immediately. This both increases the usability of our system and removes a significant incentive for land rush attacks. Second, we demonstrate that a large number of winners and the lottery's difficultly-adjustment scheme provides a statistical defense against well-resourced adversaries.
+
+% $ d_{b} / \ceil{\frac{j}{\left\vert{W_{i}}\right\vert}} $, where $ d_{b} $ is the base difficulty, $ \left\vert{W_{i}}\right\vert $ is the cardinality of $ W_{i} $, and $ j $ is the ticket's index, $ 1 \leq i \leq \left\vert{W_{i}}\right\vert $.
 
 As described in section \ref{sec:lotteryManagement}, the difficulty of generating a ticket increases according to the formula $ d / \ceil{\frac{i}{M}} $, where $ d $ the base difficulty and $ i $ is the ticket's number. If the lottery has $ M $ winners and $ M $ innocent parties submit tickets, an adversary must then perform  $ \frac{M \cdot n \cdot  (n+1) - M}{2} $ amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. If Craig (a computationally-powerful adversary) is $ X $ times computationally stronger than the average capabilities of the innocent parties, then Equation \ref{eq:numCraigTickets} computes the number of lottery tickets that he may generate following the $ M $ innocent tickets. The expected number of innocent parties to win the lottery is given by Equation \ref{eq:expInnWinners}.
 
@@ -656,6 +663,8 @@ We achieve another primary usability benefit by introducing an automatic naming 
 
 \subsection{Discussions} % next
 
+THIS NEEDS WORK
+
 In this section we further discuss and compare OnioNS with related works. 
 
 GNS and Namecoin
@@ -768,11 +777,16 @@ We would like to thank Roger Dingledine, George Kadianakis, Yawning Angel, and N
 %%\end{tabular}
 %%\end{table}
 
+% https://en.wikibooks.org/wiki/LaTeX/Bibliography_Management#Bibliography_styles
+\bibliographystyle{amsplain} 
+\bibliography{citations}
+
 \section{Appendix}
 
 %In this section we statistically analyse the Tor network and provide recommendations for the size and rotation rate of the Quorum.
 
 \subsection{Quorum Size} % nearly done
+\label{sec:qSize}
 
 In section \ref{sec:threatModel}, we assume that an attacker, Mallory, controls some fixed $ f_{E} $ fraction of routers on the Tor network. Quorum selection may be considered as an $ L_{Q} $-sized random sample taken from an $ L_{T} $-sized population without replacement, where the population contains $ L_{T} \cdot f_{E} $ entities that we assume are compromised and colluding. Then the probability that Mallory controls $ L_{E} $ Quorum nodes is given by the hypergeometric distribution, whose probability mass function is shown in Equation \ref{eq:hypergeoPMF}. Mallory controls the Quorum if either $ > \frac{L_{Q} - L_{E}}{2} $ honest Quorum nodes disagree or if $ L_{E} > \frac{L_{Q}}{2} $. The former scenario is difficult to model theoretically or in simulation, but the probability of the latter may be calculated. If all Quorum nodes are selected with equal probability, then $ \mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) $ is given by the $p$-value of the hypergeometric test for over-representation, expressed in Equation \ref{eq:compromiseProb}.
 
@@ -849,6 +863,7 @@ In contrast to Figure \ref{fig:quorumUnweightedMajority} which demonstrates that
 Small Quorums are also more susceptible to node downtime or denial-of-service attacks. Figure \ref{fig:quorumWeightedMajority} shows that the choices of $ L_{Q} = 31 $ is suboptimal; it is more easily compromised even with low levels of collusion. $ L_{Q} = 63 $ is more resistant, but not significantly more so. We therefore recommend $ L_{Q} \geq 127 $.
 
 \subsection{Quorum Rotation} % done
+\label{sec:qRotation}
 
 In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not increase in response to the inclusion of OnioNS on the Tor network. If we also assume that $ L_{T} $ is fixed, then we can examine the impact of choices for $ \Delta q $ and calculate the probability of Mallory compromising any Quorum over a period of time $ t $. Mallory's cumulative chances of compromising any Quorum is given by $ 1 - (1 - f_{c})^{\frac{t}{\Delta q}} $ where $ f_{c} $ is Mallory's chances of compromising a single Quorum. We estimate this over 10 years in Figure \ref{fig:cumulativeProbability}.
 
@@ -863,6 +878,8 @@ In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not
 Figure \ref{fig:cumulativeProbability} suggests that although larger values of $ \Delta q $ positively impact security, the choice of $ L_{Q} $ is more significant. Furthermore, even "Stable" routers in the Tor network may be too unstable for very slow rotation rates, and small values for $ \Delta q $ also reduces the disruption timeline for a malicious Quorum. Therefore, based on Figure \ref{fig:cumulativeProbability}, we further reiterate our recommendation of $ L_{Q} \geq 127 $ and suggest $ \Delta q = 7 $. Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} $ and $ \Delta q $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to specific Quorum-level attacks.
 
 \subsection{Derivation of Lottery Analysis Equations} % incomplete
+
+THIS IS INCOMPLETE
 
 In section \ref{sec:lottery}, we show that our lottery can withstand an adversary who is $ m $ times more computationally powerful than baseline. Namely, if $ n $ innocent parties first generate $ n $ tickets, an adversary of strength $ m $ can generate $ x $ tickets by
 
@@ -891,10 +908,6 @@ Gives the number of malicious tickets. Then the number of innocent winners is gi
 \begin{equation}
 \frac{n^{2}}{n + \frac{-3n + n \sqrt{9 + \frac{8m}{n}}}{2}} = \frac{2n}{-1 + \sqrt{9 + \frac{8m}{n}}}
 \end{equation}
-
-% https://en.wikibooks.org/wiki/LaTeX/Bibliography_Management#Bibliography_styles
-\bibliographystyle{amsplain} 
-\bibliography{citations}
 
 % that's all folks
 \end{document}
