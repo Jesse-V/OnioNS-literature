@@ -27,6 +27,7 @@
 \DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
 
 \newcommand*\concat{\mathbin{\|}}
+\newcommand*\nWinners{\left\vert{W_{i}}\right\vert}
   
 \begin{document}
 
@@ -170,7 +171,7 @@ Vanity key generators (e.g. Shallot \cite{KatmagicShallot}) attempt to find by b
 
 The Internet DNS is already well established as a fundamental abstraction layer for Internet routing. However, despite its widespread use and extreme popularity, the Internet DNS suffers from several significant shortcomings and fundamental security issues that make it inappropriate for use by Tor hidden services. Generally speaking, the Internet DNS by default does not use any cryptographic primitives. DNSSEC is primarily designed to prevent forgeries and DNS cache poisoning from intermediary name servers and it does not provide any degree of query privacy \cite{wachs2014censorship}. Additional extensions and protocols such as DNSCurve \cite{bernstein2009dnscurve} have been proposed, but DNSSEC and DNSCurve have not yet seen widespread full deployment across the Internet. Cachin and Samar \cite{cachin2004secure} extended the Internet DNS and decreased the attack potential for authoritative name servers via threshold cryptography, but the lack of default security in the Internet DNS and the logistical difficulty in globally implementing their work prevents us from using their system for hidden services.
 
-OnionDNS \cite{scaife2015oniondns} is a seizure-resistant alternative resolution service for the Internet. OnionDNS is based on DNS and uses unmodified BIND client software but anonymizes the root server by hosting it as a hidden service. While OnionDNS is highly usable and provides DNSSEC and other authentication mechanisms, the system is centralized by a single root server and thus highly vulnerable if the root is malicious or is compromised.
+OnionDNS \cite{scaife2015oniondns} is a seizure-resistant alternative resolution service for the Internet. OnionDNS is based on DNS and uses unmodified BIND client software but anonymizes the root server by hosting it as a hidden service. While OnionDNS is highly usable and provides DNSSEC and other authentication mechanisms, the system is centralized by a single root server and thus highly vulnerable if the root is malicious or is compromised. OnionDNS and OnioNS were named independently and readers should take care to not confuse the two works.
 
 The GNU Name System \cite{wachs2014censorship} (GNS) is a decentralized alternative DNS. GNS distributes names across a hierarchical system of zones constructed into directed graphs. Each user manages their own zone and distributes zone access peer-to-peer within social circles. However, GNS does not guarantee that names are \emph{globally} unique. Furthermore, the selection of a trustworthy zone to use would be a significant challenge for using GNS for Tor hidden services and such a selection no longer makes the system distributed. Awerbuch and Scheideler, \cite{awerbuch2004group} constructed a distributed peer-to-peer naming system, but like GNS, made no guarantee that domain names would be globally unique.
 
@@ -192,9 +193,6 @@ We assume that an active attacker, Mallory, controls some percentage of dishones
 % Finally, we assume that all participants in our system -- innocent hidden services as well as adversaries -- operate under some fixed budget, namely that they have an economical or time quota on the memory and CPU resources that they can allocate against our system. We also assume that an adversary may run operate any of the non-authoritative name servers.
 
 % We further assume that an adversary may try to gain control of authoritative OnioNS servers through a Sybil attack on the Tor network or that they may 
-
-\subsection{Use Cases}
-\label{sec:useCases}
 
 As hidden services require no more than a configured Tor client and a socket listener and are thus cheap to create, we anticipate that actors in our system will perform any of the following use cases:
 
@@ -333,13 +331,11 @@ Mirrors and Tor clients can check the aforementioned qualifications to locally d
 	\item Alice obtains and validates two consensus documents: $ C_{a} $, which is published at 00:00 UTC and contains $ \mathcal{G}(i) $; and $ C_{b} $, which is the document published 12 hours prior to $ C_{a} $. 
 	\item Alice constructs a list $ S $ from $ C_{b} $ of Quorum candidates that have the Fast, Stable, and Running flags.
 	\item For each group $ g \in S $ that publishes an identical root hash, Alice computes $ s_{g} = \sum_{j=0}^{\left\vert{g}\right\vert} w_{g}(j) $ where $ w_{g}(j) $ is the consensus weight of Tor router $ j $ in group $ g $. The Quorum candidates, $ \mathit{qc} $, is the group with the largest value of $ s_{g} $.
-	\item Alice uses $ \mathcal{R}(\mathcal{G}(i)) $ to select $ \min(\mathrm{size}(\mathit{qc}), L_{Q}) $ Quorum nodes from $ \mathit{qc} $ with the probability of selecting router $ x $ determined by Equation \ref{eq:qSelection}.
+	\item Alice uses $ \mathcal{R}(\mathcal{G}(i)) $ to select $ \min(\mathrm{size}(\mathit{qc}), L_{Q}) $ Quorum nodes from $ \mathit{qc} $ with the probability of selecting router $ x $ determined by 
+	\[
+			P(x) = \frac{w_{\mathit{qc}}(x)}{s_{\mathit{qc}}}
+	\]
 \end{enumerate}
-
-\begin{equation}
-P(x) = \frac{w_{\mathit{qc}}(x)}{s_{\mathit{qc}}}
-\label{eq:qSelection}
-\end{equation}
 
 \subsubsection{Database Selection}
 
@@ -404,7 +400,7 @@ The lottery starts at the formation of the Quorum. During the lottery, the Quoru
 
 All mirrors or other parties may verify $ W_{i} $ and update their main database accordingly through the same protocol because $ T_{i} $ is now public. As this algorithm occurs at 00:00 UTC, mirrors then update their Merkle root hash per the protocol described in section \ref{sec:qQualification}.
 
-In order to defend against the one-to-many and many-to-one attacks described in section \ref{sec:useCases}, each Quorum node only accepts the first ticket per hidden service and the first ticket per name. We provide a defense to the many-to-many attack by setting the proof-of-work threshold $ t_{d} $ according to the formula $ d_{b} / \ceil{\frac{j}{\left\vert{W_{i}}\right\vert}} $, where $ d_{b} $ is the base difficulty and and $ j $ is the ticket's index, $ 1 \leq i \leq \left\vert{W_{i}}\right\vert $.
+In order to defend against the one-to-many and many-to-one attacks described in section \ref{sec:useCases}, each Quorum node only accepts the first ticket per hidden service and the first ticket per name. We provide a defense to the many-to-many attack by setting the proof-of-work threshold $ t_{d} $ according to the formula $ d_{b} / \ceil{\frac{j}{\nWinners}} $, where $ d_{b} $ is the base difficulty and $ j $ is the ticket's index, $ 1 \leq i \leq \nWinners $.
 
 %Quorum ends when G(t+1) is actually published. 
 %
@@ -489,61 +485,79 @@ OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a
 
 In this section, we analyse the security of the Onion Name System with regard to our security goals and expected threat model. 
 
-\subsection{Global Randomness} % done
+\subsection{Global Randomness}
 \label{sec:GlobalRand}
 
 We implement $ \mathcal{G}(t) $ using \cite{GouletCommitReveal}. Commitment protocols have been studied in other works \cite{rivest1999unconditionally, naor1990bit} and are well understood. If all parties are at least semi-honest then the commitment protocols generally display correctness, privacy, and binding. However, if some participants are malicious, they demonstrate known weaknesses. Namely, while reveals must demonstrably match commits, each participant may choose to reveal or not. If they do not reveal, their value is lost and the protocol produces a different output. If Mallory controls $ b $ participants, she can make this choice with each participant in turn, allowing $ 2^{b} $ different outcomes.
 
-\cite{GouletCommitReveal} relies on nine directory authorities, which are maintained by prominent members of the Tor community. The security of the Tor network rests on the assumption that five or more are at least semi-honest, thus their commitment scheme has at most $ 2^{4} = 16 $ different outcomes in the worst case without violation of our assumptions. Given the statistical calculations and the safety margin introduced by the recommendations in section \ref{sec:qSize}, we do not consider this a significant threat to our system and conclude that the Quorum Formation protocol is secure under our design assumptions. The unpredictability of the reveals and the low probability of compromise shown in Figures \ref{fig:quorumWeightedMajority} and \ref{fig:cumulativeProbability} provides the strongest defence against Quorum-level attacks.
+\cite{GouletCommitReveal} relies on nine directory authorities, which are maintained by prominent members of the Tor community. The security of the Tor network rests on the assumption that five or more are at least semi-honest, thus their commitment scheme has at most $ 2^{4} = 16 $ different outcomes in the worst case without violation of our assumptions. Given the statistical calculations and the safety margin introduced by the recommendations in section \ref{sec:qSize}, we do not consider this a significant threat to our system and conclude that the Quorum Formation protocol is secure under our design assumptions. The unpredictability of the reveals and the low probability of compromise shown in Figures \ref{fig:quorumWeightedMajority} and \ref{fig:cumulativeProbability} provides the strongest defense against Quorum-level attacks.
 
 % In their scheme, at 00:00 UTC each authority commits a SHA-256 hash of a secret value $ x $ into each consensus vote across a 12 hour period. Then at 12:00 UTC, each directory authority reveals $ x $ across the next set of 12 consensuses. Then at 24:00 UTC, the revealed values are hashed together to create a single random number, which is then embedded in the consensus documents so that it is efficiently distributed to both Tor routers and clients.
 
-Assuming that all directory authorities reveal at 12:00 UTC, the design of \cite{GouletCommitReveal} allows $ \mathcal{G}(i) $ to be calculated up to 12 hours before $ \mathcal{G}(i) $ is published in the consensus. If we select the Quorum from the 00:00 UTC consensus containing $ \mathcal{G}(i) $, an adversary could calculate $ \mathcal{G}(i) $ to add or remove routers from the consensus in order to deterministically inject malicious routers into the Quorum. As a countermeasure, the protocol in section \ref{sec:qFormation} selects the Quorum from the consensus containing the first set of reveals.
+Assuming that all directory authorities reveal at 12:00 UTC, the design of \cite{GouletCommitReveal} allows $ \mathcal{G}(i) $ to be calculated up to 12 hours before $ \mathcal{G}(i) $ is published in the consensus. If we select $ Q_{i} $ from the 00:00 UTC consensus containing $ \mathcal{G}(i) $, an adversary could calculate $ \mathcal{G}(i) $ to add or remove routers from the consensus in order to deterministically inject malicious routers into $ Q_{i} $. As a countermeasure, the protocol in section \ref{sec:qFormation} selects the Quorum from the consensus containing the first set of reveals.
 
-\subsection{Integrity Guarantees} % done
+\subsection{Integrity Guarantees}
 
 Merkle trees are widely used to achieve secure verification of very large data structures. They are an integral component in the ZFS file system, Bitcoin, \cite{nakamoto2008bitcoin} Apache's Cassandra NoSQL database, \cite{CassandraDatabase} and in many other applications. The security of the Merkle tree largely rests on the underlying hash function and its resistance to second pre-image attacks. During a domain query, clients fetch a subtree from mirrors, verify the integrity of the ticket or record against the leaf node, and recompute and verify the hashes of the subtree. The cryptographic strength of SHA-384 prevents mirrors from forging or falsely claiming non-existence of a ticket or record. Clients also check the subtree value against the Quorum's published hashes, preventing mirrors from forging the subtree or returning an obsolete subtree. This approach provides strong integrity guarantees for both existent and non-existent records even if the mirror is malicious.
 
-\subsection{Proof-of-Work} % done
+\subsection{Proof-of-Work}
 \label{sec:proofOfWork}
 
-The proof-of-work formula is satisfied when $ \mathrm{PoW}(S_{\mathit{RSA}}(c, r)) \leq t_{d} $, where $ c $ is static data. We integrated the proof-of-work step into our registration protocols in order to create a barrier-of-entry, with the expectation that Bob run the scrypt function himself. However, our algorithm does not entirely prevent Bob from outsourcing this expensive computation to a secondary computational resource, Frank, whom we assume does not have the private key $ r $. 
+% The proof-of-work formula is satisfied when $ \mathrm{PoW}(S_{\mathit{RSA}}(c, r)) \leq t_{d} $, where $ c $ is static data. 
 
-First, Bob repeatedly computes $ S_{\mathit{RSA}}(c, r) $, producing a large list of digital signatures. Frank then tests $ \mathrm{PoW}(x) \leq t_{d} $ for each digital signature $ x $ until the formula is satisfied. Bob then sets the ticket's $ \mathit{signature} $ field to this $ x $ value, producing a valid ticket. Bob can minimize the size of his precomputed list by sending each signature individually to Frank for testing. However, as scrypt is an purposely computationally-expensive function, this still incurs a cost upon Frank that must be financially compensated by Bob. Thus, the algorithm always places a cost to Bob.
+We integrated the proof-of-work step into our registration protocols in order to create a barrier-of-entry, with the expectation that Bob run the scrypt function himself. However, our algorithm does not entirely prevent Bob from outsourcing this expensive computation to a secondary computational resource, Frank, whom we assume does not have the private key $ r $. 
+
+First, Bob repeatedly computes $ S_{\mathit{RSA}}(c, r) $, producing a large list of digital signatures. Frank then tests $ \mathrm{PoW}(x) \leq t_{d} $ for each digital signature $ x $ until the formula is satisfied. Bob then sets the ticket's $ \mathit{signature} $ field to this $ x $ value, producing a valid ticket. Bob can minimize the size of his precomputed list by sending each signature individually to Frank for testing. However, as scrypt is an purposely computationally-expensive function, this still incurs a cost upon Frank that must be financially compensated by Bob. Thus, the algorithm always introduces a cost to Bob.
 
 Alternative algorithms may more tightly couple the scrypt and RSA-PSS components and prevent Bob from outsourcing the proof-of-work step. However, we are unaware of any existing algorithm that combines proof-of-work with digital signatures. The next generation of Tor hidden services \cite{TorProp224} replaces RSA-1024 keys with Ed25519; in future work we will explore whether the Ed25519 deterministic signature scheme may be tightly combined with scrypt. 
 
-\subsection{Lottery} % done
+\subsection{Lottery}
 \label{sec:lottery}
 
-Our lottery uses proof-of-work as a barrier-of-entry and awards names to a fixed number of hidden services to limit abuse. However, adversaries with significant computational capabilities may still register many tickets in order to improve their chances of winning the lottery. This may be done as part of a denial-of-registration attack or an en-mass registration strategy. By contrast, we anticipate that honest hidden services will only attempt to register a single name, therefore they may be assumed to be computationally weak. We considered this dichotomy during the design of our lottery and it must also be considered when selecting the initial parameters.
+Our lottery uses proof-of-work as a barrier-of-entry and awards names to a fixed number of hidden services to limit abuse. However, adversaries with significant computational capabilities may still register many tickets in order to improve their chances of winning the lottery. This may be done as part of a denial-of-registration attack or an en-mass registration strategy. By contrast, we anticipate that honest hidden services will only attempt to register a single name, therefore they may be assumed to be computationally weak. We consider this dichotomy when selecting the lottery's initial parameters.
 
 Our lottery has a high degree of usability if it awards names a very large number of hidden services. Although this increases its vulnerability to the aforementioned attacks from computationally-powerful adversaries, we introduce several straightforward countermeasures. First, we may preload OnioNS with a large set of ``reserved'' names by constructing a mapping between popular hidden services and their self-declared name. Although these pre-existing hidden services must still generate a lottery ticket, they win names immediately. This both increases the usability of our system and removes a significant incentive for land rush attacks. Second, we demonstrate that a large number of winners and the lottery's difficultly-adjustment scheme provides a statistical defense against well-resourced adversaries.
 
-% $ d_{b} / \ceil{\frac{j}{\left\vert{W_{i}}\right\vert}} $, where $ d_{b} $ is the base difficulty, $ \left\vert{W_{i}}\right\vert $ is the cardinality of $ W_{i} $, and $ j $ is the ticket's index, $ 1 \leq i \leq \left\vert{W_{i}}\right\vert $.
-
-As described in section \ref{sec:lotteryManagement}, the difficulty of generating a ticket increases according to the formula $ d / \ceil{\frac{i}{M}} $, where $ d $ the base difficulty and $ i $ is the ticket's number. If the lottery has $ M $ winners and $ M $ innocent parties submit tickets, an adversary must then perform  $ \frac{M \cdot n \cdot  (n+1) - M}{2} $ amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. If Craig (a computationally-powerful adversary) is $ X $ times computationally stronger than the average capabilities of the innocent parties, then Equation \ref{eq:numCraigTickets} computes the number of lottery tickets that he may generate following the $ M $ innocent tickets. The expected number of innocent parties to win the lottery is given by Equation \ref{eq:expInnWinners}.
+As described in section \ref{sec:lotteryManagement}, the $ Q_{i} $ sets the proof-of-work threshold, $ t_{d} $, according to 
 
 \begin{equation}
-\frac{-3M + M \sqrt{9 + \frac{8X}{M}}}{2}
-\label{eq:numCraigTickets}
+	t_{d} = \frac{d_{b}}{\ceil{\frac{j}{\nWinners}}}
 \end{equation}
+
+\noindent where $ d_{b} $ is the base difficulty, $ W_{i} $ is the set of lottery winners, and $ j $ is the ticket's index in $ W_{i} $. If $ \left\vert{W_{i}}\right\vert $ innocent parties submit tickets, then by the partial sum formula Craig (a computationally-powerful adversary) must perform 
 
 \begin{equation}
-\frac{2M}{-1 + \sqrt{9 + \frac{8X}{M}}}
-\label{eq:expInnWinners}
+	C_{w} = \frac{\nWinners \cdot n \cdot  (n+1)}{2} - \nWinners
 \end{equation}
 
-Equation \ref{eq:numCraigTickets} also implies that large values for $ M $ act as a defense against a denial-of-registration attack; with large $ M $ it is impractical for Craig to generate many tickets in order to increase the proof-of-work difficulty beyond the means of innocent parties. Furthermore, while Craig could generate many tickets in order to statistically prevent others from winning the lottery, this also becomes impractical for large $ M $. If Equation \ref{eq:expInnWinners} is set to 1, then $ X $ is given by Equation \ref{eq:SpeedForDoR}.
+\noindent amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. In the same scenario, if Craig is $ X $ times computationally stronger than the average capabilities of the innocent parties, he may compute $ C_{t} $ number of lottery tickets, where
 
 \begin{equation}
-\frac{M^{3} + M^{2}}{2} - M
-\label{eq:SpeedForDoR}
+	C_{t} = \frac{-3 \nWinners + \nWinners \sqrt{9 + \frac{8X}{\nWinners}}}{2}
 \end{equation}
 
-However, large $ M $ also allows Craig to claim or squat many names. Bared on the above equations, we recommend awarding more than 21 names per lottery and suggest $ M = 35 $. We note that this value is adjustable and can be easily increased to meet a demonstrably higher demand from the Tor community.
+If his tickets are also submitted to $ Q_{i} $, then the expected number of winning innocent tickets is given by
 
-We must also set $ d $, our initial proof-of-work difficulty for the first $ M $ tickets. Low values for $ d $ provides a low barrier-to-entry, increasing usability, but it also increases the lottery's vulnerability to attacks from Craig. We consider that Craig that has access to efficient cloud computation, such as Amazon EC2. A compute-optimized instance, such as c4.large in California, costs appropriately 1 USD for 11 CPU core-hours on an Intel Xeon E5-2666 processor. In the table below, we use \href{https://www.cpubenchmark.net/}{cpubenchmark.net} to convert this to the equivalent quantity of computation from a selection of Intel i7 CPUs, which are commonly found in high-end consumer-grade computers.
+\begin{equation}
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert = \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8X}{\nWinners}}}
+	\label{eq:expInnocentWinners}
+\end{equation}
+
+Craig could also generate many tickets in order to statistically prevent others from winning the lottery. However, this also becomes impractical for large $ \nWinners $: if Equation \ref{eq:expInnocentWinners} is set to 1, then $ X $ is given by 
+
+\begin{equation}
+	X = \frac{\nWinners^{3} + \nWinners^{2}}{2} - \nWinners
+\end{equation}
+
+$ C_{w} $ increases quadratically to $ \nWinners $, suggesting that large values for $ \nWinners $ act as a defense against a denial-of-registration attack; with large $ \nWinners $ it is impractical for Craig to generate many tickets in order to increase the proof-of-work difficulty beyond the means of innocent parties. However, large $ \nWinners $ also allows Craig to claim or squat many names. Bared on the above equations, we recommend awarding more than 21 names per lottery and suggest $ \nWinners = 35 $. We note that this value is adjustable and can be easily increased to meet a demonstrably higher demand from the Tor community.
+
+We must also select a value for $ d_{b} $. Low values for $ d_{b} $ provides a low barrier-to-entry, increasing usability, but it also increases the lottery's vulnerability to attacks from Craig. We consider that Craig that has access to efficient cloud computation, such as Amazon EC2. A compute-optimized instance, such as c4.large in California, costs appropriately 1 USD for 11 CPU core-hours on an Intel Xeon E5-2666 processor. In Table \ref{table:PoWtime}, we use \href{https://www.cpubenchmark.net/}{cpubenchmark.net} to convert this to the equivalent quantity of computation from a selection of Intel i7 CPUs, which are commonly found in high-end consumer-grade computers.
+
+% , which will be accepted as long as $ \mathit{rand} $ is updated to the $ \mathcal{G}(i) $
+
+We anticipate that innocent hidden services with high-end CPUs will take less than five or six hours to generate a lottery ticket. Even with lower-end CPUs, fewer utilized cores, or a higher difficulty, the proof-of-work algorithm will generate a valid ticket eventually. It may be possible to lower the difficulty if we can prevent innocent hidden services from outsourcing computation by more tightly coupling proof-of-work to a digital signature algorithm. Finally, we suggest doubling the difficulty every two years so as to keep pace with a global average increase in computational power.
+
+With a sufficiently high value of $ \nWinners $ and a significant value for $ d_{b} $, we believe that our lottery can resist a well-resourced adversary while simultaneously serving computationally-weak innocent parties.
 
 \begin{center}
 	\vspace{0mm}
@@ -562,20 +576,16 @@ We must also set $ d $, our initial proof-of-work difficulty for the first $ M $
   		i7-6700 & 9962 & 8 & 27.38 & 4.56 \\
 		\end{tabular}
 		\caption{The average time to complete the proof-of-work across various computational resources. These CPUs utilize hyper-threading; we assume that a single vCPU provides 75 percent of the power of a real core.}
+		\label{table:PoWtime}
 	\end{table}
 	\vspace{-10mm}
 \end{center}
-
-% , which will be accepted as long as $ \mathit{rand} $ is updated to the $ \mathcal{G}(i) $
-We anticipate that innocent hidden services with high-end CPUs will take less than five or six hours to generate a lottery ticket. Even with lower-end CPUs, fewer utilized cores, or a higher difficulty, the proof-of-work algorithm will generate a valid ticket eventually. It may be possible to lower the difficulty if we can prevent innocent hidden services from outsourcing computation by more tightly coupling proof-of-work to a digital signature algorithm. We also suggest doubling the difficulty every two years so as to keep pace with a global average increase in computational power.
-
-With a sufficiently high value of $ M $ and significant proof-of-work difficulty, we believe that our lottery can resist a well-resourced adversary while simultaneously serving computationally-weak innocent parties.
 
 %Selecting the number of winners in our lottery requires balancing the demand from innocent requests for names against the threat of en-mass registrations by adversaries. If the number of winners is too low, it is too difficult for innocent HS operators to claim a name. On the other hand, too many winners allows computationally-powerful domain squatters to claim many names. Both scenarios negatively impact the usability of our system. While it is difficult to accurately predict honest demand for our system, we can estimate it by examining the number of popular hidden services on the Tor network.
 
 % As $ T_{i} $ is initially blinded, it is difficult for the adversary to determine in advance if this threshold is reached. This scheme also means that the system adapts in response to an increase in global average computational speed as the barrier-of-entry becomes too low.
 
-\subsection{DNS Leakage} % done
+\subsection{DNS Leakage}
 
 Accidental leakage of .tor lookups over the Internet DNS via human mistakes or misconfigured software may compromise user privacy. This vulnerability is not limited to OnioNS and applies to any pseudo-TLD; Mohaisen and Thomas observed .onion lookups on root DNS servers at a frequency that corresponded to external global events and highlighting the human factor in those leakages \cite{thomasmeasuring}. Closing this leakage is difficult; arguably the simplest approach is to introduce whitelists or blacklists into common web browsers to prevent known pseudo-TLDs from being queried over the Internet DNS. Such changes are outside the scope of this work, but we highlight the potential for this leak.
 
@@ -589,17 +599,15 @@ Accidental leakage of .tor lookups over the Internet DNS via human mistakes or m
 \section{Evaluation}
 \label{sec:Evaluation}
 
-\subsection{Implementation} % done
+\subsection{Implementation}
 
-We have build a reference implementation of the Onion Name System in C++11 as a supplement to this work. We utilize Boost Asio \cite{AsioLib} for our networking engine and use the Botan \cite{BotanLib} library for most cryptographic operations. We encode all the data structures in JSON; JSON is significantly more compact than XML, but retains user readability and its support of basic primitive types is highly applicable to our needs. Our code is licensed under the Modified BSD License, identical to Tor, and is available for Linux through a software repository at \href{http://onions55e7yam27n.onion}{http://onions55e7yam27n.onion}.
+We have build a reference implementation of the Onion Name System in C++11 as a supplement to this work. We utilize Boost Asio \cite{AsioLib} for our networking engine and use the Botan \cite{BotanLib} library for most cryptographic operations. We encode all the data structures in JSON; JSON is significantly more compact than XML, but retains user readability and its support of basic primitive types is highly applicable to our needs. Our code is licensed under the Modified BSD License, identical to Tor, and is available for Linux through a software repository at our hidden service, \href{http://onions55e7yam27n.onion}{http://onions55e7yam27n.onion}.
 
-We divided our software into three parts: OnioNS-client, OnioNS-server, and OnioNS-HS, with OnioNS-common as a shared library dependency. The client-side software interacts with the Tor binary, intercepts user requests for .tor domain names, performs a Domain Query, and rewrites the request to a .onion address before allowing Tor to bind the request to a circuit. This approach preserves backwards-compatibility with the Internet DNS and the .onion pseudo-TLD, achieving a design objective and enhancing usability.
+We divided our software into three parts: OnioNS-client, OnioNS-server, and OnioNS-HS, with OnioNS-common as a shared library dependency. OnioNS-client negotiates with the user's Tor software to MitM all requests for torified TCP streams. It filters for our .tor pseudo-TLD while allowing all other lookups (IPv4, .onion, or DNS) to pass unimpeded. Once it intercepts a request for a .tor domain, it performs a Domain Query and rewrites the domain to a .onion address before allowing Tor to bind the request to a circuit. This approach preserves backwards-compatibility, achieving a design objective and enhancing usability. The OnioNS-server is comparatively simpler; it binds to a localhost TCP port and performs our protocols. Tor router administrators must then configure their Tor to host a hidden service and bind it to the same localhost port so that OnioNS-server may be reached from the outside. Finally, OnioNS-HS is a simple command-line utility that prompts the user for domain information, performs the proof-of-work, and uploads the ticket or record to the current Quorum. In all three cases, our software functions with minimal configuration.
 
-% and built command-line tools for hidden services, servers, and clients.
+\subsection{Integration Test}
 
-\subsection{Integration Test} % done
-
-We have deployed a small testing network of Quorum and mirror servers. We first created a hidden service for our project, set up a small web server, and used Chutney to generate a semi-meaningful address, \href{http://onions55e7yam27n.onion}{``onions55e7yam27n.onion''}. We then used our command-line tool to create a lottery ticket for ``example.tor'' and then to transmit it to the Quorum. This sole ticket won the lottery and we received our name. Our ticket then propagated through the network to mirrors. Finally, we installed our client software into Tor Browser 5.5, a fork of Firefox 38.4.0 ESR. We typed ``example.tor'' into the Tor Browser and the request was intercepted, resolved through a Domain Query, and rewritten to \href{http://onions55e7yam27n.onion}{``onions55e7yam27n.onion''}. The Tor binary then communicated with our hidden service and returned the contents back to the Tor Browser. This process did not require any further user input and occurred behind-the-scenes, so the Tor Browser retained the ``example.tor'' name in the address bar and in the mouse-over text for relative hyperlinks. We illustrate the result in Figure \ref{fig:prototypeExample}. The software performed asynchronously and allowed normal browsing to both the Internet and other hidden services, even while the OnioNS domain was resolving.
+We have deployed a small testing network of Quorum and mirror servers. We first created a hidden service for our project, set up a small web server, and used Shallot to generate a semi-meaningful address, \href{http://onions55e7yam27n.onion}{``onions55e7yam27n.onion''}. We then used OnioNS-HS to create a lottery ticket for ``example.tor'' and then to transmit it to the Quorum. This sole ticket won the lottery and we received our name. Our ticket then propagated through the network to mirrors. Finally, we installed our client software into Tor Browser 5.5, a fork of Firefox 38.4.0 ESR. We typed ``example.tor'' into the Tor Browser and the request was intercepted, resolved through a Domain Query, and rewritten to \href{http://onions55e7yam27n.onion}{``onions55e7yam27n.onion''}. The Tor binary then communicated with our hidden service and returned the contents back to the Tor Browser. This process did not require any further user input and occurred behind-the-scenes, so the Tor Browser retained the ``example.tor'' name in the address bar and in the mouse-over text for relative hyperlinks. We illustrate the result in Figure \ref{fig:prototypeExample}. The software performed asynchronously and allowed normal browsing to both the Internet and other hidden services while it resolved ``example.tor''.
 
 \begin{figure}[h]
 	\centering
@@ -625,12 +633,11 @@ We conducted several performance measurements for the Domain Queries.  We measur
 \begin{table}[h]
 	\small
 	\begin{tabularx}{\linewidth}{ | C{1} || C{1} || C{1} || }
-		\hline
-    \textbf{Description} & \textbf{A (ms)} & \textbf{B (ms)} \\ \hline
-    Parsing JSON & 5.21 & 2.42 \\ \hline
-	Validating scrypt & 448.184 & 294.963 \\ \hline
-	$ V_{\mathit{RSA}}(m, E) $ & 6.35 & 2.74 \\ \hline
-	Total Time & 459.744 & 300.123 \\ \hline
+    	\textbf{Description} & \textbf{A (ms)} & \textbf{B (ms)} \\ \hline
+    	Parsing JSON & 5.21 & 2.42 \\ \hline
+		Validating scrypt & 448.184 & 294.963 \\ \hline
+		$ V_{\mathit{RSA}}(m, E) $ & 6.35 & 2.74 \\ \hline
+		Total Time & 459.744 & 300.123 \\
   	\end{tabularx}
 \end{table}
 
@@ -661,40 +668,30 @@ Our client software integrates well into the Tor Browser and starts and stops wi
 
 We achieve another primary usability benefit by introducing an automatic naming system for Tor hidden services: it is no longer necessary for the Tor community to construct and maintain directories of hidden services. The automatic resolution of domain names allows scaling beyond human-maintained directories, which only efficiently scales to several hundred names at most. OnioNS should provide a significant usability to Tor users and the community at large.
 
-\subsection{Discussions} % next
+\subsection{Discussions}
 
-THIS NEEDS WORK
+In this section we further discuss and compare our work with related works. The Onion Name System and Namecoin both achieve all three properties of Zooko's Triangle and share some similarities, but the two systems have different threat models and distinct design objectives.
 
-In this section we further discuss and compare OnioNS with related works. 
+Namecoin's security rests on two primary assumptions: that its network is resistant to Sybil attacks and that more than 50 percent of the network's computational power is at least semi-honest. An attacker that controls the majority of the computational power (a ``51\% attack'') or that has carried out a successful Sybil attack may then disrupt communications, corrupt the integrity of the blockchain, or can provide malicious responses to clients. Namecoin, like Bitcoin, also usually requires that clients download a complete copy of the blockchain. This introduces significant network, storage, and CPU costs which grow linearly to the age and popularity of the Namecoin network, preventing Namecoin from scaling to the general population. These costs can be largely avoided if the client uses a Namecoin-compatible DNS server or a Simplified Payment Verification \cite{nakamoto2008bitcoin} (SPV) scheme. These approaches are vulnerable to a variety of attacks if the name server is malicious and neither approach provides authenticated denial-of-existence.
 
-GNS and Namecoin
+By contrast, OnioNS' central security assumption is that Tor circuits provide privacy. This assumption implies that the majority of the directory authorities remain semi-honest and that Tor network remains resistant to Sybil attack and traffic analysis. We rely on these assumptions for all aspects of our system. Thus, we can use existing Tor infrastructure instead of introducing a new network, as Namecoin does. Moreover, if an attacker can compromise Tor circuits or de-anonymize hidden services, then a privacy-enhanced naming system no longer becomes necessary or relevant. Unlike Namecoin, we do not rely on assumptions of computational power; while Craig can negatively impact the ability for innocent hidden services to get a name, he cannot affect the security of OnioNS or disrupt network communications. Our system remains secure as long as the Quorum remains uncompromised and we demonstrate in the appendix that a sufficiently-large Quorum is strongly resistant to a Sybil attack on the Tor network.
 
+OnioNS has significantly less overhead than Namecoin: our database can be modified or deleted in-place, mirrors only remember records for non-expired names, and the storage requirements for clients is constant. Instead, the client receives a Merkle subtree and checks the root against a single consensus document. The storage cost is therefore linear to the size of the Tor network and the networking cost is logarithmic to the number of registered names. The Merkle tree provides authenticated denial-of-existence and prevents a malicious server from acting dishonestly.
 
-
-In this section we further discuss and compare our work with related works. The Onion Name System and Namecoin both achieve all three properties of Zooko's Triangle, and while the two systems share some design similarities, each system is constructed with different threat models and different objectives in mind.
-
-Namecoin's security rests on two primary assumptions: that its network is resistant to Sybil attacks and that more than 50 percent of the network's computational power is at least semi-honest. An attacker who gained the majority of the computational power (a ``51\% attack'') may double-spend transactions, prevent new transactions from entering the honest blockchain, and prevent honest miners from contributing blocks. A successful Sybil attack on Namecoin's network allows an attacker to disrupt the network by purposefully not relaying blocks or transactions, providing attacker-controlled data to clients, or by increasing the potential for double-spending attacks. Namecoin's blockchain has an indefinite length in order to allow the network to trace transactions and ownership of Namecoins back to their originating source. It relies on each participant in the Namecoin network to hold, validate, and read from its own local copy of the blockchain. The CPU, bandwidth, and memory requirements for anyone holding the blockchain scales linearly as the age and popularity of the Namecoin system increases.
-
-By contrast, OnioNS' central security assumption is that circuits through the Tor network provide privacy. This assumption implies that the Tor network remains resistant to Sybil attack, traffic analysis, and that the majority of the directory authorities remain semi-honest. We have shown that a sufficiently-large Quorum remains strongly resistant to large-scale Sybil attacks on the Tor network. Thus, we do not introduce a new network for our naming system and instead utilize the Tor network to achieve both communication privacy and the infrastructure for OnioNS. If an attacker gains control of the Tor network (such as by Sybil attack or by compromising the directory authorities) then circuits no longer provide privacy, hidden services can be de-anonymized, and a privacy-enhanced naming system no longer becomes necessary. We do not also rely on assumptions of computational power: unlike Namecoin, attackers with large computational capacities are not able to disrupt network communication or to provide malicious responses to client queries.
-
-Both Namecoin and OnioNS require each member of the network to maintain a copy of the system's database. 
-
-Both Namecoin and OnioNS utilize append-only data structures for long-term storage. Namecoin typically requires clients to either hold their own copy of the blockchain, rely on the honesty of their Namecoin-compatible DNS server, or to utilize a Simplified Payment Verification \cite{nakamoto2008bitcoin} (SPV) scheme which allows clients to download and verify minimalistic information from a central server. These latter two cases are vulnerable to a variety of attacks if the server is malicious and neither approach provides authenticated denial-of-existence. OnioNS does also not require clients to download the Pagechain; instead, clients receive a minimal number of mappings, a Merkle subtree, and Quorum signatures on the root hash. Our protocols prevent a malicious server from acting dishonestly, including spoofing mappings or falsely claiming non-existence. The security of the response depends on our security assumptions regarding the Quorum.
-
-Namecoin and OnioNS allow full enumeration of all registered domains; name registrations are assumed to be public knowledge immediately after they are uploaded to either network. We do not consider this a significant threat to our system as registrations do not contain personal information. Similar to Namecoin, anyone may obtain a complete copy of the Pagechain and Mirrors must be able to access and verify all information in the Pagechain in order to respond to client queries.
-
-Both OnioNS and Namecoin operate under weaker adversarial models than the GNU Name System. GNS assumes than attacker may participant in any role, may infiltrate the network by large-scale Sybil attack, and is assumed to have more computational power than all honest participants combined. Neither Namecoin, OnioNS, nor Tor provide full defences against such well-resourced adversaries. Tor hidden services may become de-anonymized under GNS' adversarial model so we do not assume that our adversaries are that powerful. End-users should select their naming system carefully according to their threat model.
+OnioNS and Namecoin both allow full enumeration of all registered domains; however we do not consider this a significant threat to our system as registrations do not contain personal information. Both systems operate under weaker adversarial models than GNS, which assumes than attacker may participant in any role, may infiltrate the network by large-scale Sybil attack, and is assumed to have more computational power than all honest participants combined. Neither Namecoin, OnioNS, nor Tor provide full defenses against such well-resourced adversaries. Tor hidden services may become de-anonymized under GNS' adversarial model so we do not assume that our adversaries are that powerful. %End-users should select their naming system carefully according to their threat model.
 
 \section{Conclusions and Future Work}
 
-We have presented the Onion Name System (OnioNS), a distributed, secure, and usable alternative DNS that maps globally-unique and meaningful .tor domains to .onion hidden service addresses, and achieve all three properties of Zooko's Triangle. We enable any hidden service operator to anonymously claim a human-readable name for their server and clients to query the system in privacy-enhanced manner. We introduce a distributed blockchain-based database and mechanisms that let clients authenticate and verify denial-of-existence claims. Additionally, we utilize the existing and semi-trusted infrastructure of Tor, which significantly narrows our threat model to already well-understood attack surfaces and allows our system to be integrated into Tor with minimal effort. Our reference implementation demonstrates high usability and shows that OnioNS successfully addresses the major usability issue that has been with Tor hidden services since their introduction in 2002.
+We have presented the Onion Name System (OnioNS), a distributed, secure, and usable alternative DNS that maps globally-unique and meaningful names to hidden service addresses, achieving all three properties of Zooko's Triangle. We enable any hidden service operator to anonymously claim a human-readable name for their server and clients to query the system in privacy-enhanced manner. We introduce mechanisms that let clients authenticate existent names and denial-of-existence claims with minimal overhead costs. Additionally, we utilize the existing and semi-trusted infrastructure of Tor, which significantly narrows our threat model to already well-understood attack surfaces and allows our system to be integrated into Tor with minimal effort. Our reference implementation demonstrates high usability and shows that OnioNS successfully addresses the major usability issue that has been with Tor hidden services since their introduction in 2002.
 
-In future work we will expand our implementation and pursuit integrating it into Tor. OnioNS requires a few changes to Tor, namely a new .tor pseudo-TLD and Ed25519 router keys, but we introduce no changes to Tor's hidden service protocol. Should Tor's developers introduce changes to the hidden service protocol, OnioNS can become forwards-compatible with a few changes. Additionally, our implementation currently only supports ASCII characters in domain names, so in future work we will explore implementing Punycode to provide support for international character sets. Unlike the Internet DNS, we will disallow digits zero and one (similar to base32 encoding) in order to reduce the threat of phishing attacks from spoofed domains with indistinguishable characters.
+Following publication, we will expand our implementation and pursuit deploying it onto the Tor network. OnioNS introduces new software and a new .tor pseudo-TLD but requires no changes to the Tor executable. OnioNS is also forwards-compatible to changes in Tor circuits or the hidden service protocol and requires only small modifications to become compatible to \cite{TorProp224}, the proposed next generation of Tor hidden services.
 
-\section{Acknowledgements}
+%Additionally, our implementation currently only supports ASCII characters in domain names, so in future work we will explore implementing Punycode to provide support for international character sets. Unlike the Internet DNS, we will disallow digits zero and one (similar to base32 encoding) in order to reduce the threat of phishing attacks from spoofed domains with indistinguishable characters.
 
-We would like to thank Roger Dingledine, George Kadianakis, Yawning Angel, and Nick Mathewson for their support, commentary, and assistance with Tor technical support.
-%
+%\section{Acknowledgements}
+
+%We would like to thank Roger Dingledine, George Kadianakis, Yawning Angel, and Nick Mathewson for their support, %commentary, and assistance with Tor technical support.
+
 %%We would like to thank Tor developers and volunteers within the community for technical support and their commentary on our work.
 %
 %%, a password-based key derivation function which is notable for its large memory and CPU requirements during its operation. The scrypt function provides significantly greater resistance to custom hardware attacks and massively parallel computation primarily due to its memory requirements. This limits attackers to the same software implementation and asymptotic cost as legitimate users\cite{percival2009stronger}\cite{percival2012scrypt}. We choose scrypt because of these advantages over other key derivation functions such as SHA-256 or PBKDF2. For these reasons scrypt is also common for proof-of-work purposes in some cryptocurrencies such as Litecoin.
@@ -785,7 +782,7 @@ We would like to thank Roger Dingledine, George Kadianakis, Yawning Angel, and N
 
 %In this section we statistically analyse the Tor network and provide recommendations for the size and rotation rate of the Quorum.
 
-\subsection{Quorum Size} % nearly done
+\subsection{Quorum Size} % todo
 \label{sec:qSize}
 
 In section \ref{sec:threatModel}, we assume that an attacker, Mallory, controls some fixed $ f_{E} $ fraction of routers on the Tor network. Quorum selection may be considered as an $ L_{Q} $-sized random sample taken from an $ L_{T} $-sized population without replacement, where the population contains $ L_{T} \cdot f_{E} $ entities that we assume are compromised and colluding. Then the probability that Mallory controls $ L_{E} $ Quorum nodes is given by the hypergeometric distribution, whose probability mass function is shown in Equation \ref{eq:hypergeoPMF}. Mallory controls the Quorum if either $ > \frac{L_{Q} - L_{E}}{2} $ honest Quorum nodes disagree or if $ L_{E} > \frac{L_{Q}}{2} $. The former scenario is difficult to model theoretically or in simulation, but the probability of the latter may be calculated. If all Quorum nodes are selected with equal probability, then $ \mathrm{Pr}(L_{E} > \frac{L_{Q}}{2}) $ is given by the $p$-value of the hypergeometric test for over-representation, expressed in Equation \ref{eq:compromiseProb}.
@@ -862,7 +859,7 @@ In contrast to Figure \ref{fig:quorumUnweightedMajority} which demonstrates that
 
 Small Quorums are also more susceptible to node downtime or denial-of-service attacks. Figure \ref{fig:quorumWeightedMajority} shows that the choices of $ L_{Q} = 31 $ is suboptimal; it is more easily compromised even with low levels of collusion. $ L_{Q} = 63 $ is more resistant, but not significantly more so. We therefore recommend $ L_{Q} \geq 127 $.
 
-\subsection{Quorum Rotation} % done
+\subsection{Quorum Rotation} % todo
 \label{sec:qRotation}
 
 In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not increase in response to the inclusion of OnioNS on the Tor network. If we also assume that $ L_{T} $ is fixed, then we can examine the impact of choices for $ \Delta q $ and calculate the probability of Mallory compromising any Quorum over a period of time $ t $. Mallory's cumulative chances of compromising any Quorum is given by $ 1 - (1 - f_{c})^{\frac{t}{\Delta q}} $ where $ f_{c} $ is Mallory's chances of compromising a single Quorum. We estimate this over 10 years in Figure \ref{fig:cumulativeProbability}.
@@ -877,7 +874,7 @@ In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not
 %It also supports our earlier conclusion that the choices of $ L_{Q} = 31 $ and $ L_{Q} = 63 $ are suboptimal.
 Figure \ref{fig:cumulativeProbability} suggests that although larger values of $ \Delta q $ positively impact security, the choice of $ L_{Q} $ is more significant. Furthermore, even "Stable" routers in the Tor network may be too unstable for very slow rotation rates, and small values for $ \Delta q $ also reduces the disruption timeline for a malicious Quorum. Therefore, based on Figure \ref{fig:cumulativeProbability}, we further reiterate our recommendation of $ L_{Q} \geq 127 $ and suggest $ \Delta q = 7 $. Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} $ and $ \Delta q $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to specific Quorum-level attacks.
 
-\subsection{Derivation of Lottery Analysis Equations} % incomplete
+\subsection{Derivation of Lottery Analysis Equations} % todo
 
 THIS IS INCOMPLETE
 
