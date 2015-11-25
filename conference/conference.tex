@@ -388,7 +388,7 @@ A Quorum node $ Q_{i,k} $ listens for tickets from hidden service operators. Whe
 \subsubsection{Lottery Management}
 \label{sec:lotteryManagement}
 
-In section \ref{sec:ticketGeneration} we describe a proof-of-work (PoW) protocol that acts as a barrier-of-entry. It is straightforward to design a system where a name is awarded after the completion of this PoW; however such a system is vulnerable to attacks by adversaries with strong computational capabilities who may quickly register many names, as we described in section \ref{sec:useCases}. In an attempt to resolve this problem, we introduce a lottery-like system, managed by Quorum nodes.
+In section \ref{sec:ticketGeneration} we describe a proof-of-work (PoW) protocol that acts as a barrier-of-entry. It is straightforward to design a system where a name is awarded after the completion of this PoW; however such a system is vulnerable to attacks by adversaries with strong computational capabilities who may quickly register many names, as we described in section \ref{sec:threatModel}. In an attempt to resolve this problem, we introduce a lottery-like system, managed by Quorum nodes.
 
 The lottery starts at the formation of the Quorum. During the lottery, the Quorum accepts requests (or ``tickets'') for names for hidden services, creating a list $ T_{i} $. The lottery ends when $ Q_{i} $ is cycled to $ Q_{i + 1} $. At this time, each node in $ Q_{i} $ performs the following algorithm. Let Charlie $ \in Q_{i} $.
 
@@ -400,7 +400,7 @@ The lottery starts at the formation of the Quorum. During the lottery, the Quoru
 
 All mirrors or other parties may verify $ W_{i} $ and update their main database accordingly through the same protocol because $ T_{i} $ is now public. As this algorithm occurs at 00:00 UTC, mirrors then update their Merkle root hash per the protocol described in section \ref{sec:qQualification}.
 
-In order to defend against the one-to-many and many-to-one attacks described in section \ref{sec:useCases}, each Quorum node only accepts the first ticket per hidden service and the first ticket per name. We provide a defense to the many-to-many attack by setting the proof-of-work threshold $ t_{d} $ according to the formula $ d_{b} / \ceil{\frac{j}{\nWinners}} $, where $ d_{b} $ is the base difficulty and $ j $ is the ticket's index, $ 1 \leq i \leq \nWinners $.
+In order to defend against the one-to-many and many-to-one attacks described in section \ref{sec:threatModel}, each Quorum node only accepts the first ticket per hidden service and the first ticket per name. We provide a defense to the many-to-many attack by setting the proof-of-work threshold $ t_{d} $ according to the formula $ d_{b} / \ceil{\frac{j}{\nWinners}} $, where $ d_{b} $ is the base difficulty and $ j $ is the ticket's index, $ 1 \leq i \leq \nWinners $.
 
 %Quorum ends when G(t+1) is actually published. 
 %
@@ -524,16 +524,18 @@ As described in section \ref{sec:lotteryManagement}, the $ Q_{i} $ sets the proo
 	t_{d} = \frac{d_{b}}{\ceil{\frac{j}{\nWinners}}}
 \end{equation}
 
-\noindent where $ d_{b} $ is the base difficulty, $ W_{i} $ is the set of lottery winners, and $ j $ is the ticket's index in $ W_{i} $. If $ \left\vert{W_{i}}\right\vert $ innocent parties submit tickets, then by the partial sum formula Craig (a computationally-powerful adversary) must perform 
+\noindent where $ d_{b} $ is the base difficulty, $ W_{i} $ is the set of lottery winners, and $ j $ is the ticket's index in $ W_{i} $. If $ \nWinners $ innocent parties submit tickets, then by the partial sum formula Craig (a computationally-powerful adversary) must perform 
 
 \begin{equation}
-	C_{w} = \frac{\nWinners \cdot n \cdot  (n+1)}{2} - \nWinners
+	C_{w} = \frac{d_{b} \cdot \nWinners \cdot n \cdot  (n+1)}{2} - d_{b} \cdot \nWinners
+	\label{eq:CraigWork}
 \end{equation}
 
 \noindent amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. In the same scenario, if Craig is $ X $ times computationally stronger than the average capabilities of the innocent parties, he may compute $ C_{t} $ number of lottery tickets, where
 
 \begin{equation}
-	C_{t} = \frac{-3 \nWinners + \nWinners \sqrt{9 + \frac{8X}{\nWinners}}}{2}
+	C_{t} = \frac{-3 \cdot d_{b} \cdot \nWinners + d_{b} \cdot \nWinners \sqrt{9 + \frac{8X}{\nWinners}}}{2}
+	\label{eq:nCraigTickets}
 \end{equation}
 
 If his tickets are also submitted to $ Q_{i} $, then the expected number of winning innocent tickets is given by
@@ -547,6 +549,7 @@ Craig could also generate many tickets in order to statistically prevent others 
 
 \begin{equation}
 	X = \frac{\nWinners^{3} + \nWinners^{2}}{2} - \nWinners
+	\label{eq:resistance2DoR}
 \end{equation}
 
 $ C_{w} $ increases quadratically to $ \nWinners $, suggesting that large values for $ \nWinners $ act as a defense against a denial-of-registration attack; with large $ \nWinners $ it is impractical for Craig to generate many tickets in order to increase the proof-of-work difficulty beyond the means of innocent parties. However, large $ \nWinners $ also allows Craig to claim or squat many names. Bared on the above equations, we recommend awarding more than 21 names per lottery and suggest $ \nWinners = 35 $. We note that this value is adjustable and can be easily increased to meet a demonstrably higher demand from the Tor community.
@@ -601,7 +604,7 @@ Accidental leakage of .tor lookups over the Internet DNS via human mistakes or m
 
 \subsection{Implementation}
 
-We have build a reference implementation of the Onion Name System in C++11 as a supplement to this work. We utilize Boost Asio \cite{AsioLib} for our networking engine and use the Botan \cite{BotanLib} library for most cryptographic operations. We encode all the data structures in JSON; JSON is significantly more compact than XML, but retains user readability and its support of basic primitive types is highly applicable to our needs. Our code is licensed under the Modified BSD License, identical to Tor, and is available for Linux through a software repository at our hidden service, \href{http://onions55e7yam27n.onion}{http://onions55e7yam27n.onion}.
+We have build a reference implementation of the Onion Name System in C++11 as a supplement to this work. We utilize Boost Asio \cite{AsioLib} for our networking engine and use the Botan \cite{BotanLib} library for most cryptographic operations. We encode all the data structures in JSON; JSON is significantly more compact than XML, but retains user readability and its support of basic primitive types is highly applicable to our needs. Since JSON is usually not capable of carrying binary values, we encode all non-ASCII values (such as SHA-384 hashes) in base64. Our code is licensed under the Modified BSD License, identical to Tor, and is available for Linux through a software repository at our hidden service, \href{http://onions55e7yam27n.onion}{http://onions55e7yam27n.onion}.
 
 We divided our software into three parts: OnioNS-client, OnioNS-server, and OnioNS-HS, with OnioNS-common as a shared library dependency. OnioNS-client negotiates with the user's Tor software to MitM all requests for torified TCP streams. It filters for our .tor pseudo-TLD while allowing all other lookups (IPv4, .onion, or DNS) to pass unimpeded. Once it intercepts a request for a .tor domain, it performs a Domain Query and rewrites the domain to a .onion address before allowing Tor to bind the request to a circuit. This approach preserves backwards-compatibility, achieving a design objective and enhancing usability. The OnioNS-server is comparatively simpler; it binds to a localhost TCP port and performs our protocols. Tor router administrators must then configure their Tor to host a hidden service and bind it to the same localhost port so that OnioNS-server may be reached from the outside. Finally, OnioNS-HS is a simple command-line utility that prompts the user for domain information, performs the proof-of-work, and uploads the ticket or record to the current Quorum. In all three cases, our software functions with minimal configuration.
 
@@ -618,13 +621,13 @@ We have deployed a small testing network of Quorum and mirror servers. We first 
 
 \subsection{Results}
 
-\subsubsection{Performance} % todo
+\subsubsection{Performance}
 
-Our experiment involves two machines, A and B. Both were hosted on 1 Gbit connections on a university campus. Machine A has an Intel Core2 Quad Q9000 (Penryn architecture) @ 2.00 GHz CPU from late 2008 and Machine B has an Intel i7-2600K (Sandy Bridge architecture) @ 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively.
+We tested the performance of our OnioNS-HS and OnioNS-client software on two machines, $ M_{a} $ and $ M_{b} $. $ M_{a} $ contains an Intel Core2 Quad Q9000 (Penryn architecture) 2.00 GHz CPU from late 2008 and $ M_{b} $ an Intel i7-2600K (Sandy Bridge architecture) 4.3 GHz CPU from 2011, representing low-end and medium-end consumer-grade computers, respectively. Both machines were hosted on a 1 Gbit connection on a university campus.
 
-We selected the parameters of scrypt such that it consumed 128 MB of RAM during operation. We consider this an affordable amount of RAM for low-end consumer-grade computers. We created a multi-threaded implementation of the Record Generation protocol and used all eight virtual CPU cores on Machine B to generate our Record. As expected, our RAM consumption scaled linearly with the number of scrypt instances executed in parallel; we observed approximately 1 GB of RAM consumption during Record Generation. We set our difficulty level so that Records took approximately six hours on average to become valid on Machine B.
+We selected the parameters of scrypt such that it consumed 128 MB of RAM during operation. We consider this an affordable amount of RAM for low-end consumer-grade computers. OnioNS-common provides a multi-threaded implementation of the Ticket Generation protocol, so OnioNS-HS used all eight virtual CPUs on $ M_{b} $ to generate the ticket. As expected, RAM consumption scaled linearly with the number of scrypt instances executed in parallel; with eight cores we observed that the software consumed approximately 1 GB of RAM.
 
-We conducted several performance measurements for the Domain Queries.  We measured and averaged 200 samples of the CPU wall-time required for both machines to validate the Record.
+Following ticket generation, we then measured the performance of OnioNS-client. We averaged 200 samples of the CPU wall-time required for both machines to validate the ticket.
 
 \renewcommand{\arraystretch}{1.3}
 \newcolumntype{L}[1]{>{\hsize=#1\hsize\raggedright\arraybackslash}X}%
@@ -641,32 +644,37 @@ We conducted several performance measurements for the Domain Queries.  We measur
   	\end{tabularx}
 \end{table}
 
-As expected, Machine B outperformed Machine A in all instances and we observed that single iteration of scrypt dominated the total validation time. This is a CPU cost introduced to Tor clients, Mirrors, and Quorum nodes for each Record.
+$ M_{b} $ outperformed $ M_{a} $ in all instances and we observed that single iteration of scrypt dominated the total validation time, matching our expectations. Obviously, higher-end CPUs can complete an iteration of scrypt in less time, but nevertheless the proof-of-work is the largest source of CPU cost for clients, mirrors, and Quorum nodes. Although we anticipate that this is an acceptable load on all parties, clients on extremely limited hardware may elect to skip the proof-of-work verification step at the cost of some security.
 
-Clients must also check the Merkle root signatures from all $ L_{Q} $ Quorum nodes. We use Ed25519 to reduce the signature space requirements and CPU time required for verification: $ S_{\mathit{ed}}(m, e) $ signatures fit into 64 bytes and may be verified in batch form. Bernstein et al. reports that a quad-core Westmere-era CPU can generate 109,000 signatures per second and verify 71,000 signatures per second with 134,000 CPU cycles per signature \cite{bernstein2012high}. Therefore, even with large Quorums, we anticipate clients to be able to verify signatures from all Quorum nodes in sub-second time on moderate hardware.
+\subsubsection{Latency}
 
-\subsubsection{Latency} % todo
+Although Tor is a low-latency network, all communications occur over six-hop hidden service paths through Tor, which introduces latency into most of our protocols. The exact time is highly dependent on the speed of the routers selected by either party. The latency is most significant for clients and adds an additional delay between the time that a user enters an OnioNS domain into the Tor Browser and the moment that Tor begins loading the hidden service. Fortunately, latency and load times across Tor circuits have been well studied. 
 
-Although Tor is a low-latency network, as Domain Queries occur over a Tor circuit the three-hop path still introduces some latency into the communications between the client and a Mirror. The time is highly dependent on the circuit's network distance and the speed of each Tor router. This adds an additional delay between the time that a user enters an OnioNS domain into the Tor Browser and when Tor begins loading the hidden service. Fortunately, latency and load times across Tor circuits have been well studied. Domain Queries transfer both a Record, a Merkle subtree, and a collection of ed25519 signatures. We estimate the size of this information to be approximately 50 KB. We provide the distribution of circuit performance in Figure \ref{fig:latencyGraph}.
+% S_{M} = \log_{64}(2 \cdot \log_{2}(Z)) + e \cdot \log_{2}(Z)
+Domain Queries transfer a record/ticket and a Merkle subtree. We expect that a ticket or record would be less than 1 KiB. If OnioNS contains $ Z $ names, then the expected byte size of the serialized Merkle subtree, $ S_{M} $, is approximated by
+\[
+S_{M} = 2 \cdot (\log_{64} 2^{384} + e) \cdot \log_{2} Z
+\]
+\noindent where $ e $ represents markup and other formatting overhead in the transmission. Our implementation has $ e \approx 16 $ so if $ Z $ is 8192, then the expected networking cost for clients is $ 1872 + 1024 = 2896 $ bytes, or 2.83 KiB. While Tor provides measurements on the performance of Tor circuits, their smallest measurement is 50 KiB, which we illustrate in Figure \ref{fig:latencyGraph}.
 
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=\linewidth]{../assets/images/torperf_50kb_2015-02_2015-08.eps}
-	\caption{The average performance to download 50 KB files over Tor circuits, as measured by Tor bandwidth authorities. The first and third quartiles are shown with the median time shown in orange \cite{TorMetrics}.}
+	\caption{The average performance to download 50 KiB files over Tor circuits, as measured by Tor bandwidth authorities. The first and third quartiles are shown with the median time shown in orange \cite{TorMetrics}.}
 	\label{fig:latencyGraph}
 \end{figure}
 
-This network latency to query a OnioNS Mirror is supplemental to the time to verify the Record and Merkle subtree. We avoid additional latency costs by implementing a client-side cache in order to allow subsequent queries to be resolved locally. We also reduce the expense of circuit construction by building the circuit on startup.
+The client can avoid most of the latency overhead of hidden service communication (path negotiation and circuit construction) by building a single tunnel to a mirror at startup and then recycling it for all subsequent queries. The client also needs to fetch the $ C_{a} $ and $ C_{b} $ consensus documents which are needed to derive the Quorum and verify the Merkle root, but this can also be done at startup. We therefore believe that we will have less than 50 ms of latency overhead for most queries.
 
-\subsubsection{Usability} % next
+Our implementation also provides a client-side cache which resolves queries locally whenever possible. This prevents redundant queries to remote mirrors and slightly reduces the ability for mirrors to track the popularity of hidden services.
 
-Our software maximizes usability in for two main groups of users: hidden service administrators and Tor end-users. The OnioNS-HS command-line utility provides minimal prompts: it asks the user for the main domain name, a list of subdomains and destinations, and the user's PGP key if they choose to disclose it. It then loads the hidden service private key, performs the proof-of-work to validate the Record, and automatically uploads the Record to the Quorum. We released a beta test of our software to Tor developers and volunteers and received positive feedback on the simplicity of the registration process.
+\subsubsection{Usability}
 
-Our client software integrates well into the Tor Browser and starts and stops with the Tor Browser environment. As shown in Figure \ref{fig:prototypeExample}, OnioNS resolves and loads hidden services under a meaningful name transparently without requiring any user interaction, similar to traditional DNS requests over Tor circuits. We observed that queries for unknown domains added several seconds of latency to the load time of hidden services, matching our above analysis. Similar to the BIND software for DNS, OnioNS-client caches known Records in local storage, allowing further queries for their domains to be resolved nearly instantaneously. This mechanism also accelerates load times if those Records are part of a chain of resolutions. Local resolution also minimizes a Mirror's exposure to the popularity of domain names.
+OnioNS is lightweight for clients, is straightforward for hidden service operators to use, and is easy for Tor router administrators to support. Our client software integrates well into the Tor Browser and starts and stops with the Tor Browser environment. As shown in Figure \ref{fig:prototypeExample}, OnioNS resolves and loads hidden services under a meaningful name transparently without requiring any user interaction, similar to traditional DNS requests over Tor circuits. Domain Queries have low latency and the local cache can further reduce overhead, which is especially helpful if cached records are part of a chain of resolutions. 
 
-%We also maintain significant usability and security benefits over similar systems such as Namecoin. OnioNS Records 
+OnioNS-HS enables hidden service operators to claim a name and locally manage record information. The Ticket Generation protocol has minimal prompts: it asks the user for the main domain name, a list of subdomains and destinations, and an optional PGP key. It then loads the hidden service private key, performs the proof-of-work algorithm, and automatically uploads the ticket to the Quorum. We released a beta test of our software to Tor developers and volunteers and received positive feedback on the simplicity of the registration process.
 
-We achieve another primary usability benefit by introducing an automatic naming system for Tor hidden services: it is no longer necessary for the Tor community to construct and maintain directories of hidden services. The automatic resolution of domain names allows scaling beyond human-maintained directories, which only efficiently scales to several hundred names at most. OnioNS should provide a significant usability to Tor users and the community at large.
+We achieve another primary usability benefit by introducing an automatic naming system for Tor hidden services: it is no longer necessary for the Tor community to construct and maintain directories of hidden services. The automatic resolution of domain names allows scaling beyond human-maintained directories. OnioNS should provide a significant usability enhancement to Tor users and the community at large.
 
 \subsection{Discussions}
 
@@ -834,8 +842,6 @@ However, we select Quorum members according to consensus weight, akin to router 
 	\label{fig:weightDist}
 \end{figure}
 
-TODO: REDO FROM HERE TO IMAGE
-
 We now re-examine Equation \ref{eq:compromiseProb} with regard to this distribution of consensus weight. Consider that the hypergeometric distribution describes the probability of selecting $ k $ Mallory-controlled routers in an $ L_{Q} $-sized Quorum from an $ N $-sized population containing $ K $ Mallory-controlled routers. Let $ L(x) $ be the probability distribution of selecting a router whose consensus weight is at the lowest $ x $ percentile. Then the probability of compromise is given by Equation \ref{eq:compromiseWeighted} where $ K $, the expected number of routers in a population of size $ N $, is given by Equation \ref{eq:compromiseK}, and $ R $ is the probability that routers outside $ L(x) $ are compromised. Since $ L(x) $ describes probabilities and $ N $ must be a natural number, ($ N \in \mathbb{N} $) this approach provides an approximation of the probability of compromise.
 
 We illustrate the probabilities against discrete values of $ x $ and various Quorum sizes in Figure \ref{fig:quorumWeightedMajority} using $ N = 4540 $, consistent with the population in Figure \ref{fig:quorumUnweightedMajority}.
@@ -874,37 +880,63 @@ In section \ref{sec:threatModel}, we assume that $ f_{E} $ is fixed and does not
 %It also supports our earlier conclusion that the choices of $ L_{Q} = 31 $ and $ L_{Q} = 63 $ are suboptimal.
 Figure \ref{fig:cumulativeProbability} suggests that although larger values of $ \Delta q $ positively impact security, the choice of $ L_{Q} $ is more significant. Furthermore, even "Stable" routers in the Tor network may be too unstable for very slow rotation rates, and small values for $ \Delta q $ also reduces the disruption timeline for a malicious Quorum. Therefore, based on Figure \ref{fig:cumulativeProbability}, we further reiterate our recommendation of $ L_{Q} \geq 127 $ and suggest $ \Delta q = 7 $. Although a malicious Quorum would have the capabilities to deploy a variety of attacks on the network, the proper selections of $ L_{Q} $ and $ \Delta q $ reduces the likelihood of this occurring to near-zero probabilities. We consider this a stronger solution than introducing countermeasures to specific Quorum-level attacks.
 
-\subsection{Derivation of Lottery Analysis Equations} % todo
+\subsection{Derivation of Lottery Analysis Equations}
 
-THIS IS INCOMPLETE
+In this section we derive and further clarify the lottery analysis equations that we introduced in section \ref{sec:lottery}. We set the proof-of-work threshold, $ t_{d} $ according to
+\[
+	t_{d} = \frac{d_{b}}{\ceil{\frac{j}{\nWinners}}}
+\]
 
-In section \ref{sec:lottery}, we show that our lottery can withstand an adversary who is $ m $ times more computationally powerful than baseline. Namely, if $ n $ innocent parties first generate $ n $ tickets, an adversary of strength $ m $ can generate $ x $ tickets by
+Thus $ t_{d} = d_{b} $ for the first $ \nWinners $ tickets, $ t_{d} = 2 d_{b} $ for the second set of $ \nWinners $ tickets, and so on. The coefficient is then given by the $ n $th triangular number.
+\[
+	t(n) = \binom{n + 1}{2} = \frac{n \cdot (n + 1)}{2}
+\]
 
-%We derive our equation by the following intermediate steps:
+In the scenario in section \ref{sec:lottery}, Craig submits his tickets after $ \nWinners $ innocent actors. Thus Craig starts with $ t_{d} = 2 d_{b} $ and each must compute $ d_{b} \cdot \nWinners $ for each set in the base case.
+\begin{align*}
+	C_{w} &= d_{b} \cdot \nWinners \cdot (\frac{n \cdot  (n+1)}{2} - 1) \\
+	C_{w} &= \frac{d_{b} \cdot \nWinners \cdot n \cdot  (n+1)}{2} - d_{b} \cdot \nWinners
+\end{align*}
 
-\begin{equation}
-m = n \cdot \displaystyle\sum_{i=1}^{x} j
-\end{equation}
+This is Equation \ref{eq:nCraigTickets}. We can then solve for $ n $. %, the number of tickets that Craig can compute with $ C_{w} $ work.
+\begin{align*}
+	C_{w} &= d_{b} \cdot \nWinners \cdot (\frac{n \cdot  (n+1)}{2} - 1) \\
+	\frac{C_{w}}{d_{b} \cdot \nWinners} &= \frac{n^{2} + n}{2} - 1 \\
+	\frac{C_{w}}{d_{b} \cdot \nWinners} + 1 &= \frac{n^{2} + n}{2} \\
+	\frac{2 \cdot C_{w}}{d_{b} \cdot \nWinners} + 2 &= n^{2} + n \\
+	0 &= n^{2} + n - \frac{2 \cdot C_{w}}{d_{b} \cdot \nWinners} - 2 \\
+	n &= \frac{-1 + \sqrt{1 - 4(\frac{-2 \cdot C_{w}}{d_{b} \cdot \nWinners} - 2)}}{2} \\
+	n &= \frac{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
+\end{align*}
 
-%This translates into a quadratic formula by the expansion of the partial sum formula.
+\newpage
 
-\begin{equation}
-0 = x^{2} + x - 2 - \frac{2m}{n}
-\end{equation}
+We must then account for the fact that $ \nWinners $ have already been submitted. This produces 
+\begin{align*}
+	n &= \frac{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2} - 1 \\
+	n &= \frac{-3 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
+\end{align*}
 
-\begin{equation}
-x = \frac{-1 + \sqrt{9 + \frac{8m}{n}}}{2}
-\end{equation}
+% I'm less certain about this!
+We then multiply by the total cost of generating a set $ \nWinners $ to get Equation \ref{eq:nCraigTickets}.
+\begin{align*}
+	C_{t} = \frac{-3 \cdot d_{b} \cdot \nWinners + d_{b} \cdot \nWinners \sqrt{9 + \frac{8X}{\nWinners}}}{2}
+\end{align*}
 
-\begin{equation}
-x = \frac{-3n + n\sqrt{9 + \frac{8m}{n}}}{2}
-\end{equation}
+The expected number of winning innocent hidden services is the number of winners multiplied by the probability of selecting innocent hidden services.
+\begin{align*}
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners \cdot \nWinners}{\nWinners \cdot C_{t}} \\
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners^{2}}{\nWinners \cdot \frac{-3 \cdot d_{b} \cdot \nWinners + d_{b} \cdot \nWinners \sqrt{9 + \frac{8X}{\nWinners}}}{2}} \\
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \cdot \nWinners^{2}}{-n + n \cdot \sqrt{9 + \frac{8X}{\nWinners}}} \\
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8X}{\nWinners}}}
+\end{align*}
 
-Gives the number of malicious tickets. Then the number of innocent winners is given by
+This is Equation \ref{eq:expInnocentWinners}. Then we can derive Equation \ref{eq:resistance2DoR} by the following:
+\begin{align*}
+	1 &= \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8X}{\nWinners}}} \\
+	X &= \frac{\nWinners^{3} + \nWinners^{2}}{2} - \nWinners
+\end{align*}
 
-\begin{equation}
-\frac{n^{2}}{n + \frac{-3n + n \sqrt{9 + \frac{8m}{n}}}{2}} = \frac{2n}{-1 + \sqrt{9 + \frac{8m}{n}}}
-\end{equation}
 
 % that's all folks
 \end{document}
