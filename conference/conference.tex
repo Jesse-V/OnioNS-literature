@@ -44,8 +44,9 @@
 %\subtitle{Tor-powered Distributed DNS for Tor Hidden Services}
 \runningtitle{The Onion Name System -- Tor-powered Distributed DNS for Tor Hidden Services}
 
+% OnioNS resists Sybil attacks and computationally-powerful adversaries. 
 \begin{abstract} {
-Tor hidden services are anonymous servers of unknown location and ownership which can be accessed through any Tor-enabled web browser. They have gained popularity over the years, but since their introduction in 2002 still suffer from major usability challenges primarily due to their cryptographically-generated non-memorable addresses. \newline \hspace*{1em} In response to this difficulty, in this work we introduce the Onion Name System (OnioNS), a privacy-enhanced distributed resolution service. OnioNS allows Tor users to reference a hidden service by a meaningful globally-unique verifiable domain name chosen by the hidden service operator. We construct OnioNS as an optional backwards-compatible plugin for Tor, simplify our design and threat model by embedding OnioNS within the Tor network, and provide mechanisms for authenticated denial-of-existence with minimal networking costs. We also introduce a lottery-like system to reduce the threat of land rushes and domain squatting. Finally, we integrate our client software with the Tor Browser and conduct performance analysis of our prototype. %find that the Tor Browser can load a hidden service under a meaningful domain name in approximately YYY seconds above baseline.
+Tor hidden services are anonymous servers of unknown location and ownership that can be accessed through any Tor-enabled web browser. They have gained popularity over the years, but since their introduction in 2002 still suffer from major usability challenges primarily due to their cryptographically-generated non-memorable addresses. \newline \hspace*{1em} In response to this difficulty, in this work we introduce the Onion Name System (OnioNS), a privacy-enhanced distributed resolution service. OnioNS allows Tor users to reference a hidden service by a meaningful globally-unique verifiable domain name chosen by the hidden service operator. We construct OnioNS as an optional backwards-compatible plugin for Tor, simplify our design and threat model by embedding OnioNS within the Tor network, and provide mechanisms for authenticated denial-of-existence with minimal networking costs. We introduce a lottery-like system to reduce the threat of land rushes and domain squatting. Finally, we provide a security analysis, integrate our software with the Tor Browser, and conduct performance tests of our prototype.
 }
 \end{abstract}
   
@@ -110,15 +111,15 @@ To integrate with Tor, we must provide a secure system, preserve user privacy, a
 
 \subsection{Design Objectives}
 
-Tor's privacy-enhanced environment introduces distinct challenges to any new infrastructure. Here we enumerate a list of requirements that must be met by any naming system applicable to Tor hidden services. In Section \ref{sec:RelatedWorks} we analyse existing works and show how these systems do not meet these goals and in Section \ref{sec:Solution} we demonstrate how we overcome them with OnioNS.
+Tor's privacy-enhanced environment introduces distinct challenges to any new infrastructure. Here we enumerate a list of requirements that must be met by any naming system applicable to Tor hidden services. In Section \ref{sec:RelatedWorks} we analyze existing works and show how these systems do not meet these goals and in Section \ref{sec:Solution} we demonstrate how we overcome them with OnioNS.
 
 1. \textbf{Anonymous registrations}: The system should not require any personally-identifiable or location information from the registrant. Tor hidden services publicize no more information than a public key and a set of Introduction Points.
 
 2. \textbf{Privacy-enhanced queries}: Clients should be anonymous, indistinguishable, and unable to be tracked by name servers. Tor already tunnels most Internet DNS queries over circuits, thus any alternative naming system should continue to preserve user privacy during lookups.
 
-3. \textbf{Strong integrity}: Clients must be able to verify that the domain-address pairing that they receive from name servers is authentic relative to the authenticity of the hidden service. This objective provides a defence against phishing attacks.
+3. \textbf{Strong integrity}: Clients must be able to verify that the domain-address pairing that they receive from name servers is authentic relative to the authenticity of the hidden service. This objective provides a defense against phishing attacks.
 
-4. \textbf{Globally unique domain names}: Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack. Unique domain names prevent fragmentation of users and also provides a defence against phishing attacks.
+4. \textbf{Globally unique domain names}: Any domain name of global scope must point to at most one server. For naming systems that generate names via cryptographic hashes, the key-space must be of sufficient length to resist cryptanalytic attack. Unique domain names prevent fragmentation of users and also provides a defense against phishing attacks.
 
 5. \textbf{Distributed control}: Central authorities carry absolute control over the system and root security breaches can easily compromise the integrity of the entire system. They may also be able to compromise the privacy of both users and hidden services or may not allow anonymous registrations.
 
@@ -169,7 +170,7 @@ Cases two and three may be expected by a malicious name server and constitute si
 
 Vanity key generators (e.g. Shallot \cite{KatmagicShallot}) attempt to find by brute-force an RSA key that generates a partially-desirable hash. Vanity key generators are commonly used by hidden service operators to improve the recognition of their hidden service, particularly for higher-profile services. For example, a hidden service operator may wish to start his service's address with a meaningful noun so that others may more easily recognize it. However, these generators are only partially successful at enhancing readability because the size of the domain key-space is too large to be fully brute-forced in any reasonable length of time. If the address key-space was reduced to allow a full brute-force, the system would fail to be guaranteed collision-free. Nicolussi suggested changing the address encoding to a delimited series of words, using a dictionary known in advance by all parties \cite{nicolussi2011human}. While Nicolussi's encoding improves the readability of an address, like vanity key generators it does not allow addresses to be completely meaningful.
 
-The Internet DNS is already well established as a fundamental abstraction layer for Internet routing. However, despite its widespread use and extreme popularity, the Internet DNS suffers from several significant shortcomings and fundamental security issues that make it inappropriate for use by Tor hidden services. Generally speaking, the Internet DNS by default does not use any cryptographic primitives. DNSSEC is primarily designed to prevent forgeries and DNS cache poisoning from intermediary name servers and it does not provide any degree of query privacy \cite{wachs2014censorship}. Additional extensions and protocols such as DNSCurve \cite{bernstein2009dnscurve} have been proposed, but DNSSEC and DNSCurve have not yet seen widespread full deployment across the Internet. Cachin and Samar \cite{cachin2004secure} extended the Internet DNS and decreased the attack potential for authoritative name servers via threshold cryptography, but the lack of default security in the Internet DNS and the logistical difficulty in globally implementing their work prevents us from using their system for hidden services.
+The Internet DNS is already well established as a fundamental abstraction layer for Internet routing. However, despite its widespread use and extreme popularity, DNS suffers from several significant shortcomings and fundamental security issues that make it inappropriate for use by Tor hidden services. Generally speaking, the Internet DNS by default does not use any cryptographic primitives. DNSSEC is primarily designed to prevent forgeries and DNS cache poisoning from intermediary name servers and it does not provide any degree of query privacy \cite{wachs2014censorship}. Additional extensions and protocols such as DNSCurve \cite{bernstein2009dnscurve} have been proposed, but DNSSEC and DNSCurve have not yet seen widespread full deployment across the Internet. Cachin and Samar \cite{cachin2004secure} extended DNS and decreased the attack potential for authoritative name servers via threshold cryptography, but the lack of default security in DNS and the logistical difficulty in globally implementing their work prevents us from using their system for hidden services.
 
 OnionDNS \cite{scaife2015oniondns} is a seizure-resistant alternative resolution service for the Internet. OnionDNS is based on DNS and uses unmodified BIND client software but anonymizes the root server by hosting it as a hidden service. While OnionDNS is highly usable and provides DNSSEC and other authentication mechanisms, the system is centralized by a single root server and thus highly vulnerable if the root is malicious or is compromised. OnionDNS and OnioNS were named independently and readers should take care to not confuse the two works.
 
@@ -182,9 +183,9 @@ Namecoin \cite{NamecoinHome} is an early fork of Bitcoin \cite{nakamoto2008bitco
 \section{Assumptions and Threat Model}
 \label{sec:threatModel}
 
-We assume that Tor circuits provides privacy and anonymity; if Alice constructs a three-hop Tor circuit to Bob with modern Tor cryptographic protocols and sends a message $ m $ to Bob, we assume that Bob can learn no more about Alice than the contents of $ m $. This implies that if $ m $ does not contain identifiable information, Alice is anonymous from Bob's perspective. This also implies an assumption on the security of cryptographic primitives and a lack of backdoors or analogous breaks in cryptographic libraries. The security of Tor circuits is also dependent on the assignment of consensus weight; we assume that the majority of directory authorities are at least semi-honest and that consensus weight is an effective defence against Sybil attacks. The aforementioned assumptions are shared by the Tor network.
+We assume that Tor circuits provides privacy and anonymity; if Alice constructs a three-hop Tor circuit to Bob with modern Tor cryptographic protocols and sends a message $ m $ to Bob, we assume that Bob can learn no more about Alice than the contents of $ m $. This implies that if $ m $ does not contain identifiable information, Alice is anonymous from Bob's perspective. This also implies an assumption on the security of cryptographic primitives and a lack of backdoors or analogous breaks in cryptographic libraries. The security of Tor circuits is also dependent on the assignment of consensus weight; we assume that the majority of directory authorities are at least semi-honest and that consensus weight is an effective defense against Sybil attacks. The aforementioned assumptions are shared by the Tor network.
 
-We assume that an active attacker, Mallory, controls some percentage of dishonest colluding Tor routers as well as semi-honest routers, however this percentage is small enough to avoid violating our second assumption. We assume a fixed percentage of dishonest and semi-honest routers; namely that the percentage of routers under an Mallory's control does not increase in response to the inclusion of OnionNS into Tor infrastructure. This assumption simplifies our threat model analysis but we consider it realistic because while Tor traffic is purposely secret as it travels through the network, we consider OnioNS information public so we don't consider the inclusion of OnioNS a motivating factor to Mallory. However, we allow Mallory to operate and actively MITM any of the non-authoritative name servers.
+We assume that an active attacker, Mallory, controls some percentage of dishonest colluding Tor routers as well as semi-honest routers; however this percentage is small enough to avoid violating our second assumption. We assume a fixed percentage of dishonest and semi-honest routers; namely that the percentage of routers under an Mallory's control does not increase in response to the inclusion of OnionNS into Tor infrastructure. This assumption simplifies our threat model analysis but we consider it realistic because while Tor traffic is purposely secret as it travels through the network, we consider OnioNS information public so we don't consider the inclusion of OnioNS a motivating factor to Mallory. However, we allow Mallory to operate and actively MitM any of our non-authoritative name servers.
 
 % Let $ R $ be a set of Tor routers with the Fast, Stable, and Running flags and let $ \mathit{qc} \in R $ be the set of agreeing routers with the largest cumulative amount of consensus weight. If an $ M $-sized set $ Q $ is randomly chosen from $ \mathit{qc} $ with selection probability determined by the consensus weight of each member in $ \mathit{qc} $, then we assume that the largest subset of agreeing routers in $ Q $ are at least semi-honest.
 
@@ -283,7 +284,7 @@ We now describe the protocols fundamental to OnioNS functionality.% These protoc
 
 We use $ \mathcal{G}(t) $ as a basis for several of our protocols, although we note that $ \mathcal{G}(t) $ has applications in Tor beyond OnioNS. One straightforward definition of $ \mathcal{G}(t) $ is the SHA-384 hash of Tor's consensus documents. If the Tor network is dynamic enough to provide significant amounts of entropy into the consensus documents, then $ \mathcal{G}(t) $ may be considered cryptographically secure. However, this assumption does not hold because current router descriptors are publicly available before the consensus documents are published, allowing $ \mathcal{G}(t) $ under this approach to be easily manipulated by a few malicious Tor routers. The attack becomes significantly easier in the final moments before the directory authorities publish the consensus.
 
-Instead, we suggest implementing $ \mathcal{G}(t) $ as the commitment scheme proposed by Goulet and Kadianakis \cite{GouletCommitReveal}. Their algorithm modifies the consensus voting protocol that is run once an hour by Tor directory authorities. In their scheme, at 00:00 UTC each authority commits a SHA-256 hash of a secret value $ v $ into each consensus vote across a 12 hour period. Then at 12:00 UTC, each directory authority reveals $ v $ across the next set of 12 consensuses. Then at 24:00 UTC, the revealed values are hashed together to create a single random number, which is then embedded in the consensus documents so that it is efficiently distributed to both Tor routers and clients. A different random number thus appears in the consensus every 24 hours. While this implementation of $ \mathcal{G}(t) $ defines $ t $ as an integer of 24 hours, $ \Delta q $ may be greater than 24 hours, as discussed in \ref{sec:qRotation}. Therefore, throughout the remainder of this document we will use the notation $ \mathcal{G}(i) $ to reference the $ \mathcal{G}(t \dot 24 \cdot \Delta q) $ that defines $ Q_{i} $.
+Instead, we suggest implementing $ \mathcal{G}(t) $ as the commitment scheme proposed by Goulet and Kadianakis \cite{GouletCommitReveal}. Their algorithm modifies the consensus voting protocol that is run once an hour by Tor directory authorities. In their scheme, at 00:00 UTC each authority commits a SHA-256 hash of a secret value $ v $ into each consensus vote across a 12 hour period. Then at 12:00 UTC, each directory authority reveals $ v $ across the next set of 12 consensuses. Then at 24:00 UTC, the revealed values are hashed together to create a single random number, which is then embedded in the consensus documents so that it is efficiently distributed to both Tor routers and clients. A different random number thus appears in the consensus every 24 hours. While this implementation of $ \mathcal{G}(t) $ defines $ t $ as an integer of 24 hours, $ \Delta q $ may be greater than 24 hours, as discussed in \ref{sec:qRotation}. Therefore, throughout the remainder of this document we will use the notation $ \mathcal{G}(i) $ to reference the $ \mathcal{G}(t \cdot 24 \cdot \Delta q) $ that defines $ Q_{i} $.
 
 %todo: need image here to explain the cycle and Quorum lifetime
 
@@ -516,7 +517,7 @@ Alternative algorithms may more tightly couple the scrypt and RSA-PSS components
 
 Our lottery uses proof-of-work as a barrier-of-entry and awards names to a fixed number of hidden services to limit abuse. However, adversaries with significant computational capabilities may still register many tickets in order to improve their chances of winning the lottery. This may be done as part of a denial-of-registration attack or an en-mass registration strategy. By contrast, we anticipate that honest hidden services will only attempt to register a single name, therefore they may be assumed to be computationally weak. We consider this dichotomy when selecting the lottery's initial parameters.
 
-Our lottery has a high degree of usability if it awards names a very large number of hidden services. Although this increases its vulnerability to the aforementioned attacks from computationally-powerful adversaries, we introduce several straightforward countermeasures. First, we may preload OnioNS with a large set of ``reserved'' names by constructing a mapping between popular hidden services and their self-declared name. Although these pre-existing hidden services must still generate a lottery ticket, they win names immediately. This both increases the usability of our system and removes a significant incentive for land rush attacks. Second, we demonstrate that a large number of winners and the lottery's difficultly-adjustment scheme provides a statistical defense against well-resourced adversaries.
+Our lottery has a high degree of usability if it awards names a very large number of hidden services. Although this increases its vulnerability to the aforementioned attacks from computationally-powerful adversaries, we introduce several straightforward countermeasures. First, we may preload OnioNS with a large set of ``reserved'' names by constructing a mapping between popular hidden services and their self-declared name. Although these pre-existing hidden services must still generate a lottery ticket, they win names immediately. This both increases the usability of our system and removes a significant incentive for land rush attacks. Second, we demonstrate that a large number of winners and the lottery's difficulty-adjustment scheme provides a statistical defense against well-resourced adversaries.
 
 As described in section \ref{sec:lotteryManagement}, the $ Q_{i} $ sets the proof-of-work threshold, $ t_{d} $, according to 
 
@@ -531,28 +532,28 @@ As described in section \ref{sec:lotteryManagement}, the $ Q_{i} $ sets the proo
 	\label{eq:CraigWork}
 \end{equation}
 
-\noindent amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. In the same scenario, if Craig is $ X $ times computationally stronger than the average capabilities of the innocent parties, he may compute $ C_{t} $ number of lottery tickets, where
+\noindent amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. In the same scenario, if Craig is $ C_{R} $ times computationally stronger than the average capabilities of the innocent parties, he may compute $ C_{t} $ number of lottery tickets, where
 
 \begin{equation}
-	C_{t} = \frac{-3 \cdot d_{b} \cdot \nWinners + d_{b} \cdot \nWinners \sqrt{9 + \frac{8X}{\nWinners}}}{2}
+	C_{t} = \frac{-3 \cdot \nWinners + \nWinners \sqrt{9 + \frac{8 \cdot C_{R}}{d_{b} \cdot \nWinners}}}{2}
 	\label{eq:nCraigTickets}
 \end{equation}
 
 If his tickets are also submitted to $ Q_{i} $, then the expected number of winning innocent tickets is given by
 
 \begin{equation}
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert = \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8X}{\nWinners}}}
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert = \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8 \cdot C_{R}}{d_{b} \cdot \nWinners}}}
 	\label{eq:expInnocentWinners}
 \end{equation}
 
-Craig could also generate many tickets in order to statistically prevent others from winning the lottery. However, this also becomes impractical for large $ \nWinners $: if Equation \ref{eq:expInnocentWinners} is set to 1, then $ X $ is given by 
+Craig could also generate many tickets in order to statistically prevent others from winning the lottery. However, this also becomes impractical for large $ \nWinners $: if Equation \ref{eq:expInnocentWinners} is set to 1, then $ C_{R} $ is given by 
 
 \begin{equation}
-	X = \frac{\nWinners^{3} + \nWinners^{2}}{2} - \nWinners
+	C_{R} = \frac{d_{b} \cdot \nWinners^{3} + d_{b} \cdot \nWinners^{2}}{2} - d_{b} \cdot \nWinners
 	\label{eq:resistance2DoR}
 \end{equation}
 
-$ C_{w} $ increases quadratically to $ \nWinners $, suggesting that large values for $ \nWinners $ act as a defense against a denial-of-registration attack; with large $ \nWinners $ it is impractical for Craig to generate many tickets in order to increase the proof-of-work difficulty beyond the means of innocent parties. However, large $ \nWinners $ also allows Craig to claim or squat many names. Bared on the above equations, we recommend awarding more than 21 names per lottery and suggest $ \nWinners = 35 $. We note that this value is adjustable and can be easily increased to meet a demonstrably higher demand from the Tor community.
+$ C_{R} $ increases quadratically to $ \nWinners $, suggesting that large values for $ \nWinners $ act as a defense against a denial-of-registration attack; with large $ \nWinners $ it is impractical for Craig to generate many tickets in order to increase the proof-of-work difficulty beyond the means of innocent parties. However, large $ \nWinners $ also allows Craig to claim or squat many names. Bared on the above equations, we recommend awarding more than 21 names per lottery and suggest $ \nWinners = 35 $. We note that this value is adjustable and can be easily increased to meet a demonstrably higher demand from the Tor community.
 
 We must also select a value for $ d_{b} $. Low values for $ d_{b} $ provides a low barrier-to-entry, increasing usability, but it also increases the lottery's vulnerability to attacks from Craig. We consider that Craig that has access to efficient cloud computation, such as Amazon EC2. A compute-optimized instance, such as c4.large in California, costs appropriately 1 USD for 11 CPU core-hours on an Intel Xeon E5-2666 processor. In Table \ref{table:PoWtime}, we use \href{https://www.cpubenchmark.net/}{cpubenchmark.net} to convert this to the equivalent quantity of computation from a selection of Intel i7 CPUs, which are commonly found in high-end consumer-grade computers.
 
@@ -636,7 +637,7 @@ Following ticket generation, we then measured the performance of OnioNS-client. 
 \begin{table}[h]
 	\small
 	\begin{tabularx}{\linewidth}{ | C{1} || C{1} || C{1} || }
-    	\textbf{Description} & \textbf{A (ms)} & \textbf{B (ms)} \\ \hline
+    	\textbf{Description} & \textbf{$ M_{a} $ (ms)} & \textbf{$ M_{b} $ (ms)} \\ \hline
     	Parsing JSON & 5.21 & 2.42 \\ \hline
 		Validating scrypt & 448.184 & 294.963 \\ \hline
 		$ V_{\mathit{RSA}}(m, E) $ & 6.35 & 2.74 \\ \hline
@@ -690,6 +691,7 @@ OnioNS and Namecoin both allow full enumeration of all registered domains; howev
 
 \section{Conclusions and Future Work}
 
+% Our system resists Sybil attack and land rushes from computationally-powerful adversaries.
 We have presented the Onion Name System (OnioNS), a distributed, secure, and usable alternative DNS that maps globally-unique and meaningful names to hidden service addresses, achieving all three properties of Zooko's Triangle. We enable any hidden service operator to anonymously claim a human-readable name for their server and clients to query the system in privacy-enhanced manner. We introduce mechanisms that let clients authenticate existent names and denial-of-existence claims with minimal overhead costs. Additionally, we utilize the existing and semi-trusted infrastructure of Tor, which significantly narrows our threat model to already well-understood attack surfaces and allows our system to be integrated into Tor with minimal effort. Our reference implementation demonstrates high usability and shows that OnioNS successfully addresses the major usability issue that has been with Tor hidden services since their introduction in 2002.
 
 Following publication, we will expand our implementation and pursuit deploying it onto the Tor network. OnioNS introduces new software and a new .tor pseudo-TLD but requires no changes to the Tor executable. OnioNS is also forwards-compatible to changes in Tor circuits or the hidden service protocol and requires only small modifications to become compatible to \cite{TorProp224}, the proposed next generation of Tor hidden services.
@@ -887,12 +889,12 @@ In this section we derive and further clarify the lottery analysis equations tha
 	t_{d} = \frac{d_{b}}{\ceil{\frac{j}{\nWinners}}}
 \]
 
-Thus $ t_{d} = d_{b} $ for the first $ \nWinners $ tickets, $ t_{d} = 2 d_{b} $ for the second set of $ \nWinners $ tickets, and so on. The coefficient is then given by the $ n $th triangular number.
+Thus $ t_{d} = d_{b} $ for the first $ \nWinners $ tickets, $ t_{d} = 2 d_{b} $ for the second set of $ \nWinners $ tickets, and so on. The sum of the coefficient is given by the $ n $th triangular number.
 \[
 	t(n) = \binom{n + 1}{2} = \frac{n \cdot (n + 1)}{2}
 \]
 
-In the scenario in section \ref{sec:lottery}, Craig submits his tickets after $ \nWinners $ innocent actors. Thus Craig starts with $ t_{d} = 2 d_{b} $ and each must compute $ d_{b} \cdot \nWinners $ for each set in the base case.
+In the scenario in section \ref{sec:lottery}, Craig submits his tickets after $ \nWinners $ innocent actors. Thus Craig starts with $ t_{d} = 2 d_{b} $ and each must perform $ d_{b} \cdot \nWinners $ amount of work for each set in the base case.
 \begin{align*}
 	C_{w} &= d_{b} \cdot \nWinners \cdot (\frac{n \cdot  (n+1)}{2} - 1) \\
 	C_{w} &= \frac{d_{b} \cdot \nWinners \cdot n \cdot  (n+1)}{2} - d_{b} \cdot \nWinners
@@ -911,31 +913,35 @@ This is Equation \ref{eq:nCraigTickets}. We can then solve for $ n $. %, the num
 
 \newpage
 
-We must then account for the fact that $ \nWinners $ have already been submitted. This produces 
+We must then account for the fact that $ \nWinners $ tickets have already been submitted. This produces 
 \begin{align*}
 	n &= \frac{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2} - 1 \\
 	n &= \frac{-3 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
 \end{align*}
 
-% I'm less certain about this!
-We then multiply by the total cost of generating a set $ \nWinners $ to get Equation \ref{eq:nCraigTickets}.
+We then multiply by the size of each set, $ \nWinners $, resulting in Equation \ref{eq:nCraigTickets}.
 \begin{align*}
-	C_{t} = \frac{-3 \cdot d_{b} \cdot \nWinners + d_{b} \cdot \nWinners \sqrt{9 + \frac{8X}{\nWinners}}}{2}
+	C_{t} = \frac{-3 \cdot \nWinners + \nWinners \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
 \end{align*}
 
 The expected number of winning innocent hidden services is the number of winners multiplied by the probability of selecting innocent hidden services.
 \begin{align*}
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners \cdot \nWinners}{\nWinners \cdot C_{t}} \\
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners^{2}}{\nWinners \cdot \frac{-3 \cdot d_{b} \cdot \nWinners + d_{b} \cdot \nWinners \sqrt{9 + \frac{8X}{\nWinners}}}{2}} \\
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \cdot \nWinners^{2}}{-n + n \cdot \sqrt{9 + \frac{8X}{\nWinners}}} \\
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8X}{\nWinners}}}
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners \cdot \nWinners}{\nWinners + C_{t}} \\
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners^{2}}{\nWinners + \frac{-3 \cdot \nWinners + \nWinners \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}} \\
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \cdot \nWinners^{2}}{-\nWinners + \nWinners \cdot \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}} \\
+	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}
 \end{align*}
 
-This is Equation \ref{eq:expInnocentWinners}. Then we can derive Equation \ref{eq:resistance2DoR} by the following:
-\begin{align*}
-	1 &= \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8X}{\nWinners}}} \\
-	X &= \frac{\nWinners^{3} + \nWinners^{2}}{2} - \nWinners
-\end{align*}
+This is Equation \ref{eq:expInnocentWinners}. $ \left\vert{W_{i}(\mathrm{innocent})}\right\vert > 0 $ when $ \nWinners \geq 1 $, so Craig cannot prevent innocent hidden services from claiming names. However, if $ C_{t} $ is sufficiently large, then $ \left\vert{W_{i}(\mathrm{innocent})}\right\vert < 1 $. If Craig can compute $ C_{R} $ amount of work, then we can express $ \left\vert{W_{i}(\mathrm{innocent})}\right\vert = 1 $ as
+\[
+	1 = \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8 \cdot C_{R}}{d_{b} \cdot \nWinners}}}
+\]
+
+The inverse is Equation \ref{eq:resistance2DoR}, which computes the minimum amount of work required for Craig to carry out a denial-of-registration attack.
+\[
+	C_{R} = \frac{d_{b} \cdot \nWinners^{3} + d_{b} \cdot \nWinners^{2}}{2} - d_{b} \cdot \nWinners
+\]
+
 
 
 % that's all folks
