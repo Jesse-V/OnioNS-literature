@@ -339,8 +339,10 @@ Mirrors and Tor clients can check the aforementioned qualifications to locally d
 \end{enumerate}
 
 \subsubsection{Database Selection}
+% in implementation, Charlie asks for H(nonce + database), and nodes reject query or notify Charlie if they see the same nonce twice
+	% the implementation can also repeat this algorithm periodically, could be used for choosing who to subscribe to
 
-Database updates are usually done in near real-time in a peer-to-peer fashion. At startup, OnioNS mirrors subscribe to new information by opening authenticated circuits to the Quorum and attempting to read from the circuit. All Quorum nodes subscribe to each other, forming a complete graph. Assuming that all mirrors are online and at least semi-honest, all mirrors will be processing the same ephemeral and main databases. However, some mirrors may drop offline temporarily or new ones may appear on the network, and these must synchronize with the network to update their databases. Mirrors select certain Quorum nodes to synchronize against by the following algorithm. Let Charlie be a mirror.
+The OnioNS network propagates information in near real-time in a peer-to-peer fashion; mirrors open authenticated circuits to other mirrors and subscribe for new tickets or records. All Quorum nodes subscribe to each other, forming a complete graph, and non-Quorum mirrors subscribe to all Quorum nodes. Under this scheme, all mirrors that remain online and at least semi-honest will process the same ephemeral and main databases. However; however, mirrors that drop offline will be out-of-date and must synchronize against the network by the following algorithm. Let Charlie be a mirror.
 
 % todo: enough detail here?
 \begin{enumerate}
@@ -352,7 +354,7 @@ Database updates are usually done in near real-time in a peer-to-peer fashion. A
 	\item Charlie merges and $ \mathit{db}_{e} $ and $ \mathit{db}_{m} $ into his locally-stored $ \mathit{db}_{e} $ and $ \mathit{db}_{m} $.
 \end{enumerate}
 
-Quorum nodes that were temporarily offline conduct the same algorithm, but may also ask other Quorum nodes to replay new tickets so that they may update that database too. Non-Quorum mirrors subscribe to Quorum nodes according to the same algorithm.
+Quorum nodes that were temporarily offline conduct the same algorithm, but may also ask other Quorum nodes to replay new tickets so that they may update that database too. %Non-Quorum mirrors subscribe to Quorum nodes according to the same algorithm.
 
 % When hidden services transmit information to the Quorum, each Quorum node replays it to all subscribers. This allows all Quorum members to receive the same information even if the hidden service transmits to only some Quorum nodes.
 
@@ -401,7 +403,7 @@ The lottery starts at the formation of the Quorum. During the lottery, the Quoru
 
 All mirrors or other parties may verify $ W_{i} $ and update their main database accordingly through the same protocol because $ T_{i} $ is now public. As this algorithm occurs at 00:00 UTC, mirrors then update their Merkle root hash per the protocol described in section \ref{sec:qQualification}.
 
-In order to defend against the one-to-many and many-to-one attacks described in section \ref{sec:threatModel}, each Quorum node only accepts the first ticket per hidden service and the first ticket per name. We provide a defense to the many-to-many attack by setting the proof-of-work threshold $ t_{d} $ according to the formula $ d_{b} / \ceil{\frac{j}{\nWinners}} $, where $ d_{b} $ is the base difficulty and $ j $ is the ticket's index, $ 1 \leq i \leq \nWinners $.
+In order to defend against the one-to-many and many-to-one attacks described in section \ref{sec:threatModel}, each Quorum node only accepts the first ticket per hidden service and the first ticket per name. We counter the many-to-many attack by setting the threshold $ t_{d} $ for ticket $ i + 1 $ according to the formula $ d_{b} / \ceil{\frac{j}{\nWinners}} $, where $ d_{b} $ is the base difficulty and $ j $ is the ticket's index, $ 1 \leq i \leq \nWinners $. Thus the Quorum accepts the first $ \nWinners $ tickets at $ t_{d} = d_{b} $, the second $ \nWinners $ tickets at $ t_{d} = \frac{d_{b}}{2} $, and so on.
 
 %Quorum ends when G(t+1) is actually published. 
 %
@@ -484,7 +486,7 @@ OnioNS also supports reverse-hostname lookups. In an Onion Query, Alice issues a
 \section{Security Analysis}
 \label{sec:Analysis}
 
-In this section, we analyse the security of the Onion Name System with regard to our security goals and expected threat model. 
+In this section, we analyse the security of the Onion Name System with regard to our security goals and expected threat model. We supplement with a statistical analysis of the Quorum in sections \ref{sec:qSize} and \ref{sec:qRotation}.
 
 \subsection{Global Randomness}
 \label{sec:GlobalRand}
@@ -515,45 +517,75 @@ Alternative algorithms may more tightly couple the scrypt and RSA-PSS components
 \subsection{Lottery}
 \label{sec:lottery}
 
-Our lottery uses proof-of-work as a barrier-of-entry and awards names to a fixed number of hidden services to limit abuse. However, adversaries with significant computational capabilities may still register many tickets in order to improve their chances of winning the lottery. This may be done as part of a denial-of-registration attack or an en-mass registration strategy. By contrast, we anticipate that honest hidden services will only attempt to register a single name, therefore they may be assumed to be computationally weak. We consider this dichotomy when selecting the lottery's initial parameters.
+%  in order to improve their chances of winning the lottery
+Our lottery uses proof-of-work as a barrier-of-entry and awards names to a fixed number of hidden services to limit abuse. However, adversaries with significant computational capabilities may still register many tickets. This may be done as part of a statistical denial-of-registration attack or an en-mass registration strategy. By contrast, we anticipate that honest hidden services will only attempt to register a single name, therefore they may be assumed to be computationally weak. We consider this dichotomy when selecting the lottery's initial parameters.
 
-Our lottery has a high degree of usability if it awards names a very large number of hidden services. Although this increases its vulnerability to the aforementioned attacks from computationally-powerful adversaries, we introduce several straightforward countermeasures. First, we may preload OnioNS with a large set of ``reserved'' names by constructing a mapping between popular hidden services and their self-declared name. Although these pre-existing hidden services must still generate a lottery ticket, they win names immediately. This both increases the usability of our system and removes a significant incentive for land rush attacks. Second, we demonstrate that a large number of winners and the lottery's difficulty-adjustment scheme provides a statistical defense against well-resourced adversaries.
+Our lottery has a high degree of usability if it awards names a very large number of hidden services. Although this increases its vulnerability to the aforementioned attacks, we introduce several straightforward countermeasures. First, we may preload OnioNS with a large set of ``reserved'' names by constructing a mapping between popular hidden services and their self-declared name. Although these pre-existing hidden services must still generate a lottery ticket, they win names immediately. This both increases the usability of our system and removes a significant incentive for land rush attacks. Second, we demonstrate that a large number of winners and the lottery's threshold-adjustment scheme provides a statistical defense against well-resourced adversaries.
 
-As described in section \ref{sec:lotteryManagement}, the $ Q_{i} $ sets the proof-of-work threshold, $ t_{d} $, according to 
+% If the lottery required a constant amount of computational work for each lottery ticket, then a computationally-powerful adversary, Craig, could easily generate many tickets and quickly place the statistics in his favor. We counter this potential for abuse 
+We counter the potential for abuse by decreasing the proof-of-work threshold (thus increasing the cost) in a stepwise manner proportionally to the number of tickets submitted to the lottery. As described in section \ref{sec:lotteryManagement}, $ Q_{i} $ sets the threshold, $ t_{d} $, according to 
 
 \begin{equation}
 	t_{d} = \frac{d_{b}}{\ceil{\frac{j}{\nWinners}}}
 \end{equation}
 
-\noindent where $ d_{b} $ is the base difficulty, $ W_{i} $ is the set of lottery winners, and $ j $ is the ticket's index in $ W_{i} $. If $ \nWinners $ innocent parties submit tickets, then by the partial sum formula Craig (a computationally-powerful adversary) must perform 
+\noindent where $ d_{b} $ is the base difficulty, $ W_{i} $ is the set of lottery winners, and $ j $ is the ticket's index in $ W_{i} $. Although this makes it more difficult for Craig to generate many names, it does introduce an advantage for hidden services that submit their tickets near the beginning of the lottery. This side-effect creates lower and upper bounds on the cost for Craig; he can generate many tickets at minimal cost if he submits them to $ Q_{i} $ before innocent users, but his cost is maximized if he submits them after innocent users.
 
+Let the function $ T(p) $ compute the maximum number of tickets that have a total cost $ p $, where
 \begin{equation}
-	C_{w} = \frac{d_{b} \cdot \nWinners \cdot n \cdot  (n+1)}{2} - d_{b} \cdot \nWinners
-	\label{eq:CraigWork}
+	T(p) = \frac{\nWinners \cdot \sqrt{1 + \frac{8 \cdot p}{d_{b} \cdot \nWinners}} - \nWinners}{2}
+	\label{eq:nTickets}
 \end{equation}
 
-\noindent amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. In the same scenario, if Craig is $ C_{R} $ times computationally stronger than the average capabilities of the innocent parties, he may compute $ C_{t} $ number of lottery tickets, where
+If the innocent users have a collective computational power $ P_{I} $ and Craig has power $ P_{C} $, then Craig can compute $ C_{t} $ lottery tickets, where
 
 \begin{equation}
-	C_{t} = \frac{-3 \cdot \nWinners + \nWinners \sqrt{9 + \frac{8 \cdot C_{R}}{d_{b} \cdot \nWinners}}}{2}
-	\label{eq:nCraigTickets}
+	C_{t} \in {[ T(P_{I} + P_{C}) - T(P_{I}), T(P_{C})  ]}
 \end{equation}
 
-If his tickets are also submitted to $ Q_{i} $, then the expected number of winning innocent tickets is given by
+If $ P_{I} $ and $ P_{C} $ remain constant, Craig's upper-bound increases sub-linearly to $ \nWinners $. The expected number of Craig's tickets winning the lottery, $ W_{C} $, is given by
 
 \begin{equation}
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert = \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8 \cdot C_{R}}{d_{b} \cdot \nWinners}}}
-	\label{eq:expInnocentWinners}
+	W_{C} = \frac{C_{t} \cdot \nWinners}{T(P_{I} + P_{C})}
 \end{equation}
 
-Craig could also generate many tickets in order to statistically prevent others from winning the lottery. However, this also becomes impractical for large $ \nWinners $: if Equation \ref{eq:expInnocentWinners} is set to 1, then $ C_{R} $ is given by 
+% todo: add a note that fragmented adversaries also allows innocent users to win names
+In the worst case, Craig submits his tickets first. In practice, we expect this to be unlikely because innocent users can submit tickets at the same time. Thus we anticipate that $ W_{C} $ will usually be between the upper and lower bounds. In all cases, higher $ P_{I} $ reduces $ W_{C} $. However, if Craig is significantly powerful, we could expect $ W_{C} > \nWinners - 1 $ during a statistical denial-of-registration attack. The lottery's resistance to this attack is highly dependent on $ \nWinners $. However, large $ \nWinners $ also allows Craig to claim or squat many names. Based on the above equations, we suggest $ \nWinners = 35 $. We note that this value is adjustable and can be easily increased to meet a demonstrably higher demand from the Tor community.
 
-\begin{equation}
-	C_{R} = \frac{d_{b} \cdot \nWinners^{3} + d_{b} \cdot \nWinners^{2}}{2} - d_{b} \cdot \nWinners
-	\label{eq:resistance2DoR}
-\end{equation}
+% \textbf{I don't think that the above upper bound is correct. Equation 2 is correct for the lower-bound. How do I proceed and demonstrate the significance of $ \nWinners $? I should be able to show that large $ \nWinners $ provides a defense against mass-generation of tickets.}
 
-$ C_{R} $ increases quadratically to $ \nWinners $, suggesting that large values for $ \nWinners $ act as a defense against a denial-of-registration attack; with large $ \nWinners $ it is impractical for Craig to generate many tickets in order to increase the proof-of-work difficulty beyond the means of innocent parties. However, large $ \nWinners $ also allows Craig to claim or squat many names. Bared on the above equations, we recommend awarding more than 21 names per lottery and suggest $ \nWinners = 35 $. We note that this value is adjustable and can be easily increased to meet a demonstrably higher demand from the Tor community.
+
+
+
+%If $ \nWinners $ innocent parties submit tickets, then by the partial sum formula Craig (a computationally-powerful adversary) must perform 
+%
+%\begin{equation}
+%	C_{w} = \frac{d_{b} \cdot \nWinners \cdot n \cdot  (n+1)}{2} - d_{b} \cdot \nWinners
+%	\label{eq:CraigWork}
+%\end{equation}
+%
+%\noindent amount of work to have a $ \frac{1}{n} $ chance of his names winning the lottery. In the same scenario, if Craig is $ C_{R} $ times computationally stronger than the average capabilities of the innocent parties, he may compute $ C_{t} $ number of lottery tickets, where
+%
+%\begin{equation}
+%	C_{t} = \frac{-3 \cdot \nWinners + \nWinners \sqrt{9 + \frac{8 \cdot C_{R}}{d_{b} \cdot \nWinners}}}{2}
+%	\label{eq:nCraigTickets}
+%\end{equation}
+%
+%If his tickets are also submitted to $ Q_{i} $, then the expected number of winning innocent tickets is given by
+%
+%\begin{equation}
+%	\left\vert{W_{i}(\mathrm{innocent})}\right\vert = \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8 \cdot C_{R}}{d_{b} \cdot \nWinners}}}
+%	\label{eq:expInnocentWinners}
+%\end{equation}
+%
+%Craig could also generate many tickets in order to statistically prevent others from winning the lottery. However, this also becomes impractical for large $ \nWinners $: if Equation \ref{eq:expInnocentWinners} is set to 1, then $ C_{R} $ is given by 
+%
+%\begin{equation}
+%	C_{R} = \frac{d_{b} \cdot \nWinners^{3} + d_{b} \cdot \nWinners^{2}}{2} - d_{b} \cdot \nWinners
+%	\label{eq:resistance2DoR}
+%\end{equation}
+%
+%$ C_{R} $ increases quadratically to $ \nWinners $, suggesting that large values for $ \nWinners $ act as a defense against a denial-of-registration attack; with large $ \nWinners $ it is impractical for Craig to generate many tickets in order to increase the proof-of-work difficulty beyond the means of innocent parties. However, large $ \nWinners $ also allows Craig to claim or squat many names. Bared on the above equations, we recommend awarding more than 21 names per lottery and suggest $ \nWinners = 35 $. We note that this value is adjustable and can be easily increased to meet a demonstrably higher demand from the Tor community.
 
 We must also select a value for $ d_{b} $. Low values for $ d_{b} $ provides a low barrier-to-entry, increasing usability, but it also increases the lottery's vulnerability to attacks from Craig. We consider that Craig that has access to efficient cloud computation, such as Amazon EC2. A compute-optimized instance, such as c4.large in California, costs appropriately 1 USD for 11 CPU core-hours on an Intel Xeon E5-2666 processor. In Table \ref{table:PoWtime}, we use \href{https://www.cpubenchmark.net/}{cpubenchmark.net} to convert this to the equivalent quantity of computation from a selection of Intel i7 CPUs, which are commonly found in high-end consumer-grade computers.
 
@@ -564,7 +596,7 @@ We anticipate that innocent hidden services with high-end CPUs will take less th
 With a sufficiently high value of $ \nWinners $ and a significant value for $ d_{b} $, we believe that our lottery can resist a well-resourced adversary while simultaneously serving computationally-weak innocent parties.
 
 \begin{center}
-	\vspace{0mm}
+	\vspace{-5mm}
 	\begin{table}[htp]
 		\hspace{5 mm}
   		\begin{tabular}{ | c | c | c | c | c | }
@@ -889,58 +921,69 @@ In this section we derive and further clarify the lottery analysis equations tha
 	t_{d} = \frac{d_{b}}{\ceil{\frac{j}{\nWinners}}}
 \]
 
-Thus $ t_{d} = d_{b} $ for the first $ \nWinners $ tickets, $ t_{d} = 2 d_{b} $ for the second set of $ \nWinners $ tickets, and so on. The sum of the coefficient is given by the $ n $th triangular number.
+Thus $ t_{d} = d_{b} $ for the first $ \nWinners $ tickets, $ t_{d} = \frac{d_{b}}{2} $ for the second set of $ \nWinners $ tickets, and so on. The sum of the coefficient is given by the $ n $th triangular number.
 \[
 	t(n) = \binom{n + 1}{2} = \frac{n \cdot (n + 1)}{2}
 \]
 
-In the scenario in section \ref{sec:lottery}, Craig submits his tickets after $ \nWinners $ innocent actors. Thus Craig starts with $ t_{d} = 2 d_{b} $ and each must perform $ d_{b} \cdot \nWinners $ amount of work for each set in the base case.
+We can then compute $ T(p) $ by deriving Equation \ref{eq:nTickets}.
 \begin{align*}
-	C_{w} &= d_{b} \cdot \nWinners \cdot (\frac{n \cdot  (n+1)}{2} - 1) \\
-	C_{w} &= \frac{d_{b} \cdot \nWinners \cdot n \cdot  (n+1)}{2} - d_{b} \cdot \nWinners
+	p &= d_{b} \cdot \nWinners \cdot (\frac{n \cdot  (n+1)}{2}) \\
+	\frac{p}{d_{b} \cdot \nWinners} &= \frac{n^{2} + n}{2} \\
+	0 &= n^{2} + n - \frac{2 \cdot p}{d_{b} \cdot \nWinners} \\
+	n &=  \frac{-1 + \sqrt{1 - 4(\frac{-2 \cdot p}{d_{b} \cdot \nWinners} - 2)}}{2} \\
+	n &= \frac{-1+ \sqrt{1 + \frac{8 \cdot p}{d_{b} \cdot \nWinners}}}{2} \\
+	T(p) &= \frac{\nWinners \cdot \sqrt{1 + \frac{8 \cdot p}{d_{b} \cdot \nWinners}} - \nWinners}{2}
 \end{align*}
 
-This is Equation \ref{eq:nCraigTickets}. We can then solve for $ n $. %, the number of tickets that Craig can compute with $ C_{w} $ work.
-\begin{align*}
-	C_{w} &= d_{b} \cdot \nWinners \cdot (\frac{n \cdot  (n+1)}{2} - 1) \\
-	\frac{C_{w}}{d_{b} \cdot \nWinners} &= \frac{n^{2} + n}{2} - 1 \\
-	\frac{C_{w}}{d_{b} \cdot \nWinners} + 1 &= \frac{n^{2} + n}{2} \\
-	\frac{2 \cdot C_{w}}{d_{b} \cdot \nWinners} + 2 &= n^{2} + n \\
-	0 &= n^{2} + n - \frac{2 \cdot C_{w}}{d_{b} \cdot \nWinners} - 2 \\
-	n &= \frac{-1 + \sqrt{1 - 4(\frac{-2 \cdot C_{w}}{d_{b} \cdot \nWinners} - 2)}}{2} \\
-	n &= \frac{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
-\end{align*}
 
-\newpage
-
-We must then account for the fact that $ \nWinners $ tickets have already been submitted. This produces 
-\begin{align*}
-	n &= \frac{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2} - 1 \\
-	n &= \frac{-3 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
-\end{align*}
-
-We then multiply by the size of each set, $ \nWinners $, resulting in Equation \ref{eq:nCraigTickets}.
-\begin{align*}
-	C_{t} = \frac{-3 \cdot \nWinners + \nWinners \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
-\end{align*}
-
-The expected number of winning innocent hidden services is the number of winners multiplied by the probability of selecting innocent hidden services.
-\begin{align*}
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners \cdot \nWinners}{\nWinners + C_{t}} \\
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners^{2}}{\nWinners + \frac{-3 \cdot \nWinners + \nWinners \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}} \\
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \cdot \nWinners^{2}}{-\nWinners + \nWinners \cdot \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}} \\
-	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}
-\end{align*}
-
-This is Equation \ref{eq:expInnocentWinners}. $ \left\vert{W_{i}(\mathrm{innocent})}\right\vert > 0 $ when $ \nWinners \geq 1 $, so Craig cannot prevent innocent hidden services from claiming names. However, if $ C_{t} $ is sufficiently large, then $ \left\vert{W_{i}(\mathrm{innocent})}\right\vert < 1 $. If Craig can compute $ C_{R} $ amount of work, then we can express $ \left\vert{W_{i}(\mathrm{innocent})}\right\vert = 1 $ as
-\[
-	1 = \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8 \cdot C_{R}}{d_{b} \cdot \nWinners}}}
-\]
-
-The inverse is Equation \ref{eq:resistance2DoR}, which computes the minimum amount of work required for Craig to carry out a denial-of-registration attack.
-\[
-	C_{R} = \frac{d_{b} \cdot \nWinners^{3} + d_{b} \cdot \nWinners^{2}}{2} - d_{b} \cdot \nWinners
-\]
+%In the scenario in section \ref{sec:lottery}, Craig submits his tickets after $ \nWinners $ innocent actors. Thus Craig starts with $ t_{d} = 2 d_{b} $ and each must perform $ d_{b} \cdot \nWinners $ amount of work for each set in the base case.
+%\begin{align*}
+%	C_{w} &= d_{b} \cdot \nWinners \cdot (\frac{n \cdot  (n+1)}{2} - 1) \\
+%	C_{w} &= \frac{d_{b} \cdot \nWinners \cdot n \cdot  (n+1)}{2} - d_{b} \cdot \nWinners
+%\end{align*}
+%
+%This is Equation \ref{eq:nCraigTickets}. We can then solve for $ n $. %, the number of tickets that Craig can compute with $ C_{w} $ work.
+%\begin{align*}
+%	C_{w} &= d_{b} \cdot \nWinners \cdot (\frac{n \cdot  (n+1)}{2} - 1) \\
+%	\frac{C_{w}}{d_{b} \cdot \nWinners} &= \frac{n^{2} + n}{2} - 1 \\
+%	\frac{C_{w}}{d_{b} \cdot \nWinners} + 1 &= \frac{n^{2} + n}{2} \\
+%	\frac{2 \cdot C_{w}}{d_{b} \cdot \nWinners} + 2 &= n^{2} + n \\
+%	0 &= n^{2} + n - \frac{2 \cdot C_{w}}{d_{b} \cdot \nWinners} - 2 \\
+%	n &= \frac{-1 + \sqrt{1 - 4(\frac{-2 \cdot C_{w}}{d_{b} \cdot \nWinners} - 2)}}{2} \\
+%	n &= \frac{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
+%\end{align*}
+%
+%\newpage
+%
+%We must then account for the fact that $ \nWinners $ tickets have already been submitted. This produces 
+%\begin{align*}
+%	n &= \frac{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2} - 1 \\
+%	n &= \frac{-3 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
+%\end{align*}
+%
+%We then multiply by the size of each set, $ \nWinners $, resulting in Equation \ref{eq:nCraigTickets}.
+%\begin{align*}
+%	C_{t} = \frac{-3 \cdot \nWinners + \nWinners \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}
+%\end{align*}
+%
+%The expected number of winning innocent hidden services is the number of winners multiplied by the probability of selecting innocent hidden services.
+%\begin{align*}
+%	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners \cdot \nWinners}{\nWinners + C_{t}} \\
+%	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{\nWinners^{2}}{\nWinners + \frac{-3 \cdot \nWinners + \nWinners \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}{2}} \\
+%	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \cdot \nWinners^{2}}{-\nWinners + \nWinners \cdot \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}} \\
+%	\left\vert{W_{i}(\mathrm{innocent})}\right\vert &= \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8 \cdot C_{w}}{d_{b} \cdot \nWinners}}}
+%\end{align*}
+%
+%This is Equation \ref{eq:expInnocentWinners}. $ \left\vert{W_{i}(\mathrm{innocent})}\right\vert > 0 $ when $ \nWinners \geq 1 $, so Craig cannot prevent innocent hidden services from claiming names. However, if $ C_{t} $ is sufficiently large, then $ \left\vert{W_{i}(\mathrm{innocent})}\right\vert < 1 $. If Craig can compute $ C_{R} $ amount of work, then we can express $ \left\vert{W_{i}(\mathrm{innocent})}\right\vert = 1 $ as
+%\[
+%	1 = \frac{2 \nWinners}{-1 + \sqrt{9 + \frac{8 \cdot C_{R}}{d_{b} \cdot \nWinners}}}
+%\]
+%
+%The inverse is Equation \ref{eq:resistance2DoR}, which computes the minimum amount of work required for Craig to carry out a denial-of-registration attack.
+%\[
+%	C_{R} = \frac{d_{b} \cdot \nWinners^{3} + d_{b} \cdot \nWinners^{2}}{2} - d_{b} \cdot \nWinners
+%\]
 
 
 
