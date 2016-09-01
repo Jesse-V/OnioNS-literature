@@ -6,7 +6,7 @@ This repository contains my thesis that I wrote for my Master's in Computer Scie
 * [Direct link to the thesis PDF](https://github.com/Jesse-V/OnioNS-literature/raw/master/thesis/thesis.pdf)
 * [Direct link to PoPETS 2017.1 pre-print](https://github.com/Jesse-V/OnioNS-literature/raw/master/conference/conference.pdf)
 
-Due to extensive feedback from the peer-reviewers of CSS'15, NDSS'16, PoPETS'16, and Tor developers, the PoPETS paper differs significantly from the original thesis. The main ideas are still there, but many components such as the name registration protocol and the random number beacon went through many iterations.
+Due to extensive feedback from the peer-reviewers of CSS'15, NDSS'16, PoPETS'16, PoPETS'17, and Tor developers, the paper differs significantly from the original thesis. The main ideas are still there, but many components such as the name registration protocol and the random number beacon went through many iterations.
 
 Compiling the LaTex sources:
 ======
